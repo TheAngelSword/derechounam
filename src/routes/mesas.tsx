@@ -1,84 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Pencil, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Shell } from "@/components/shell";
 import { useBoard, useRefreshBoard } from "@/components/board-context";
 import { Button, Card, Field, FormBox, Input, Textarea } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
-import { useAreaVisit } from "@/components/directory";
-import { addGroup } from "@/lib/content";
-
+import { canEditPublication, useAreaVisit, useDirectory } from "@/components/directory";
+import { addGroup, updateGroup } from "@/lib/content";
+import type { StudyGroup } from "@/lib/types";
 export const Route = createFileRoute("/mesas")({ component: MesasPage });
-
-function MesasPage() {
-  const { groups } = useBoard();
-  const refresh = useRefreshBoard();
-  useAreaVisit("mesas");
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const name = String(data.get("name") ?? "").trim();
-    const course = String(data.get("course") ?? "").trim();
-    const whenText = String(data.get("whenText") ?? "").trim();
-    const place = String(data.get("place") ?? "").trim();
-    const notes = String(data.get("notes") ?? "").trim();
-    if (name.length < 3 || course.length < 3 || whenText.length < 3 || place.length < 3 || notes.length < 3) {
-      setError("Falta el nombre de la mesa o el horario.");
-      return;
-    }
-    try {
-      await addGroup({ data: { name, course, whenText, place, notes } });
-      form.reset();
-      await refresh();
-    } catch {
-      setError("Entra al padrón para publicar.");
-    }
-  }
-
-  return (
-    <Shell
-      eyebrow="Después de la jornada"
-      title="Una mesa por materia del bloque."
-      lead="Romano, personas, historia, teoría y sociología. El cupo se cierra en la propia mesa."
-    >
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="grid gap-4 md:grid-cols-2 lg:col-span-2">
-          {groups.map((group) => (
-            <Card key={group.id}>
-              <p className="text-xs uppercase tracking-[0.14em] text-clay">{group.course}</p>
-              <h2 className="mt-2 font-display text-2xl">{group.name}</h2>
-              <p className="mt-3 text-sm">
-                {group.whenText} · {group.place}
-              </p>
-              <p className="mt-2 text-sm text-muted">{group.notes}</p>
-            </Card>
-          ))}
-        </div>
-        <PublishGate area="mesas">
-        <FormBox title="Abrir una mesa" onSubmit={onSubmit}>
-          <Field label="Nombre">
-            <Input name="name" required placeholder="Mesa de precedentes" />
-          </Field>
-          <Field label="Materia">
-            <Input name="course" required placeholder="Constitucional II" />
-          </Field>
-          <Field label="Cuándo">
-            <Input name="whenText" required placeholder="Domingo 11:00" />
-          </Field>
-          <Field label="Dónde">
-            <Input name="place" required placeholder="Biblioteca · sala 4" />
-          </Field>
-          <Field label="Acuerdo">
-            <Textarea name="notes" required placeholder="Una ficha por semana" />
-          </Field>
-          {error ? <p className="text-sm text-danger">{error}</p> : null}
-          <Button type="submit">Publicar mesa</Button>
-        </FormBox>
-        </PublishGate>
-      </div>
-    </Shell>
-  );
-}
+function MesasPage(){const{groups}=useBoard();const refresh=useRefreshBoard();const{user,directory}=useDirectory();useAreaVisit("mesas");const[error,setError]=useState<string|null>(null);const[editing,setEditing]=useState<StudyGroup|null>(null);function read(fd:FormData){return{name:String(fd.get("name")??"").trim(),course:String(fd.get("course")??"").trim(),whenText:String(fd.get("whenText")??"").trim(),place:String(fd.get("place")??"").trim(),notes:String(fd.get("notes")??"").trim()}}async function onSubmit(e:FormEvent<HTMLFormElement>){e.preventDefault();setError(null);const f=e.currentTarget;try{await addGroup({data:read(new FormData(f))});f.reset();await refresh()}catch{setError("Entra al padrón para publicar.")}}async function onEdit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!editing)return;try{await updateGroup({data:{id:editing.id,...read(new FormData(e.currentTarget))}});setEditing(null);await refresh()}catch(c){const m=c instanceof Error?c.message:"No se pudo guardar.";setError(/autor de la publicación|administrador/i.test(m)?"Sólo el autor o un administrador puede editar esta mesa.":m)}}return <Shell eyebrow="Después de la jornada" title="Una mesa por materia del bloque." lead="Romano, personas, historia, teoría y sociología. El cupo se cierra en la propia mesa."><div className="grid gap-6 lg:grid-cols-3"><div className="grid gap-4 md:grid-cols-2 lg:col-span-2">{groups.map(group=>{const editable=canEditPublication(directory,user?.id,group.createdBy);return <Card key={group.id}><div className="flex items-center justify-between gap-2"><p className="text-xs uppercase tracking-[0.14em] text-clay">{group.course}</p>{editable?<button type="button" onClick={()=>setEditing(group)} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-forest"><Pencil className="size-3.5"/>Editar</button>:null}</div><h2 className="mt-2 font-display text-2xl">{group.name}</h2><p className="mt-3 text-sm">{group.whenText} · {group.place}</p><p className="mt-2 text-sm text-muted">{group.notes}</p></Card>})}</div><div>{editing?<FormBox title="Editar mesa" onSubmit={onEdit}><button type="button" onClick={()=>setEditing(null)} className="inline-flex items-center gap-1 justify-self-end text-xs font-semibold text-forest"><X className="size-3.5"/>Cancelar</button><GroupFields group={editing}/>{error?<p className="text-sm text-danger">{error}</p>:null}<Button type="submit"><Pencil className="mr-2 size-4"/>Guardar cambios</Button></FormBox>:<PublishGate area="mesas"><FormBox title="Abrir una mesa" onSubmit={onSubmit}><GroupFields/>{error?<p className="text-sm text-danger">{error}</p>:null}<Button type="submit">Publicar mesa</Button></FormBox></PublishGate>}</div></div></Shell>}
+function GroupFields({group}:{group?:StudyGroup}){return <><Field label="Nombre"><Input name="name" required defaultValue={group?.name??""} placeholder="Mesa de precedentes"/></Field><Field label="Materia"><Input name="course" required defaultValue={group?.course??""} placeholder="Constitucional II"/></Field><Field label="Cuándo"><Input name="whenText" required defaultValue={group?.whenText??""} placeholder="Domingo 11:00"/></Field><Field label="Dónde"><Input name="place" required defaultValue={group?.place??""} placeholder="Biblioteca · sala 4"/></Field><Field label="Acuerdo"><Textarea name="notes" required defaultValue={group?.notes??""} placeholder="Una ficha por semana"/></Field></>}

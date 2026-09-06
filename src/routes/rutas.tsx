@@ -1,127 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Pencil, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Shell } from "@/components/shell";
 import { useBoard, useRefreshBoard } from "@/components/board-context";
 import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
-import { useAreaVisit } from "@/components/directory";
-import { addRide } from "@/lib/content";
-
+import { canEditPublication, useAreaVisit, useDirectory } from "@/components/directory";
+import { addRide, updateRide } from "@/lib/content";
+import type { RideItem } from "@/lib/types";
 export const Route = createFileRoute("/rutas")({ component: RutasPage });
-
-function RutasPage() {
-  const { rides } = useBoard();
-  const refresh = useRefreshBoard();
-  useAreaVisit("rutas");
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const fromPlace = String(data.get("fromPlace") ?? "").trim();
-    const toPlace = String(data.get("toPlace") ?? "").trim();
-    const timeSlot = String(data.get("timeSlot") ?? "").trim();
-    const notes = String(data.get("notes") ?? "").trim();
-    const ownerAlias = String(data.get("ownerAlias") ?? "").trim();
-    const seats = Number(data.get("seats") ?? 2);
-    if (fromPlace.length < 3 || toPlace.length < 3 || timeSlot.length < 4 || notes.length < 3 || ownerAlias.length < 2) {
-      setError("Usa puntos de encuentro del campus o el metro. Sin teléfonos.");
-      return;
-    }
-    try {
-      await addRide({
-        data: {
-          direction: String(data.get("direction") ?? "Ida") as "Ida",
-          fromPlace,
-          toPlace,
-          weekday: String(data.get("weekday") ?? "Lunes") as "Lunes",
-          timeSlot,
-          seats: Number.isFinite(seats) ? Math.min(6, Math.max(1, seats)) : 2,
-          notes,
-          ownerAlias,
-        },
-      });
-      form.reset();
-      await refresh();
-    } catch {
-      setError("Entra al padrón para publicar.");
-    }
-  }
-
-  return (
-    <Shell
-      eyebrow="Ruta 9114"
-      title="Llegar a D-106 antes de las 07:00."
-      lead="Salida a las 06:35. Vuelta a las 14:10 desde E-003, cuando termina Ser universitario."
-    >
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="grid gap-4 lg:col-span-2">
-          {rides.map((ride) => (
-            <Card key={ride.id} className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="flex flex-wrap gap-2">
-                  <Pill>{ride.direction}</Pill>
-                  <Pill>{ride.weekday}</Pill>
-                </div>
-                <h2 className="mt-3 font-display text-2xl">
-                  {ride.fromPlace}
-                  <span className="mx-2 text-muted">→</span>
-                  {ride.toPlace}
-                </h2>
-                <p className="mt-2 text-sm text-muted">{ride.notes}</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.12em] text-clay">{ride.ownerAlias}</p>
-              </div>
-              <div className="shrink-0 text-right">
-                <p className="font-display text-3xl tabular-nums leading-none">{ride.seats}</p>
-                <p className="mt-1 text-xs uppercase tracking-[0.12em] text-muted">asientos</p>
-                <p className="mt-2 text-sm tabular-nums">{ride.timeSlot}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-        <PublishGate area="rutas">
-        <FormBox title="Ofrecer asiento" onSubmit={onSubmit}>
-          <Field label="Sentido">
-            <Select name="direction" defaultValue="Ida">
-              <option>Ida</option>
-              <option>Vuelta</option>
-            </Select>
-          </Field>
-          <Field label="Sale de">
-            <Input name="fromPlace" required placeholder="Metro Copilco" />
-          </Field>
-          <Field label="Llega a">
-            <Input name="toPlace" required placeholder="Puerta sur" />
-          </Field>
-          <Field label="Día">
-            <Select name="weekday" defaultValue="Lunes">
-              <option>Lunes</option>
-              <option>Martes</option>
-              <option>Miércoles</option>
-              <option>Jueves</option>
-              <option>Viernes</option>
-              <option>Sábado</option>
-            </Select>
-          </Field>
-          <Field label="Hora">
-            <Input name="timeSlot" required placeholder="07:20" />
-          </Field>
-          <Field label="Asientos">
-            <Input name="seats" type="number" min={1} max={6} defaultValue={2} />
-          </Field>
-          <Field label="Punto de encuentro">
-            <Textarea name="notes" required placeholder="Salida oriente del metro" />
-          </Field>
-          <Field label="Alias de ruta">
-            <Input name="ownerAlias" required placeholder="Ruta sur" />
-          </Field>
-          {error ? <p className="text-sm text-danger">{error}</p> : null}
-          <Button type="submit">Publicar ruta</Button>
-        </FormBox>
-        </PublishGate>
-      </div>
-    </Shell>
-  );
-}
+function RutasPage(){const{rides}=useBoard();const refresh=useRefreshBoard();const{user,directory}=useDirectory();useAreaVisit("rutas");const[error,setError]=useState<string|null>(null);const[editing,setEditing]=useState<RideItem|null>(null);function read(fd:FormData){const seats=Number(fd.get("seats")??2);return{direction:String(fd.get("direction")??"Ida") as "Ida",fromPlace:String(fd.get("fromPlace")??"").trim(),toPlace:String(fd.get("toPlace")??"").trim(),weekday:String(fd.get("weekday")??"Lunes") as "Lunes",timeSlot:String(fd.get("timeSlot")??"").trim(),seats:Number.isFinite(seats)?Math.min(6,Math.max(1,seats)):2,notes:String(fd.get("notes")??"").trim(),ownerAlias:String(fd.get("ownerAlias")??"").trim()}}async function onSubmit(e:FormEvent<HTMLFormElement>){e.preventDefault();setError(null);const f=e.currentTarget;try{await addRide({data:read(new FormData(f))});f.reset();await refresh()}catch{setError("Entra al padrón para publicar.")}}async function onEdit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!editing)return;try{await updateRide({data:{id:editing.id,...read(new FormData(e.currentTarget))}});setEditing(null);await refresh()}catch(c){const m=c instanceof Error?c.message:"No se pudo guardar.";setError(/autor de la publicación|administrador/i.test(m)?"Sólo el autor o un administrador puede editar esta ruta.":m)}}return <Shell eyebrow="Ruta 9114" title="Llegar a D-106 antes de las 07:00." lead="Salida a las 06:35. Vuelta a las 14:10 desde E-003, cuando termina Ser universitario."><div className="grid gap-6 lg:grid-cols-3"><div className="grid gap-4 lg:col-span-2">{rides.map(ride=>{const editable=canEditPublication(directory,user?.id,ride.createdBy);return <Card key={ride.id} className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div><div className="flex flex-wrap gap-2"><Pill>{ride.direction}</Pill><Pill>{ride.weekday}</Pill>{editable?<button type="button" onClick={()=>setEditing(ride)} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1 text-xs font-semibold text-forest"><Pencil className="size-3.5"/>Editar</button>:null}</div><h2 className="mt-3 font-display text-2xl">{ride.fromPlace}<span className="mx-2 text-muted">→</span>{ride.toPlace}</h2><p className="mt-2 text-sm text-muted">{ride.notes}</p><p className="mt-2 text-xs uppercase tracking-[0.12em] text-clay">{ride.ownerAlias}</p></div><div className="shrink-0 text-right"><p className="font-display text-3xl tabular-nums leading-none">{ride.seats}</p><p className="mt-1 text-xs uppercase tracking-[0.12em] text-muted">asientos</p><p className="mt-2 text-sm tabular-nums">{ride.timeSlot}</p></div></Card>})}</div><div>{editing?<FormBox title="Editar ruta" onSubmit={onEdit}><button type="button" onClick={()=>setEditing(null)} className="inline-flex items-center gap-1 justify-self-end text-xs font-semibold text-forest"><X className="size-3.5"/>Cancelar</button><RideFields ride={editing}/>{error?<p className="text-sm text-danger">{error}</p>:null}<Button type="submit"><Pencil className="mr-2 size-4"/>Guardar cambios</Button></FormBox>:<PublishGate area="rutas"><FormBox title="Ofrecer asiento" onSubmit={onSubmit}><RideFields/>{error?<p className="text-sm text-danger">{error}</p>:null}<Button type="submit">Publicar ruta</Button></FormBox></PublishGate>}</div></div></Shell>}
+function RideFields({ride}:{ride?:RideItem}){return <><Field label="Sentido"><Select name="direction" defaultValue={ride?.direction??"Ida"}><option>Ida</option><option>Vuelta</option></Select></Field><Field label="Sale de"><Input name="fromPlace" required defaultValue={ride?.fromPlace??""} placeholder="Metro Copilco"/></Field><Field label="Llega a"><Input name="toPlace" required defaultValue={ride?.toPlace??""} placeholder="Puerta sur"/></Field><Field label="Día"><Select name="weekday" defaultValue={ride?.weekday??"Lunes"}><option>Lunes</option><option>Martes</option><option>Miércoles</option><option>Jueves</option><option>Viernes</option><option>Sábado</option></Select></Field><Field label="Hora"><Input name="timeSlot" required defaultValue={ride?.timeSlot??""} placeholder="07:20"/></Field><Field label="Asientos"><Input name="seats" type="number" min={1} max={6} defaultValue={ride?.seats??2}/></Field><Field label="Punto de encuentro"><Textarea name="notes" required defaultValue={ride?.notes??""} placeholder="Salida oriente del metro"/></Field><Field label="Alias de ruta"><Input name="ownerAlias" required defaultValue={ride?.ownerAlias??""} placeholder="Ruta sur"/></Field></>}

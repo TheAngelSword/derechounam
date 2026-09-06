@@ -1,69 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Pencil, X } from "lucide-react";
 import { useState, type FormEvent } from "react";
 import { Shell } from "@/components/shell";
 import { useBoard, useRefreshBoard } from "@/components/board-context";
 import { Button, Card, Field, FormBox, Input, Pill, Textarea } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
-import { useAreaVisit } from "@/components/directory";
-import { addNotice } from "@/lib/content";
-
+import { canEditPublication, useAreaVisit, useDirectory } from "@/components/directory";
+import { addNotice, updateNotice } from "@/lib/content";
+import type { Notice } from "@/lib/types";
 export const Route = createFileRoute("/mural")({ component: MuralPage });
-
-function MuralPage() {
-  const { notices } = useBoard();
-  const refresh = useRefreshBoard();
-  useAreaVisit("mural");
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-    const form = event.currentTarget;
-    const data = new FormData(form);
-    const title = String(data.get("title") ?? "").trim();
-    const body = String(data.get("body") ?? "").trim();
-    if (title.length < 3 || body.length < 3) {
-      setError("El aviso necesita título y un texto breve.");
-      return;
-    }
-    try {
-      await addNotice({ data: { title, body } });
-      form.reset();
-      await refresh();
-    } catch {
-      setError("Entra al padrón para publicar.");
-    }
-  }
-
-  return (
-    <Shell
-      eyebrow="Grupo 9114"
-      title="Salón D-106, cruce a E-003, recados del día."
-      lead="Lo urgente se clava arriba: jornada, cambio de edificio y listas."
-    >
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="grid gap-4 lg:col-span-2">
-          {notices.map((notice) => (
-            <Card key={notice.id}>
-              {notice.pinned ? <Pill>Fijo</Pill> : <Pill>Recado</Pill>}
-              <h2 className="mt-3 font-display text-2xl">{notice.title}</h2>
-              <p className="mt-2 text-sm text-muted">{notice.body}</p>
-            </Card>
-          ))}
-        </div>
-        <PublishGate area="mural">
-        <FormBox title="Dejar un recado" onSubmit={onSubmit}>
-          <Field label="Título">
-            <Input name="title" required placeholder="Cambio de aula" />
-          </Field>
-          <Field label="Texto">
-            <Textarea name="body" required placeholder="B-221 el martes por mantenimiento" />
-          </Field>
-          {error ? <p className="text-sm text-danger">{error}</p> : null}
-          <Button type="submit">Colgar aviso</Button>
-        </FormBox>
-        </PublishGate>
-      </div>
-    </Shell>
-  );
-}
+function MuralPage(){const{notices}=useBoard();const refresh=useRefreshBoard();const{user,directory}=useDirectory();useAreaVisit("mural");const[error,setError]=useState<string|null>(null);const[editing,setEditing]=useState<Notice|null>(null);function read(fd:FormData){return{title:String(fd.get("title")??"").trim(),body:String(fd.get("body")??"").trim()}}async function onSubmit(e:FormEvent<HTMLFormElement>){e.preventDefault();setError(null);const f=e.currentTarget;try{await addNotice({data:read(new FormData(f))});f.reset();await refresh()}catch{setError("Entra al padrón para publicar.")}}async function onEdit(e:FormEvent<HTMLFormElement>){e.preventDefault();if(!editing)return;try{await updateNotice({data:{id:editing.id,...read(new FormData(e.currentTarget))}});setEditing(null);await refresh()}catch(c){const m=c instanceof Error?c.message:"No se pudo guardar.";setError(/autor de la publicación|administrador/i.test(m)?"Sólo el autor o un administrador puede editar este aviso.":m)}}return <Shell eyebrow="Grupo 9114" title="Salón D-106, cruce a E-003, recados del día." lead="Lo urgente se clava arriba: jornada, cambio de edificio y listas."><div className="grid gap-6 lg:grid-cols-3"><div className="grid gap-4 lg:col-span-2">{notices.map(notice=>{const editable=canEditPublication(directory,user?.id,notice.createdBy);return <Card key={notice.id}><div className="flex items-center justify-between gap-2"><div>{notice.pinned?<Pill>Fijo</Pill>:<Pill>Recado</Pill>}</div>{editable?<button type="button" onClick={()=>setEditing(notice)} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-forest"><Pencil className="size-3.5"/>Editar</button>:null}</div><h2 className="mt-3 font-display text-2xl">{notice.title}</h2><p className="mt-2 text-sm text-muted">{notice.body}</p></Card>})}</div><div>{editing?<FormBox title="Editar aviso" onSubmit={onEdit}><button type="button" onClick={()=>setEditing(null)} className="inline-flex items-center gap-1 justify-self-end text-xs font-semibold text-forest"><X className="size-3.5"/>Cancelar</button><NoticeFields notice={editing}/>{error?<p className="text-sm text-danger">{error}</p>:null}<Button type="submit"><Pencil className="mr-2 size-4"/>Guardar cambios</Button></FormBox>:<PublishGate area="mural"><FormBox title="Dejar un recado" onSubmit={onSubmit}><NoticeFields/>{error?<p className="text-sm text-danger">{error}</p>:null}<Button type="submit">Colgar aviso</Button></FormBox></PublishGate>}</div></div></Shell>}
+function NoticeFields({notice}:{notice?:Notice}){return <><Field label="Título"><Input name="title" required defaultValue={notice?.title??""} placeholder="Cambio de aula"/></Field><Field label="Texto"><Textarea name="body" required defaultValue={notice?.body??""} placeholder="B-221 el martes por mantenimiento"/></Field></>}

@@ -30,6 +30,7 @@ export type EventItem = {
   modality: string;
   description: string;
   hostAlias: string;
+  createdBy?: string;
 };
 
 export type BookItem = {
@@ -49,6 +50,7 @@ export type BookItem = {
   externalUrl?: string | null;
   commerceUrl?: string | null;
   priceText?: string | null;
+  createdBy?: string;
 };
 
 export type RideItem = {
@@ -61,6 +63,7 @@ export type RideItem = {
   seats: number;
   notes: string;
   ownerAlias: string;
+  createdBy?: string;
 };
 
 export type StudyGroup = {
@@ -70,6 +73,7 @@ export type StudyGroup = {
   whenText: string;
   place: string;
   notes: string;
+  createdBy?: string;
 };
 
 export type Notice = {
@@ -78,6 +82,7 @@ export type Notice = {
   body: string;
   pinned: boolean;
   createdAt: string;
+  createdBy?: string;
 };
 
 export type BitacoraPost = {
@@ -90,6 +95,7 @@ export type BitacoraPost = {
   place: string | null;
   authorAlias: string;
   createdAt: string;
+  createdBy?: string;
 };
 
 
@@ -106,6 +112,7 @@ export type ClassMaterial = {
   externalUrl: string | null;
   authorAlias: string;
   createdAt: string;
+  createdBy?: string;
 };
 
 export type ServiceOffer = {
@@ -122,6 +129,7 @@ export type ServiceOffer = {
   imageName: string | null;
   sellerAlias: string;
   createdAt: string;
+  createdBy?: string;
 };
 
 export type Board = {

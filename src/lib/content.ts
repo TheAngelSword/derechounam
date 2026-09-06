@@ -36,6 +36,12 @@ async function canControl(userId: string, area: string, createdBy: string) {
   return me;
 }
 
+async function canEditOwnedOrModerator(userId: string, createdBy: string) {
+  const me = await activeMember(userId);
+  if (createdBy === userId || me.role === "moderador") return me;
+  throw new Error("Solo el autor de la publicación o un administrador puede editarla");
+}
+
 function asIsoDate(value: unknown) {
   if (typeof value === "string") return value.slice(0, 10);
   if (value instanceof Date) return value.toISOString().slice(0, 10);
@@ -75,7 +81,8 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       modality: string;
       description: string;
       host_alias: string;
-    }>`select id, title, kind, event_date, time_slot, place, modality, description, host_alias from events order by event_date, time_slot`,
+      created_by: string;
+    }>`select id, title, kind, event_date, time_slot, place, modality, description, host_alias, created_by from events order by event_date, time_slot`,
     sql<{
       id: number;
       title: string;
@@ -93,7 +100,8 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       external_url: string | null;
       commerce_url: string | null;
       price_text: string | null;
-    }>`select id, title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn, file_url, file_name, external_url, commerce_url, price_text from books order by id desc`,
+      created_by: string;
+    }>`select id, title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn, file_url, file_name, external_url, commerce_url, price_text, created_by from books order by id desc`,
     sql<{
       id: number;
       direction: string;
@@ -104,7 +112,8 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       seats: number;
       notes: string;
       owner_alias: string;
-    }>`select id, direction, from_place, to_place, weekday, time_slot, seats, notes, owner_alias from rides order by weekday, time_slot`,
+      created_by: string;
+    }>`select id, direction, from_place, to_place, weekday, time_slot, seats, notes, owner_alias, created_by from rides order by weekday, time_slot`,
     sql<{
       id: number;
       name: string;
@@ -112,14 +121,16 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       when_text: string;
       place: string;
       notes: string;
-    }>`select id, name, course, when_text, place, notes from study_groups order by id`,
+      created_by: string;
+    }>`select id, name, course, when_text, place, notes, created_by from study_groups order by id`,
     sql<{
       id: number;
       title: string;
       body: string;
       pinned: boolean;
       created_at: string;
-    }>`select id, title, body, pinned, created_at from notices order by pinned desc, created_at desc`,
+      created_by: string;
+    }>`select id, title, body, pinned, created_at, created_by from notices order by pinned desc, created_at desc`,
     sql<{
       id: number;
       title: string;
@@ -130,7 +141,8 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       place: string | null;
       author_alias: string;
       created_at: string;
-    }>`select id, title, body, image_url, image_name, shot_date, place, author_alias, created_at from class_posts order by created_at desc, id desc`,
+      created_by: string;
+    }>`select id, title, body, image_url, image_name, shot_date, place, author_alias, created_at, created_by from class_posts order by created_at desc, id desc`,
     sql<{
       id: number;
       course_code: string;
@@ -144,7 +156,8 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       external_url: string | null;
       author_alias: string;
       created_at: string;
-    }>`select id, course_code, course_name, class_date, kind, title, body, file_url, file_name, external_url, author_alias, created_at from class_materials order by class_date desc, created_at desc`,
+      created_by: string;
+    }>`select id, course_code, course_name, class_date, kind, title, body, file_url, file_name, external_url, author_alias, created_at, created_by from class_materials order by class_date desc, created_at desc`,
     sql<{
       id: number;
       title: string;
@@ -159,7 +172,8 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       image_name: string | null;
       seller_alias: string;
       created_at: string;
-    }>`select id, title, category, description, price_text, availability_days, delivery_place, order_cutoff, how_to_order, image_url, image_name, seller_alias, created_at from service_offers order by created_at desc, id desc`,
+      created_by: string;
+    }>`select id, title, category, description, price_text, availability_days, delivery_place, order_cutoff, how_to_order, image_url, image_name, seller_alias, created_at, created_by from service_offers order by created_at desc, id desc`,
   ]);
 
   return {
@@ -193,6 +207,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       modality: row.modality,
       description: row.description,
       hostAlias: row.host_alias,
+      createdBy: row.created_by,
     })) satisfies EventItem[],
     books: books.map((row) => ({
       id: row.id,
@@ -211,6 +226,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       externalUrl: row.external_url,
       commerceUrl: row.commerce_url,
       priceText: row.price_text,
+      createdBy: row.created_by,
     })) satisfies BookItem[],
     rides: rides.map((row) => ({
       id: row.id,
@@ -222,6 +238,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       seats: Number(row.seats),
       notes: row.notes,
       ownerAlias: row.owner_alias,
+      createdBy: row.created_by,
     })) satisfies RideItem[],
     groups: groups.map((row) => ({
       id: row.id,
@@ -230,6 +247,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       whenText: row.when_text,
       place: row.place,
       notes: row.notes,
+      createdBy: row.created_by,
     })) satisfies StudyGroup[],
     notices: notices.map((row) => ({
       id: row.id,
@@ -237,6 +255,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       body: row.body,
       pinned: Boolean(row.pinned),
       createdAt: String(row.created_at),
+      createdBy: row.created_by,
     })) satisfies Notice[],
     posts: posts.map((row) => ({
       id: row.id,
@@ -248,6 +267,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       place: row.place,
       authorAlias: row.author_alias,
       createdAt: String(row.created_at),
+      createdBy: row.created_by,
     })) satisfies BitacoraPost[],
     materials: materials.map((row) => ({
       id: row.id,
@@ -262,6 +282,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       externalUrl: row.external_url,
       authorAlias: row.author_alias,
       createdAt: String(row.created_at),
+      createdBy: row.created_by,
     })) satisfies ClassMaterial[],
     services: services.map((row) => ({
       id: row.id,
@@ -277,6 +298,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       imageName: row.image_name,
       sellerAlias: row.seller_alias,
       createdAt: String(row.created_at),
+      createdBy: row.created_by,
     })) satisfies ServiceOffer[],
   };
 });
@@ -328,20 +350,20 @@ export const addProfessor = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const eventInputSchema = z.object({
+  title: short,
+  kind: z.enum(["Taller", "Conferencia", "Actividad", "Clínica", "Social"]),
+  eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  timeSlot: z.string().trim().min(4).max(24),
+  place: short,
+  modality: z.enum(["Presencial", "En línea", "Híbrido"]),
+  description: mid,
+  hostAlias: short,
+});
+
 export const addEvent = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      title: short,
-      kind: z.enum(["Taller", "Conferencia", "Actividad", "Clínica", "Social"]),
-      eventDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      timeSlot: z.string().trim().min(4).max(24),
-      place: short,
-      modality: z.enum(["Presencial", "En línea", "Híbrido"]),
-      description: mid,
-      hostAlias: short,
-    }),
-  )
+  .validator(eventInputSchema)
   .handler(async ({ context, data }) => {
     await activeMember(context.userId);
     const sql = await getSql();
@@ -354,27 +376,27 @@ const optionalUrl = z.union([z.literal(""), z.string().url().max(1500)]).optiona
 const bookTitle = z.string().trim().min(2).max(300);
 const bookAuthor = z.string().trim().min(2).max(400);
 
+const bookInputSchema = z.object({
+  title: bookTitle,
+  author: bookAuthor,
+  kind: z.enum(["Bibliografía", "Préstamo", "Venta", "Recomendación", "Descarga"]),
+  course: z.string().trim().max(180).optional(),
+  notes: z.string().trim().max(1800).optional(),
+  ownerAlias: z.string().trim().max(160).optional(),
+  publisher: z.string().trim().max(240).optional(),
+  publicationYear: z.string().trim().max(40).optional(),
+  edition: z.string().trim().max(240).optional(),
+  isbn: z.string().trim().max(80).optional(),
+  fileUrl: optionalUrl,
+  fileName: z.string().trim().max(220).optional(),
+  externalUrl: optionalUrl,
+  commerceUrl: optionalUrl,
+  priceText: z.string().trim().max(120).optional(),
+});
+
 export const addBook = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      title: bookTitle,
-      author: bookAuthor,
-      kind: z.enum(["Bibliografía", "Préstamo", "Venta", "Recomendación", "Descarga"]),
-      course: z.string().trim().max(180).optional(),
-      notes: z.string().trim().max(1800).optional(),
-      ownerAlias: z.string().trim().max(160).optional(),
-      publisher: z.string().trim().max(240).optional(),
-      publicationYear: z.string().trim().max(40).optional(),
-      edition: z.string().trim().max(240).optional(),
-      isbn: z.string().trim().max(80).optional(),
-      fileUrl: optionalUrl,
-      fileName: z.string().trim().max(220).optional(),
-      externalUrl: optionalUrl,
-      commerceUrl: optionalUrl,
-      priceText: z.string().trim().max(120).optional(),
-    }),
-  )
+  .validator(bookInputSchema)
   .handler(async ({ context, data }) => {
     await activeMember(context.userId);
     const sql = await getSql();
@@ -389,20 +411,20 @@ export const addBook = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const rideInputSchema = z.object({
+  direction: z.enum(["Ida", "Vuelta"]),
+  fromPlace: short,
+  toPlace: short,
+  weekday: z.enum(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]),
+  timeSlot: z.string().trim().min(4).max(16),
+  seats: z.number().int().min(1).max(6),
+  notes: mid,
+  ownerAlias: short,
+});
+
 export const addRide = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      direction: z.enum(["Ida", "Vuelta"]),
-      fromPlace: short,
-      toPlace: short,
-      weekday: z.enum(["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"]),
-      timeSlot: z.string().trim().min(4).max(16),
-      seats: z.number().int().min(1).max(6),
-      notes: mid,
-      ownerAlias: short,
-    }),
-  )
+  .validator(rideInputSchema)
   .handler(async ({ context, data }) => {
     await activeMember(context.userId);
     const sql = await getSql();
@@ -411,17 +433,17 @@ export const addRide = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const groupInputSchema = z.object({
+  name: short,
+  course: short,
+  whenText: short,
+  place: short,
+  notes: mid,
+});
+
 export const addGroup = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      name: short,
-      course: short,
-      whenText: short,
-      place: short,
-      notes: mid,
-    }),
-  )
+  .validator(groupInputSchema)
   .handler(async ({ context, data }) => {
     await activeMember(context.userId);
     const sql = await getSql();
@@ -430,9 +452,11 @@ export const addGroup = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const noticeInputSchema = z.object({ title: short, body: mid });
+
 export const addNotice = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(z.object({ title: short, body: mid }))
+  .validator(noticeInputSchema)
   .handler(async ({ context, data }) => {
     await activeMember(context.userId);
     const sql = await getSql();
@@ -441,18 +465,19 @@ export const addNotice = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+
+const bitacoraInputSchema = z.object({
+  title: z.string().trim().min(2).max(120),
+  body: z.string().trim().min(3).max(900),
+  imageUrl: optionalUrl,
+  imageName: z.string().trim().max(220).optional(),
+  shotDate: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional(),
+  place: z.string().trim().max(120).optional(),
+});
+
 export const addBitacoraPost = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      title: z.string().trim().min(2).max(120),
-      body: z.string().trim().min(3).max(900),
-      imageUrl: optionalUrl,
-      imageName: z.string().trim().max(220).optional(),
-      shotDate: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional(),
-      place: z.string().trim().max(120).optional(),
-    }),
-  )
+  .validator(bitacoraInputSchema)
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     const sql = await getSql();
@@ -461,21 +486,22 @@ export const addBitacoraPost = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+
+const classMaterialInputSchema = z.object({
+  courseCode: z.string().trim().min(2).max(12),
+  courseName: z.string().trim().min(2).max(180),
+  classDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  kind: z.enum(["Apuntes", "Tarea", "Foto", "Material", "Aviso"]),
+  title: z.string().trim().min(2).max(240),
+  body: z.string().trim().min(3).max(2400),
+  fileUrl: optionalUrl,
+  fileName: z.string().trim().max(220).optional(),
+  externalUrl: optionalUrl,
+});
+
 export const addClassMaterial = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      courseCode: z.string().trim().min(2).max(12),
-      courseName: z.string().trim().min(2).max(180),
-      classDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      kind: z.enum(["Apuntes", "Tarea", "Foto", "Material", "Aviso"]),
-      title: z.string().trim().min(2).max(240),
-      body: z.string().trim().min(3).max(2400),
-      fileUrl: optionalUrl,
-      fileName: z.string().trim().max(220).optional(),
-      externalUrl: optionalUrl,
-    }),
-  )
+  .validator(classMaterialInputSchema)
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     const sql = await getSql();
@@ -484,27 +510,147 @@ export const addClassMaterial = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+
+const serviceInputSchema = z.object({
+  title: z.string().trim().min(2).max(180),
+  category: z.enum(["Desayuno", "Comida", "Sándwiches", "Postres", "Bebidas", "Otro"]),
+  description: z.string().trim().min(3).max(1800),
+  priceText: z.string().trim().min(1).max(80),
+  availabilityDays: z.string().trim().min(2).max(180),
+  deliveryPlace: z.string().trim().min(2).max(180),
+  orderCutoff: z.string().trim().max(120).optional(),
+  howToOrder: z.string().trim().min(2).max(600),
+  imageUrl: optionalUrl,
+  imageName: z.string().trim().max(220).optional(),
+});
+
 export const addServiceOffer = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      title: z.string().trim().min(2).max(180),
-      category: z.enum(["Desayuno", "Comida", "Sándwiches", "Postres", "Bebidas", "Otro"]),
-      description: z.string().trim().min(3).max(1800),
-      priceText: z.string().trim().min(1).max(80),
-      availabilityDays: z.string().trim().min(2).max(180),
-      deliveryPlace: z.string().trim().min(2).max(180),
-      orderCutoff: z.string().trim().max(120).optional(),
-      howToOrder: z.string().trim().min(2).max(600),
-      imageUrl: optionalUrl,
-      imageName: z.string().trim().max(220).optional(),
-    }),
-  )
+  .validator(serviceInputSchema)
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     const sql = await getSql();
     await sql`insert into service_offers (title, category, description, price_text, availability_days, delivery_place, order_cutoff, how_to_order, image_url, image_name, seller_alias, created_by)
       values (${data.title}, ${data.category}, ${data.description}, ${data.priceText}, ${data.availabilityDays}, ${data.deliveryPlace}, ${data.orderCutoff || null}, ${data.howToOrder}, ${data.imageUrl || null}, ${data.imageName || null}, ${me.alias}, ${context.userId})`;
+    return { ok: true as const };
+  });
+
+
+export const updateEvent = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(eventInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from events where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update events set title = ${data.title}, kind = ${data.kind}, event_date = ${data.eventDate}, time_slot = ${data.timeSlot},
+      place = ${data.place}, modality = ${data.modality}, description = ${data.description}, host_alias = ${data.hostAlias}
+      where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const updateRide = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(rideInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from rides where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update rides set direction = ${data.direction}, from_place = ${data.fromPlace}, to_place = ${data.toPlace}, weekday = ${data.weekday},
+      time_slot = ${data.timeSlot}, seats = ${data.seats}, notes = ${data.notes}, owner_alias = ${data.ownerAlias}
+      where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const updateGroup = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(groupInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from study_groups where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update study_groups set name = ${data.name}, course = ${data.course}, when_text = ${data.whenText}, place = ${data.place}, notes = ${data.notes}
+      where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const updateNotice = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(noticeInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from notices where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update notices set title = ${data.title}, body = ${data.body} where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const updateBook = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(bookInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from books where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update books set
+      title = ${data.title}, author = ${data.author}, kind = ${data.kind}, course = ${data.course || null},
+      notes = ${data.notes || ""}, owner_alias = ${data.ownerAlias || "Biblioteca 9114"}, publisher = ${data.publisher || null},
+      publication_year = ${data.publicationYear || null}, edition = ${data.edition || null}, isbn = ${data.isbn || null},
+      file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null}, external_url = ${data.externalUrl || null},
+      commerce_url = ${data.commerceUrl || null}, price_text = ${data.priceText || null}
+      where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const updateBitacoraPost = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(bitacoraInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from class_posts where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update class_posts set
+      title = ${data.title}, body = ${data.body}, image_url = ${data.imageUrl || null}, image_name = ${data.imageName || null},
+      shot_date = ${data.shotDate || null}, place = ${data.place || null}
+      where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const updateClassMaterial = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(classMaterialInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from class_materials where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update class_materials set
+      course_code = ${data.courseCode}, course_name = ${data.courseName}, class_date = ${data.classDate}, kind = ${data.kind},
+      title = ${data.title}, body = ${data.body}, file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null},
+      external_url = ${data.externalUrl || null}
+      where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const updateServiceOffer = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(serviceInputSchema.extend({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from service_offers where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    await sql`update service_offers set
+      title = ${data.title}, category = ${data.category}, description = ${data.description}, price_text = ${data.priceText},
+      availability_days = ${data.availabilityDays}, delivery_place = ${data.deliveryPlace}, order_cutoff = ${data.orderCutoff || null},
+      how_to_order = ${data.howToOrder}, image_url = ${data.imageUrl || null}, image_name = ${data.imageName || null}
+      where id = ${data.id}`;
     return { ok: true as const };
   });
 

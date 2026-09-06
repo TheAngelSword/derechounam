@@ -24,6 +24,17 @@ export function canPublish(directory: Directory | null) {
   return Boolean(directory?.me && directory.me.status === "activo");
 }
 
+
+export function canEditPublication(
+  directory: Directory | null,
+  currentUserId: string | undefined,
+  createdBy: string | undefined,
+) {
+  const me = directory?.me;
+  if (!me || me.status !== "activo" || !currentUserId) return false;
+  return me.role === "moderador" || Boolean(createdBy && createdBy === currentUserId);
+}
+
 export function isModerator(directory: Directory | null) {
   return directory?.me?.role === "moderador" && directory.me.status === "activo";
 }
