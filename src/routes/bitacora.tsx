@@ -7,18 +7,10 @@ import { useAreaVisit } from "@/components/directory";
 import { Button, Card, Field, FormBox, Input, Pill, Textarea } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
 import { addBitacoraPost } from "@/lib/content";
+import { uploadToAtrioMedia } from "@/lib/media-upload";
 
 export const Route = createFileRoute("/bitacora")({ component: BitacoraPage });
 
-function safeUploadName(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(-140) || "bitacora.jpg";
-}
 
 function formatPostDate(value: string) {
   return new Intl.DateTimeFormat("es-MX", {
@@ -74,14 +66,14 @@ function BitacoraPage() {
         throw new Error("La imagen supera el límite de 20 MB.");
       }
 
-      const { uploadPresigned } = await import("@vercel/blob/client");
-      const blob = await uploadPresigned(`bitacora/${Date.now()}-${safeUploadName(file.name)}`, file, {
-        access: "public",
-        handleUploadUrl: "/api/bitacora-upload",
-        multipart: true,
-        onUploadProgress: ({ percentage }) => setUploadProgress(Math.round(percentage)),
+      const now = new Date();
+      const stored = await uploadToAtrioMedia({
+        file,
+        category: "bitacora",
+        subfolder: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`,
+        onProgress: setUploadProgress,
       });
-      imageUrl = blob.downloadUrl || blob.url;
+      imageUrl = stored.url;
       imageName = file.name;
 
       await addBitacoraPost({
@@ -101,8 +93,8 @@ function BitacoraPage() {
       await refresh();
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "No se pudo publicar la foto.";
-      if (/blob|signed|oidc|store|token/i.test(message)) {
-        setError("No se pudo subir la imagen. Revisa que Vercel Blob esté conectado al proyecto.");
+      if (/ge01|servidor de archivos|autorizar|subida|media/i.test(message)) {
+        setError(`No se pudo subir la imagen a ge01.com. ${message}`);
       } else if (/authorized|padrón|unauthorized/i.test(message)) {
         setError("Debes iniciar sesión y estar activo en el padrón para publicar.");
       } else {

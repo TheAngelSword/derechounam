@@ -17,6 +17,7 @@ import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea, cn } from 
 import { PublishGate } from "@/components/publish-gate";
 import { useAreaVisit } from "@/components/directory";
 import { addBook } from "@/lib/content";
+import { uploadToAtrioMedia } from "@/lib/media-upload";
 import type { BookItem } from "@/lib/types";
 
 export const Route = createFileRoute("/biblioteca")({ component: BibliotecaPage });
@@ -32,15 +33,6 @@ function citationFor(book: BookItem) {
   return `${book.author.trim()} (${year}). ${book.title.trim()}.${edition}${publisher}${isbn}`.replace(/\s+/g, " ").trim();
 }
 
-function safeUploadName(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-zA-Z0-9._-]+/g, "-")
-    .replace(/-+/g, "-")
-    .replace(/^-|-$/g, "")
-    .slice(-140) || "libro.pdf";
-}
 
 function normalizeOptionalUrl(value: FormDataEntryValue | null) {
   const raw = String(value ?? "").trim();
@@ -131,14 +123,14 @@ function BibliotecaPage() {
           throw new Error("El archivo supera el límite de 100 MB.");
         }
 
-        const { uploadPresigned } = await import("@vercel/blob/client");
-        const blob = await uploadPresigned(`library/${Date.now()}-${safeUploadName(file.name)}`, file, {
-          access: "public",
-          handleUploadUrl: "/api/library-upload",
-          multipart: true,
-          onUploadProgress: ({ percentage }) => setUploadProgress(Math.round(percentage)),
+        const now = new Date();
+        const stored = await uploadToAtrioMedia({
+          file,
+          category: "biblioteca",
+          subfolder: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`,
+          onProgress: setUploadProgress,
         });
-        fileUrl = blob.downloadUrl || blob.url;
+        fileUrl = stored.url;
         fileName = file.name;
       }
 
@@ -168,8 +160,8 @@ function BibliotecaPage() {
       await refresh();
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "No se pudo publicar.";
-      if (/blob|signed|oidc|store|token/i.test(message)) {
-        setError("No se pudo subir el archivo. Revisa que Vercel Blob esté conectado al proyecto. La ficha no se publicó.");
+      if (/ge01|servidor de archivos|autorizar|subida|media/i.test(message)) {
+        setError(`No se pudo subir el archivo a ge01.com. ${message}`);
       } else if (/authorized|padrón|unauthorized/i.test(message)) {
         setError("Debes iniciar sesión y estar activo en el padrón para publicar.");
       } else {
