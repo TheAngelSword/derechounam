@@ -1,0 +1,27 @@
+ATRIO — derechounam.com
+Grupo 9114 · primer semestre
+Paquete listo para el hosting · 5 de septiembre de 2026
+
+Empieza por estos tres documentos (están en docs/ como PDF, HTML y Markdown):
+
+  1. RESUMEN-DEL-PROYECTO.pdf   qué es el sitio y qué trae
+  2. GUIA-RAPIDA.pdf            cómo lo usa el grupo
+  3. DESPLIEGUE.pdf             cómo se pone en derechounam.com
+
+Este proyecto NO se pega en public_html de un hosting solo PHP.
+Necesita Node.js 22 y PostgreSQL. El detalle está en DESPLIEGUE.
+
+Arranque en el servidor:
+
+  unzip atrio-derechounam.zip
+  cd atrio-derechounam
+  npm install
+  export DATABASE_URL="postgres://USUARIO:CLAVE@HOST:5432/atrio"
+  export BETTER_AUTH_URL="https://derechounam.com"
+  export BETTER_AUTH_SECRET="una-cadena-larga-y-aleatoria"
+  export NODE_ENV="production"
+  npm run db:migrate
+  npm run build
+
+La primera cuenta que se registra en el padrón queda como moderador.
+A partir de ahí el grupo puede ir subiendo el contenido del semestre.

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Atrio — Resumen del proyecto</title>
+  <link rel="stylesheet" href="./print.css" />
+</head>
+<body>
+  <header>
+    <p class="kicker">derechounam.com · grupo 9114</p>
+    <h1>Atrio — Resumen del proyecto</h1>
+    <p class="meta">Mural interno del primer semestre · paquete del 5 de septiembre de 2026</p>
+  </header>
+
+  <h2>Qué es</h2>
+  <p>Atrio es el patio digital de la generación: un sitio web donde el grupo publica y controla lo que ocurre alrededor de la jornada diaria. No es el directorio oficial de la facultad. Es un mural de aula, con cuentas, roles y bitácora de accesos.</p>
+  <p>Quien entra ve el horario, las cátedras, los talleres, los libros, las rutas y los avisos. Quien se registra puede ir subiendo contenido. Quien modera puede quitar lo que ya no corre y suspender fichas.</p>
+
+  <h2>Jornada del grupo 9114</h2>
+  <table>
+    <thead>
+      <tr><th>Hora</th><th>Clave</th><th>Asignatura</th><th>Salón</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>07:00–08:00</td><td>1122</td><td>Derecho romano I</td><td>D-106</td></tr>
+      <tr><td>08:00–09:00</td><td>1121</td><td>Acto jurídico y derecho de las personas</td><td>D-106</td></tr>
+      <tr><td>09:00–10:00</td><td>1123</td><td>Historia del derecho mexicano</td><td>D-106</td></tr>
+      <tr><td>10:00–11:00</td><td>1127</td><td>Teoría general del Estado</td><td>D-106</td></tr>
+      <tr><td>11:00–12:00</td><td>1126</td><td>Sociología jurídica</td><td>D-106</td></tr>
+      <tr><td>12:00–13:00</td><td>1124</td><td>Introducción a la teoría del derecho</td><td>D-106</td></tr>
+      <tr><td>13:00–14:00</td><td>1125</td><td>Ser universitario y cultura de la legalidad</td><td>E-003</td></tr>
+    </tbody>
+  </table>
+  <p>Seis horas en D-106. A las 13:00 el grupo cruza al edificio E.</p>
+
+  <h2>Mapa del sitio</h2>
+  <table>
+    <thead><tr><th>Página</th><th>Para qué sirve</th></tr></thead>
+    <tbody>
+      <tr><td>Inicio</td><td>Jornada 07–14, avisos fijos y talleres de la quincena</td></tr>
+      <tr><td>Clases</td><td>Bloque diario con clave, salón y hora</td></tr>
+      <tr><td>Cátedras</td><td>Cubículos y horas de atención después de las 14:00</td></tr>
+      <tr><td>Agenda</td><td>Talleres, conferencias y actividades</td></tr>
+      <tr><td>Libros</td><td>Préstamo, venta y recomendaciones por materia</td></tr>
+      <tr><td>Rutas</td><td>Ida 06:35 a D-106 y vuelta 14:10 desde E-003</td></tr>
+      <tr><td>Mesas</td><td>Grupos de estudio por asignatura</td></tr>
+      <tr><td>Mural</td><td>Recados del día y cambios de salón</td></tr>
+      <tr><td>Registro</td><td>Padrón de alumnos, profesores y moderadores</td></tr>
+      <tr><td>Control</td><td>Subir clases o cátedras y quitar contenido</td></tr>
+      <tr><td>Entrar</td><td>Google, X o correo</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Contenido de partida</h2>
+  <ul>
+    <li>Siete fichas de cátedra (Romano, Personas, Historia, TGE, Sociología, Teoría, Ser universitario).</li>
+    <li>Seis actividades de septiembre (Gayo, acto jurídico, línea del tiempo, cineforo, seminario de Estado, observación de campo).</li>
+    <li>Siete títulos de estantería, de Justiniano a García Máynez.</li>
+    <li>Cinco rutas, cinco mesas y cuatro avisos fijos.</li>
+  </ul>
+
+  <h2>Control de accesos</h2>
+  <table>
+    <thead><tr><th>Figura</th><th>Puede</th></tr></thead>
+    <tbody>
+      <tr><td>Alumno activo</td><td>Publicar en agenda, libros, rutas, mesas y mural</td></tr>
+      <tr><td>Profesor activo</td><td>Lo mismo, y subir clases y cátedras</td></tr>
+      <tr><td>Moderador</td><td>Activar o suspender fichas, asignar áreas y quitar contenido</td></tr>
+      <tr><td>Sin cuenta</td><td>Leer el mural, no publicar</td></tr>
+    </tbody>
+  </table>
+  <p>La primera cuenta del padrón queda como moderador. El registro guarda quién entra a cada zona.</p>
+
+  <h2>Cómo está hecho</h2>
+  <p>Aplicación web en React 19, TanStack Start y Vite, con Tailwind. Cuentas con Better Auth (Google, X y correo). PostgreSQL guarda el mural, el padrón y la bitácora.</p>
+  <p>Archivos clave: <code>src/routes/</code>, <code>src/lib/content.ts</code>, <code>src/lib/members.ts</code>, <code>migrations/</code>, <code>docs/</code>.</p>
+  <p>No es un sitio de HTML suelto para hosting solo PHP. El instructivo técnico está en <code>DESPLIEGUE.md</code>.</p>
+
+  <footer>Atrio · paquete atrio-derechounam.zip · uso interno del grupo 9114</footer>
+</body>
+</html>
