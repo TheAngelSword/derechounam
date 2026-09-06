@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
-import { GROK_PROVIDERS, authClient, authEnabled, signIn } from "@/lib/auth/client";
+import { AUTH_PROVIDERS, authClient, authEnabled, googleAuthEnabled, signIn } from "@/lib/auth/client";
 import { Button, Field, Input } from "@/components/ui";
 
 export const Route = createFileRoute("/login")({ component: Login });
@@ -48,29 +48,35 @@ function Login() {
 
   return (
     <main className="grid min-h-dvh place-items-center bg-bg px-4 text-ink">
-      <div className="w-full max-w-md rounded-xl border border-line bg-surface p-6 shadow-card">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-clay">Grupo 9114</p>
+      <div className="w-full max-w-md overflow-hidden rounded-xl border border-line bg-surface shadow-card">
+        <div className="flex items-center justify-between border-b border-line bg-surface-strong px-6 py-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-forest">Facultad de Derecho</p>
+            <p className="mt-0.5 text-[11px] text-muted">Comunidad académica · Grupo 9114</p>
+          </div>
+          <img src="/unam-logo.png" alt="Universidad Nacional Autónoma de México" className="h-16 w-auto object-contain" />
+        </div>
+        <div className="p-6">
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-clay">Atrio · Grupo 9114</p>
         <h1 className="mt-2 font-display text-4xl">Entrar al atrio</h1>
         <p className="mt-2 text-sm text-muted">
           El registro de alumnos, cátedras y moderadores pide cuenta. El mural se puede leer sin entrar.
         </p>
 
-        {authEnabled ? (
+        {authEnabled && googleAuthEnabled ? (
           <div className="mt-6 grid gap-2">
-            {GROK_PROVIDERS.map((provider) => (
+            {AUTH_PROVIDERS.map((provider) => (
               <button
                 key={provider.providerId}
                 type="button"
                 onClick={() => signIn(provider.providerId, { callbackURL: "/registro" })}
-                className="min-h-11 rounded-sm border border-line-strong bg-bg-warm px-4 text-sm font-medium"
+                className="min-h-11 rounded-md border border-forest/20 bg-forest px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-forest-deep"
               >
                 Continuar con {provider.label}
               </button>
             ))}
           </div>
-        ) : (
-          <p className="mt-6 text-sm text-muted">El acceso está desactivado.</p>
-        )}
+        ) : null}
 
         <div className="mt-6 border-t border-line pt-5">
           <div className="mb-3 flex gap-2">
@@ -109,9 +115,10 @@ function Login() {
           </form>
         </div>
 
-        <Link to="/" className="mt-6 inline-block text-sm text-forest">
-          Volver al mural
+        <Link to="/" className="mt-6 inline-block text-sm font-medium text-forest">
+          Volver al inicio
         </Link>
+        </div>
       </div>
     </main>
   );

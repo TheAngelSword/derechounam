@@ -88,6 +88,19 @@ export function Shell({
             })}
           </nav>
           <div className="mt-auto grid gap-4">
+            <div className="rounded-xl border border-line bg-surface-strong p-3">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/unam-logo.png"
+                  alt="Universidad Nacional Autónoma de México"
+                  className="h-16 w-12 object-contain"
+                />
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-forest">UNAM</p>
+                  <p className="mt-1 text-xs leading-snug text-muted">Facultad de Derecho</p>
+                </div>
+              </div>
+            </div>
             <AuthSlot pending={isPending} />
             <p className="text-xs leading-relaxed text-muted">
               Comunidad académica privada · grupo 9114

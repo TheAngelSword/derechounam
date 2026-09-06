@@ -17,7 +17,7 @@ export const Route = createRootRoute({
         name: "description",
         content: "Comunidad de la facultad de derecho: clases, cátedras, agenda, libros y rutas.",
       },
-      { name: "theme-color", content: "#2C4A3E" },
+      { name: "theme-color", content: "#003D79" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },

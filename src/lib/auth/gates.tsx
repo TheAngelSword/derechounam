@@ -1,6 +1,6 @@
 import { useState, useSyncExternalStore, type ReactNode } from "react";
 import { Navigate } from "@tanstack/react-router";
-import { GROK_PROVIDERS, authEnabled, signIn, signOut } from "./client";
+import { AUTH_PROVIDERS, authEnabled, googleAuthEnabled, signIn, signOut } from "./client";
 import { hasGateSessionMarker } from "./gate-session-marker";
 import { resolveSignInGateState } from "./sign-in-gate";
 import { useCurrentUser, useCurrentUserState } from "./use-current-user";
@@ -66,16 +66,16 @@ export function SignInGate({
 export function SignInButtons() {
   return (
     <div className="flex w-full max-w-sm flex-col gap-2">
-      {GROK_PROVIDERS.map((p) => (
+      {googleAuthEnabled ? AUTH_PROVIDERS.map((p) => (
         <button
           key={p.providerId}
           type="button"
           onClick={() => signIn(p.providerId, { callbackURL: "/" })}
           className="w-full cursor-pointer rounded-md border border-neutral-300 px-4 py-2 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-900"
         >
-          Continue with {p.label}
+          Continuar con {p.label}
         </button>
-      ))}
+      )) : null}
     </div>
   );
 }
@@ -124,7 +124,7 @@ export function UserButton() {
           }}
           className="cursor-pointer text-sm underline-offset-4 opacity-70 hover:underline disabled:cursor-wait disabled:no-underline"
         >
-          {signingOut ? "Signing out…" : "Sign out"}
+          {signingOut ? "Saliendo…" : "Salir"}
         </button>
       )}
     </div>
