@@ -42,26 +42,65 @@ export const authConfigured =
   !authDisabled && (emailAndPasswordEnabled || googleConfigured);
 
 const explicitBaseURL = env("BETTER_AUTH_URL");
+const publicHostname = env("VITE_PUBLIC_HOSTNAME");
+const vercelUrl = env("VERCEL_URL");
+const vercelProductionUrl = env("VERCEL_PROJECT_PRODUCTION_URL");
 const previewAllowedHosts: string[] = [...PREVIEW_ALLOWED_HOSTS];
+const isProduction = env("NODE_ENV") === "production";
 const LOCAL_DEV_ORIGINS: string[] = [
   "http://localhost:8080",
   "http://127.0.0.1:8080",
   "http://[::1]:8080",
 ];
 
-const baseURL = explicitBaseURL ?? {
-  allowedHosts: [...previewAllowedHosts, "localhost", "127.0.0.1", "[::1]"],
-  protocol: "auto" as const,
-  fallback: "http://localhost:8080",
-};
+function originFrom(value?: string): string | null {
+  if (!value) return null;
+  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value}`;
+  try {
+    return new URL(withProtocol).origin;
+  } catch {
+    return null;
+  }
+}
 
-const trustedOrigins: string[] = explicitBaseURL
-  ? [explicitBaseURL, ...LOCAL_DEV_ORIGINS]
-  : [
-      ...previewAllowedHosts,
-      ...previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`]),
-      ...LOCAL_DEV_ORIGINS,
-    ];
+function wwwVariants(value?: string): string[] {
+  const origin = originFrom(value);
+  if (!origin) return [];
+  const url = new URL(origin);
+  const hosts = new Set<string>([url.hostname]);
+  if (url.hostname.startsWith("www.")) hosts.add(url.hostname.slice(4));
+  else hosts.add(`www.${url.hostname}`);
+  return [...hosts].map((host) => `${url.protocol}//${host}${url.port ? `:${url.port}` : ""}`);
+}
+
+const productionOrigins = [
+  ...wwwVariants(explicitBaseURL),
+  ...wwwVariants(publicHostname),
+  originFrom(vercelUrl),
+  originFrom(vercelProductionUrl),
+].filter((value): value is string => Boolean(value));
+
+const trustedOrigins: string[] = Array.from(
+  new Set([
+    ...productionOrigins,
+    ...(!isProduction
+      ? previewAllowedHosts.flatMap((host) => [`https://${host}`, `http://${host}`])
+      : []),
+    ...(!isProduction ? LOCAL_DEV_ORIGINS : []),
+  ]),
+);
+
+const baseURL = explicitBaseURL ?? {
+  allowedHosts: [
+    ...(publicHostname ? [publicHostname, `www.${publicHostname.replace(/^www\./, "")}`] : []),
+    ...(vercelUrl ? [vercelUrl] : []),
+    ...(vercelProductionUrl ? [vercelProductionUrl] : []),
+    ...(!isProduction ? previewAllowedHosts : []),
+    ...(!isProduction ? ["localhost", "127.0.0.1", "[::1]"] : []),
+  ],
+  protocol: "auto" as const,
+  fallback: originFrom(publicHostname) ?? "http://localhost:8080",
+};
 
 const databaseUrl = env("DATABASE_URL");
 const database = databaseUrl
