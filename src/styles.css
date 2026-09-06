@@ -1,0 +1,130 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg: #f3eee4;
+  --color-bg-warm: #e9e1d2;
+  --color-surface: #fcfaf5;
+  --color-surface-strong: #ffffff;
+  --color-ink: #171813;
+  --color-ink-soft: #393a33;
+  --color-muted: #6c6a60;
+  --color-line: #d8d0c2;
+  --color-line-strong: #bfb4a1;
+  --color-forest: #24483b;
+  --color-forest-deep: #173128;
+  --color-forest-soft: #dce8e0;
+  --color-clay: #9a5f3f;
+  --color-clay-soft: #dfc2ae;
+  --color-gold: #b88a3a;
+  --color-danger: #8a3a32;
+
+  --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
+  --font-sans: "Figtree", "Segoe UI", system-ui, sans-serif;
+
+  --radius-xs: 6px;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 30px;
+
+  --shadow-card: 0 1px 0 rgba(26, 24, 20, 0.04), 0 16px 40px -28px rgba(26, 24, 20, 0.42);
+  --shadow-float: 0 24px 70px -38px rgba(20, 36, 29, 0.55);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+    background: var(--color-bg);
+    color: var(--color-ink);
+  }
+
+  body {
+    font-family: var(--font-sans);
+    line-height: 1.55;
+    background-image:
+      radial-gradient(circle at 10% 0%, rgba(154, 95, 63, 0.08), transparent 28rem),
+      radial-gradient(circle at 90% 8%, rgba(36, 72, 59, 0.09), transparent 30rem);
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    font-family: var(--font-display);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-forest);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--color-forest) 22%, white);
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    background: color-mix(in oklab, var(--color-surface) 88%, transparent);
+    backdrop-filter: blur(18px);
+  }
+
+  .paper-grid {
+    background-image:
+      linear-gradient(to right, rgba(36, 72, 59, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(36, 72, 59, 0.045) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .soft-enter {
+    animation: soft-enter 420ms cubic-bezier(.2,.75,.25,1) both;
+  }
+
+  .float-in {
+    animation: float-in 500ms cubic-bezier(.2,.75,.25,1) both;
+  }
+}
+
+@keyframes soft-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes float-in {
+  from { opacity: 0; transform: translateY(12px) scale(.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
