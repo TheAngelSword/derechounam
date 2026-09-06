@@ -11,6 +11,7 @@ import {
   Megaphone,
   Menu,
   Shield,
+  ShoppingBasket,
   SlidersHorizontal,
   Sparkles,
   Users,
@@ -27,6 +28,7 @@ const NAV = [
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/biblioteca", label: "Libros", icon: BookOpen },
   { to: "/bitacora", label: "Bitácora", icon: Camera },
+  { to: "/servicios", label: "Servicios", icon: ShoppingBasket },
   { to: "/rutas", label: "Rutas", icon: CarFront },
   { to: "/mesas", label: "Mesas", icon: Users },
   { to: "/mural", label: "Mural", icon: Megaphone },
@@ -67,7 +69,7 @@ export function Shell({
             <p className="mt-1 text-sm text-bg/70">Primer semestre · Facultad de Derecho</p>
           </div>
 
-          <nav className="stagger-children mt-7 grid gap-1.5" aria-label="Navegación principal">
+          <nav className="stagger-children mt-7 grid min-h-0 flex-1 content-start gap-1.5 overflow-y-auto pr-1" aria-label="Navegación principal">
             {NAV.map((item) => {
               const active = pathname === item.to;
               return (

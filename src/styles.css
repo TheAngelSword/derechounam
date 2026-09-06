@@ -201,3 +201,45 @@
   from { transform: translate3d(0, 0, 0) scale(1); }
   to { transform: translate3d(24px, 14px, 0) scale(1.08); }
 }
+
+@layer utilities {
+  .motion-sheen {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .motion-sheen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,.5) 42%, transparent 62%);
+    transform: translateX(-135%);
+    transition: transform 700ms cubic-bezier(.2,.75,.25,1);
+    z-index: 2;
+  }
+
+  .motion-sheen:hover::after {
+    transform: translateX(135%);
+  }
+
+  .glow-dot {
+    box-shadow: 0 0 0 0 rgba(213,159,15,.35);
+    animation: glow-ping 2.4s ease-out infinite;
+  }
+
+  .micro-float {
+    animation: micro-float 5.5s ease-in-out infinite;
+  }
+}
+
+@keyframes glow-ping {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(213,159,15,.28); }
+  50% { box-shadow: 0 0 0 9px rgba(213,159,15,0); }
+}
+
+@keyframes micro-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}

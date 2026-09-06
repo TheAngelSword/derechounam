@@ -8,6 +8,8 @@ import {
   GraduationCap,
   Landmark,
   MapPin,
+  ShoppingBasket,
+  Camera,
   Sparkles,
 } from "lucide-react";
 import { Shell } from "@/components/shell";
@@ -230,8 +232,10 @@ function Home() {
           <div className="grid grid-cols-2 gap-3">
             <QuickLink to="/agenda" icon={CalendarDays} label="Agenda" hint="Talleres y fechas" />
             <QuickLink to="/biblioteca" icon={BookOpen} label="Biblioteca" hint="Libros del grupo" />
+            <QuickLink to="/catedras" icon={Landmark} label="Cátedras" hint="Apuntes y tareas" />
+            <QuickLink to="/bitacora" icon={Camera} label="Bitácora" hint="Fotos de clase" />
+            <QuickLink to="/servicios" icon={ShoppingBasket} label="Servicios" hint="Comida y encargos" />
             <QuickLink to="/mesas" icon={GraduationCap} label="Mesas" hint="Estudio por materia" />
-            <QuickLink to="/catedras" icon={Landmark} label="Cátedras" hint="Atención y oficinas" />
           </div>
         </Card>
       </div>
@@ -254,7 +258,7 @@ function QuickLink({
   label,
   hint,
 }: {
-  to: "/agenda" | "/biblioteca" | "/mesas" | "/catedras";
+  to: "/agenda" | "/biblioteca" | "/mesas" | "/catedras" | "/bitacora" | "/servicios";
   icon: typeof CalendarDays;
   label: string;
   hint: string;

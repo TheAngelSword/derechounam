@@ -431,4 +431,6 @@ export const seedBoard: Board = {
       createdAt: "2026-09-04T13:05:00.000Z",
     },
   ],
+  materials: [],
+  services: [],
 };

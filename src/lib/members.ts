@@ -12,6 +12,7 @@ export const AREAS = [
   { id: "mesas", label: "Mesas" },
   { id: "mural", label: "Mural" },
   { id: "bitacora", label: "Bitácora" },
+  { id: "servicios", label: "Servicios" },
 ] as const;
 
 export type AreaId = (typeof AREAS)[number]["id"];
@@ -49,7 +50,7 @@ export type Directory = {
 
 const roleSchema = z.enum(["alumno", "profesor", "moderador"]);
 const statusSchema = z.enum(["pendiente", "activo", "suspendido"]);
-const areaSchema = z.enum(["clases", "catedras", "agenda", "biblioteca", "rutas", "mesas", "mural", "bitacora"]);
+const areaSchema = z.enum(["clases", "catedras", "agenda", "biblioteca", "rutas", "mesas", "mural", "bitacora", "servicios"]);
 
 function mapMember(row: {
   user_id: string;

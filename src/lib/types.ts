@@ -92,6 +92,38 @@ export type BitacoraPost = {
   createdAt: string;
 };
 
+
+export type ClassMaterial = {
+  id: number;
+  courseCode: string;
+  courseName: string;
+  classDate: string;
+  kind: "Apuntes" | "Tarea" | "Foto" | "Material" | "Aviso";
+  title: string;
+  body: string;
+  fileUrl: string | null;
+  fileName: string | null;
+  externalUrl: string | null;
+  authorAlias: string;
+  createdAt: string;
+};
+
+export type ServiceOffer = {
+  id: number;
+  title: string;
+  category: "Desayuno" | "Comida" | "Sándwiches" | "Postres" | "Bebidas" | "Otro";
+  description: string;
+  priceText: string;
+  availabilityDays: string;
+  deliveryPlace: string;
+  orderCutoff: string | null;
+  howToOrder: string;
+  imageUrl: string | null;
+  imageName: string | null;
+  sellerAlias: string;
+  createdAt: string;
+};
+
 export type Board = {
   professors: Professor[];
   courses: Course[];
@@ -101,4 +133,6 @@ export type Board = {
   groups: StudyGroup[];
   notices: Notice[];
   posts: BitacoraPost[];
+  materials: ClassMaterial[];
+  services: ServiceOffer[];
 };

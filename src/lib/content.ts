@@ -2,7 +2,19 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
-import type { BitacoraPost, Board, BookItem, Course, EventItem, Notice, Professor, RideItem, StudyGroup } from "@/lib/types";
+import type {
+  BitacoraPost,
+  Board,
+  BookItem,
+  ClassMaterial,
+  Course,
+  EventItem,
+  Notice,
+  Professor,
+  RideItem,
+  ServiceOffer,
+  StudyGroup,
+} from "@/lib/types";
 
 type MemberRow = { alias: string; role: string; status: string };
 
@@ -32,7 +44,7 @@ function asIsoDate(value: unknown) {
 
 export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Promise<Board> => {
   const sql = await getSql();
-  const [professors, courses, events, books, rides, groups, notices, posts] = await Promise.all([
+  const [professors, courses, events, books, rides, groups, notices, posts, materials, services] = await Promise.all([
     sql<{
       id: number;
       full_title: string;
@@ -119,6 +131,35 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       author_alias: string;
       created_at: string;
     }>`select id, title, body, image_url, image_name, shot_date, place, author_alias, created_at from class_posts order by created_at desc, id desc`,
+    sql<{
+      id: number;
+      course_code: string;
+      course_name: string;
+      class_date: string;
+      kind: string;
+      title: string;
+      body: string;
+      file_url: string | null;
+      file_name: string | null;
+      external_url: string | null;
+      author_alias: string;
+      created_at: string;
+    }>`select id, course_code, course_name, class_date, kind, title, body, file_url, file_name, external_url, author_alias, created_at from class_materials order by class_date desc, created_at desc`,
+    sql<{
+      id: number;
+      title: string;
+      category: string;
+      description: string;
+      price_text: string;
+      availability_days: string;
+      delivery_place: string;
+      order_cutoff: string | null;
+      how_to_order: string;
+      image_url: string | null;
+      image_name: string | null;
+      seller_alias: string;
+      created_at: string;
+    }>`select id, title, category, description, price_text, availability_days, delivery_place, order_cutoff, how_to_order, image_url, image_name, seller_alias, created_at from service_offers order by created_at desc, id desc`,
   ]);
 
   return {
@@ -208,6 +249,35 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       authorAlias: row.author_alias,
       createdAt: String(row.created_at),
     })) satisfies BitacoraPost[],
+    materials: materials.map((row) => ({
+      id: row.id,
+      courseCode: row.course_code,
+      courseName: row.course_name,
+      classDate: asIsoDate(row.class_date),
+      kind: row.kind as ClassMaterial["kind"],
+      title: row.title,
+      body: row.body,
+      fileUrl: row.file_url,
+      fileName: row.file_name,
+      externalUrl: row.external_url,
+      authorAlias: row.author_alias,
+      createdAt: String(row.created_at),
+    })) satisfies ClassMaterial[],
+    services: services.map((row) => ({
+      id: row.id,
+      title: row.title,
+      category: row.category as ServiceOffer["category"],
+      description: row.description,
+      priceText: row.price_text,
+      availabilityDays: row.availability_days,
+      deliveryPlace: row.delivery_place,
+      orderCutoff: row.order_cutoff,
+      howToOrder: row.how_to_order,
+      imageUrl: row.image_url,
+      imageName: row.image_name,
+      sellerAlias: row.seller_alias,
+      createdAt: String(row.created_at),
+    })) satisfies ServiceOffer[],
   };
 });
 
@@ -391,6 +461,53 @@ export const addBitacoraPost = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const addClassMaterial = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(
+    z.object({
+      courseCode: z.string().trim().min(2).max(12),
+      courseName: z.string().trim().min(2).max(180),
+      classDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+      kind: z.enum(["Apuntes", "Tarea", "Foto", "Material", "Aviso"]),
+      title: z.string().trim().min(2).max(240),
+      body: z.string().trim().min(3).max(2400),
+      fileUrl: optionalUrl,
+      fileName: z.string().trim().max(220).optional(),
+      externalUrl: optionalUrl,
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    const me = await activeMember(context.userId);
+    const sql = await getSql();
+    await sql`insert into class_materials (course_code, course_name, class_date, kind, title, body, file_url, file_name, external_url, author_alias, created_by)
+      values (${data.courseCode}, ${data.courseName}, ${data.classDate}, ${data.kind}, ${data.title}, ${data.body}, ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${me.alias}, ${context.userId})`;
+    return { ok: true as const };
+  });
+
+export const addServiceOffer = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(
+    z.object({
+      title: z.string().trim().min(2).max(180),
+      category: z.enum(["Desayuno", "Comida", "Sándwiches", "Postres", "Bebidas", "Otro"]),
+      description: z.string().trim().min(3).max(1800),
+      priceText: z.string().trim().min(1).max(80),
+      availabilityDays: z.string().trim().min(2).max(180),
+      deliveryPlace: z.string().trim().min(2).max(180),
+      orderCutoff: z.string().trim().max(120).optional(),
+      howToOrder: z.string().trim().min(2).max(600),
+      imageUrl: optionalUrl,
+      imageName: z.string().trim().max(220).optional(),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    const me = await activeMember(context.userId);
+    const sql = await getSql();
+    await sql`insert into service_offers (title, category, description, price_text, availability_days, delivery_place, order_cutoff, how_to_order, image_url, image_name, seller_alias, created_by)
+      values (${data.title}, ${data.category}, ${data.description}, ${data.priceText}, ${data.availabilityDays}, ${data.deliveryPlace}, ${data.orderCutoff || null}, ${data.howToOrder}, ${data.imageUrl || null}, ${data.imageName || null}, ${me.alias}, ${context.userId})`;
+    return { ok: true as const };
+  });
+
 const idSchema = z.object({ id: z.number().int().positive() });
 
 export const removeCourse = createServerFn({ method: "POST" })
@@ -486,5 +603,29 @@ export const removeBitacoraPost = createServerFn({ method: "POST" })
     if (!rows[0]) return { ok: true as const };
     await canControl(context.userId, "bitacora", rows[0].created_by);
     await sql`delete from class_posts where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const removeClassMaterial = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(idSchema)
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from class_materials where id = ${data.id}`;
+    if (!rows[0]) return { ok: true as const };
+    await canControl(context.userId, "catedras", rows[0].created_by);
+    await sql`delete from class_materials where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const removeServiceOffer = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(idSchema)
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from service_offers where id = ${data.id}`;
+    if (!rows[0]) return { ok: true as const };
+    await canControl(context.userId, "servicios", rows[0].created_by);
+    await sql`delete from service_offers where id = ${data.id}`;
     return { ok: true as const };
   });
