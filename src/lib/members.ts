@@ -4,13 +4,14 @@ import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
 
 export const AREAS = [
-  { id: "clases", label: "Clases" },
+  { id: "clases", label: "Horarios" },
   { id: "catedras", label: "Cátedras" },
   { id: "agenda", label: "Agenda" },
-  { id: "biblioteca", label: "Libros" },
+  { id: "biblioteca", label: "Biblioteca" },
   { id: "rutas", label: "Rutas" },
   { id: "mesas", label: "Mesas" },
   { id: "mural", label: "Mural" },
+  { id: "bitacora", label: "Bitácora" },
 ] as const;
 
 export type AreaId = (typeof AREAS)[number]["id"];
@@ -48,7 +49,7 @@ export type Directory = {
 
 const roleSchema = z.enum(["alumno", "profesor", "moderador"]);
 const statusSchema = z.enum(["pendiente", "activo", "suspendido"]);
-const areaSchema = z.enum(["clases", "catedras", "agenda", "biblioteca", "rutas", "mesas", "mural"]);
+const areaSchema = z.enum(["clases", "catedras", "agenda", "biblioteca", "rutas", "mesas", "mural", "bitacora"]);
 
 function mapMember(row: {
   user_id: string;

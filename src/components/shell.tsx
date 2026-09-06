@@ -3,6 +3,7 @@ import { useState } from "react";
 import {
   BookOpen,
   CalendarDays,
+  Camera,
   CarFront,
   GraduationCap,
   Landmark,
@@ -21,10 +22,11 @@ import { cn } from "@/components/ui";
 
 const NAV = [
   { to: "/", label: "Inicio", icon: LayoutGrid },
-  { to: "/clases", label: "Clases", icon: GraduationCap },
+  { to: "/clases", label: "Horarios", icon: GraduationCap },
   { to: "/catedras", label: "Cátedras", icon: Landmark },
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
   { to: "/biblioteca", label: "Libros", icon: BookOpen },
+  { to: "/bitacora", label: "Bitácora", icon: Camera },
   { to: "/rutas", label: "Rutas", icon: CarFront },
   { to: "/mesas", label: "Mesas", icon: Users },
   { to: "/mural", label: "Mural", icon: Megaphone },
@@ -32,7 +34,7 @@ const NAV = [
   { to: "/control", label: "Control", icon: SlidersHorizontal },
 ] as const;
 
-const MOBILE_PRIMARY = NAV.filter((item) => ["/", "/clases", "/agenda", "/mural"].includes(item.to));
+const MOBILE_PRIMARY = NAV.filter((item) => ["/", "/clases", "/biblioteca", "/bitacora"].includes(item.to));
 const MOBILE_MORE = NAV.filter((item) => !MOBILE_PRIMARY.some((primary) => primary.to === item.to));
 
 export function Shell({
@@ -54,18 +56,18 @@ export function Shell({
   return (
     <div className="min-h-dvh bg-transparent text-ink">
       <div className="mx-auto flex max-w-7xl gap-0 lg:gap-8 xl:gap-12">
-        <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-line/80 px-5 py-8 lg:flex">
+        <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 flex-col border-r border-line/80 px-5 py-7 lg:flex">
           <Brand />
-          <div className="mt-7 rounded-xl border border-forest/10 bg-forest px-4 py-4 text-bg shadow-float">
+          <div className="hero-glow mt-6 rounded-[1.6rem] border border-forest/10 bg-forest px-5 py-5 text-bg shadow-float">
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-bg/70">
               <Sparkles className="size-3.5" />
               Grupo activo
             </div>
-            <p className="mt-2 font-display text-xl">9114 · Derecho</p>
-            <p className="mt-1 text-xs text-bg/65">Primer semestre · Facultad</p>
+            <p className="mt-2 font-display text-2xl">9114 · Derecho</p>
+            <p className="mt-1 text-sm text-bg/70">Primer semestre · Facultad de Derecho</p>
           </div>
 
-          <nav className="mt-7 grid gap-1.5" aria-label="Navegación principal">
+          <nav className="stagger-children mt-7 grid gap-1.5" aria-label="Navegación principal">
             {NAV.map((item) => {
               const active = pathname === item.to;
               return (
@@ -74,37 +76,23 @@ export function Shell({
                   to={item.to}
                   aria-current={active ? "page" : undefined}
                   className={cn(
-                    "group flex min-h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-all duration-200",
+                    "group flex min-h-11 items-center gap-3 rounded-xl px-3.5 text-sm font-medium transition-all duration-250",
                     active
-                      ? "bg-forest text-bg shadow-sm"
-                      : "text-ink-soft hover:translate-x-0.5 hover:bg-bg-warm",
+                      ? "bg-forest text-bg shadow-[0_18px_38px_-28px_rgba(0,61,121,0.9)]"
+                      : "text-ink-soft hover:translate-x-1 hover:bg-white hover:shadow-sm",
                   )}
                 >
-                  <item.icon className="size-4" strokeWidth={1.8} />
+                  <item.icon className={cn("size-4 transition-transform duration-250", active ? "scale-105" : "group-hover:-rotate-3")} strokeWidth={1.8} />
                   <span>{item.label}</span>
-                  {active ? <span className="ml-auto size-1.5 rounded-full bg-clay-soft" /> : null}
+                  {active ? <span className="ml-auto size-1.5 rounded-full bg-clay-soft animate-pulse" /> : null}
                 </Link>
               );
             })}
           </nav>
-          <div className="mt-auto grid gap-4">
-            <div className="rounded-xl border border-line bg-surface-strong p-3">
-              <div className="flex items-center gap-3">
-                <img
-                  src="/unam-logo.png"
-                  alt="Universidad Nacional Autónoma de México"
-                  className="h-16 w-12 object-contain"
-                />
-                <div>
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-forest">UNAM</p>
-                  <p className="mt-1 text-xs leading-snug text-muted">Facultad de Derecho</p>
-                </div>
-              </div>
-            </div>
+
+          <div className="mt-auto grid gap-3 pt-4">
             <AuthSlot pending={isPending} />
-            <p className="text-xs leading-relaxed text-muted">
-              Comunidad académica privada · grupo 9114
-            </p>
+            <p className="text-xs leading-relaxed text-muted">Comunidad académica privada · grupo 9114</p>
           </div>
         </aside>
 
@@ -113,7 +101,7 @@ export function Shell({
             <Brand compact />
             <AuthSlot pending={isPending} compact />
           </header>
-          <header className="mb-8 max-w-3xl soft-enter">
+          <header className="mb-8 max-w-4xl soft-enter">
             <div className="mb-3 flex items-center gap-2">
               <span className="h-px w-8 bg-clay" />
               <p className="text-xs font-semibold uppercase tracking-[0.17em] text-clay">{eyebrow}</p>
@@ -138,8 +126,8 @@ export function Shell({
           <div className="glass-panel absolute inset-x-3 bottom-20 rounded-2xl border border-line p-4 shadow-float float-in">
             <div className="mb-3 flex items-center justify-between">
               <div>
-                <p className="font-display text-xl">Más de Atrio</p>
-                <p className="text-xs text-muted">Herramientas del grupo 9114</p>
+                <p className="font-display text-xl">Más del grupo 9114</p>
+                <p className="text-xs text-muted">Herramientas y áreas académicas</p>
               </div>
               <button
                 type="button"
@@ -159,8 +147,8 @@ export function Shell({
                     to={item.to}
                     onClick={() => setMoreOpen(false)}
                     className={cn(
-                      "flex min-h-14 items-center gap-3 rounded-lg border p-3 text-sm font-medium",
-                      active ? "border-forest bg-forest text-bg" : "border-line bg-surface text-ink-soft",
+                      "flex min-h-14 items-center gap-3 rounded-lg border p-3 text-sm font-medium transition-all duration-200",
+                      active ? "border-forest bg-forest text-bg" : "border-line bg-surface text-ink-soft hover:-translate-y-0.5",
                     )}
                   >
                     <item.icon className="size-4" />
@@ -183,8 +171,8 @@ export function Shell({
                 to={item.to}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold transition-colors",
-                  active ? "bg-forest-soft text-forest-deep" : "text-muted",
+                  "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold transition-all duration-200",
+                  active ? "bg-forest-soft text-forest-deep" : "text-muted hover:bg-white/60",
                 )}
               >
                 <item.icon className="size-[18px]" strokeWidth={1.8} />
@@ -196,8 +184,8 @@ export function Shell({
             type="button"
             onClick={() => setMoreOpen((value) => !value)}
             className={cn(
-              "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold",
-              moreOpen || moreActive ? "bg-forest-soft text-forest-deep" : "text-muted",
+              "flex min-h-14 flex-col items-center justify-center gap-1 rounded-lg text-[10px] font-semibold transition-all duration-200",
+              moreOpen || moreActive ? "bg-forest-soft text-forest-deep" : "text-muted hover:bg-white/60",
             )}
           >
             <Menu className="size-[18px]" strokeWidth={1.8} />
@@ -221,7 +209,7 @@ function AuthSlot({ pending, compact = false }: { pending: boolean; compact?: bo
         </div>
       </SignedIn>
       <SignedOut>
-        <Link to="/login" className="rounded-md border border-line bg-surface px-3 py-2 text-sm font-semibold text-forest shadow-sm">
+        <Link to="/login" className="rounded-md border border-line bg-surface px-3 py-2 text-sm font-semibold text-forest shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
           Entrar
         </Link>
       </SignedOut>
@@ -231,17 +219,19 @@ function AuthSlot({ pending, compact = false }: { pending: boolean; compact?: bo
 
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
-    <Link to="/" className="group flex items-center gap-3">
-      <span className="relative grid size-10 place-items-center overflow-hidden rounded-md bg-forest text-bg shadow-sm transition-transform duration-200 group-hover:-rotate-2">
-        <Landmark className="size-4" strokeWidth={1.7} />
-        <span className="absolute inset-x-0 bottom-0 h-1 bg-clay" />
-      </span>
-      <span className={cn("leading-tight", compact && "text-sm")}>
-        <span className="block font-display text-[1.35rem] tracking-tight">Atrio</span>
-        <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">
-          Comunidad jurídica
-        </span>
-      </span>
+    <Link to="/" className={cn("group block rounded-2xl border border-line/80 bg-surface px-4 py-4 shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:shadow-float", compact && "px-3 py-3")}>
+      <div className="flex items-center gap-3">
+        <img
+          src="/unam-logo.png"
+          alt="Logo de la UNAM"
+          className={cn("w-14 shrink-0 object-contain", compact ? "h-14" : "h-16")}
+        />
+        <div className={cn("leading-tight", compact && "text-sm")}>
+          <span className="block text-[10px] font-semibold uppercase tracking-[0.22em] text-forest">UNAM</span>
+          <span className="mt-1 block font-display text-[1.28rem] tracking-tight text-ink">Facultad de Derecho</span>
+          <span className="mt-1 block text-xs text-muted">Grupo 9114 · Comunidad académica</span>
+        </div>
+      </div>
     </Link>
   );
 }

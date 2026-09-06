@@ -80,6 +80,18 @@ export type Notice = {
   createdAt: string;
 };
 
+export type BitacoraPost = {
+  id: number;
+  title: string;
+  body: string;
+  imageUrl: string | null;
+  imageName: string | null;
+  shotDate: string | null;
+  place: string | null;
+  authorAlias: string;
+  createdAt: string;
+};
+
 export type Board = {
   professors: Professor[];
   courses: Course[];
@@ -88,4 +100,5 @@ export type Board = {
   rides: RideItem[];
   groups: StudyGroup[];
   notices: Notice[];
+  posts: BitacoraPost[];
 };

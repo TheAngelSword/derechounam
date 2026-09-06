@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { seedBoard } from "@/lib/seed";
-import type { Board, BookItem, EventItem, Notice, RideItem, StudyGroup } from "@/lib/types";
+import type { BitacoraPost, Board, BookItem, EventItem, Notice, RideItem, StudyGroup } from "@/lib/types";
 
 type Actions = {
   addEvent: (item: Omit<EventItem, "id">) => void;
@@ -8,6 +8,7 @@ type Actions = {
   addRide: (item: Omit<RideItem, "id">) => void;
   addGroup: (item: Omit<StudyGroup, "id">) => void;
   addNotice: (item: Omit<Notice, "id" | "pinned" | "createdAt">) => void;
+  addPost: (item: Omit<BitacoraPost, "id" | "createdAt">) => void;
 };
 
 function nextId(rows: Array<{ id: number }>) {
@@ -34,6 +35,17 @@ export const useBoardStore = create<Board & Actions>()((set) => ({
           createdAt: new Date().toISOString(),
         },
         ...state.notices,
+      ],
+    })),
+  addPost: (item) =>
+    set((state) => ({
+      posts: [
+        {
+          ...item,
+          id: nextId(state.posts),
+          createdAt: new Date().toISOString(),
+        },
+        ...state.posts,
       ],
     })),
 }));

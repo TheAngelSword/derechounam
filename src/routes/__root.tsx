@@ -15,7 +15,7 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: "Comunidad de la facultad de derecho: clases, cátedras, agenda, libros y rutas.",
+        content: "Comunidad de la facultad de derecho: horarios, cátedras, agenda, biblioteca, bitácora y rutas.",
       },
       { name: "theme-color", content: "#003D79" },
     ],

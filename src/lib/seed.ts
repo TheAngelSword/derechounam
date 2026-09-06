@@ -407,4 +407,28 @@ export const seedBoard: Board = {
       createdAt: "2026-09-03T09:00:00.000Z",
     },
   ],
+  posts: [
+    {
+      id: 1,
+      title: "Primera jornada del grupo 9114",
+      body: "Arranque de clases en D-106. Bitácora abierta para compartir fotos, acuerdos y evidencias de actividades.",
+      imageUrl: null,
+      imageName: null,
+      shotDate: "2026-09-04",
+      place: "D-106",
+      authorAlias: "Moderación 9114",
+      createdAt: "2026-09-04T08:30:00.000Z",
+    },
+    {
+      id: 2,
+      title: "Cruce a E-003",
+      body: "Última materia del bloque diario. Aquí podrán subir fotos del cambio de edificio y avisos rápidos del grupo.",
+      imageUrl: null,
+      imageName: null,
+      shotDate: "2026-09-04",
+      place: "E-003",
+      authorAlias: "Grupo 9114",
+      createdAt: "2026-09-04T13:05:00.000Z",
+    },
+  ],
 };

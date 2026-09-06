@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
-import type { Board, BookItem, Course, EventItem, Notice, Professor, RideItem, StudyGroup } from "@/lib/types";
+import type { BitacoraPost, Board, BookItem, Course, EventItem, Notice, Professor, RideItem, StudyGroup } from "@/lib/types";
 
 type MemberRow = { alias: string; role: string; status: string };
 
@@ -32,7 +32,7 @@ function asIsoDate(value: unknown) {
 
 export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Promise<Board> => {
   const sql = await getSql();
-  const [professors, courses, events, books, rides, groups, notices] = await Promise.all([
+  const [professors, courses, events, books, rides, groups, notices, posts] = await Promise.all([
     sql<{
       id: number;
       full_title: string;
@@ -108,6 +108,17 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       pinned: boolean;
       created_at: string;
     }>`select id, title, body, pinned, created_at from notices order by pinned desc, created_at desc`,
+    sql<{
+      id: number;
+      title: string;
+      body: string;
+      image_url: string | null;
+      image_name: string | null;
+      shot_date: string | null;
+      place: string | null;
+      author_alias: string;
+      created_at: string;
+    }>`select id, title, body, image_url, image_name, shot_date, place, author_alias, created_at from class_posts order by created_at desc, id desc`,
   ]);
 
   return {
@@ -186,6 +197,17 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       pinned: Boolean(row.pinned),
       createdAt: String(row.created_at),
     })) satisfies Notice[],
+    posts: posts.map((row) => ({
+      id: row.id,
+      title: row.title,
+      body: row.body,
+      imageUrl: row.image_url,
+      imageName: row.image_name,
+      shotDate: row.shot_date ? asIsoDate(row.shot_date) : null,
+      place: row.place,
+      authorAlias: row.author_alias,
+      createdAt: String(row.created_at),
+    })) satisfies BitacoraPost[],
   };
 });
 
@@ -209,7 +231,7 @@ export const addCourse = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
-    if (me.role === "alumno") throw new Error("Solo cátedra o moderación sube clases");
+    if (me.role === "alumno") throw new Error("Solo cátedra o moderación sube horarios");
     const sql = await getSql();
     await sql`insert into courses (code, name, chair, modality, weekday, time_slot, place, semester, group_code, created_by)
       values (${data.code}, ${data.name}, ${data.chair}, ${data.modality}, ${data.weekday}, ${data.timeSlot}, ${data.place}, ${data.semester}, ${data.group}, ${context.userId})`;
@@ -347,6 +369,26 @@ export const addNotice = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const addBitacoraPost = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(
+    z.object({
+      title: z.string().trim().min(2).max(120),
+      body: z.string().trim().min(3).max(900),
+      imageUrl: optionalUrl,
+      imageName: z.string().trim().max(220).optional(),
+      shotDate: z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional(),
+      place: z.string().trim().max(120).optional(),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    const me = await activeMember(context.userId);
+    const sql = await getSql();
+    await sql`insert into class_posts (title, body, image_url, image_name, shot_date, place, author_alias, created_by)
+      values (${data.title}, ${data.body}, ${data.imageUrl || null}, ${data.imageName || null}, ${data.shotDate || null}, ${data.place || null}, ${me.alias}, ${context.userId})`;
+    return { ok: true as const };
+  });
+
 const idSchema = z.object({ id: z.number().int().positive() });
 
 export const removeCourse = createServerFn({ method: "POST" })
@@ -430,5 +472,17 @@ export const removeNotice = createServerFn({ method: "POST" })
     if (!rows[0]) return { ok: true as const };
     await canControl(context.userId, "mural", rows[0].created_by);
     await sql`delete from notices where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const removeBitacoraPost = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(idSchema)
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from class_posts where id = ${data.id}`;
+    if (!rows[0]) return { ok: true as const };
+    await canControl(context.userId, "bitacora", rows[0].created_by);
+    await sql`delete from class_posts where id = ${data.id}`;
     return { ok: true as const };
   });

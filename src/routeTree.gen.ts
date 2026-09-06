@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AgendaRouteImport } from './routes/agenda'
 import { Route as BibliotecaRouteImport } from './routes/biblioteca'
+import { Route as BitacoraRouteImport } from './routes/bitacora'
 import { Route as CatedrasRouteImport } from './routes/catedras'
 import { Route as ClasesRouteImport } from './routes/clases'
 import { Route as ControlRouteImport } from './routes/control'
@@ -35,6 +36,11 @@ const AgendaRoute = AgendaRouteImport.update({
 const BibliotecaRoute = BibliotecaRouteImport.update({
   id: '/biblioteca',
   path: '/biblioteca',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BitacoraRoute = BitacoraRouteImport.update({
+  id: '/bitacora',
+  path: '/bitacora',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CatedrasRoute = CatedrasRouteImport.update({
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/bitacora': typeof BitacoraRoute
   '/catedras': typeof CatedrasRoute
   '/clases': typeof ClasesRoute
   '/control': typeof ControlRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/bitacora': typeof BitacoraRoute
   '/catedras': typeof CatedrasRoute
   '/clases': typeof ClasesRoute
   '/control': typeof ControlRoute
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/agenda': typeof AgendaRoute
   '/biblioteca': typeof BibliotecaRoute
+  '/bitacora': typeof BitacoraRoute
   '/catedras': typeof CatedrasRoute
   '/clases': typeof ClasesRoute
   '/control': typeof ControlRoute
@@ -132,6 +141,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agenda'
     | '/biblioteca'
+    | '/bitacora'
     | '/catedras'
     | '/clases'
     | '/control'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agenda'
     | '/biblioteca'
+    | '/bitacora'
     | '/catedras'
     | '/clases'
     | '/control'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/'
     | '/agenda'
     | '/biblioteca'
+    | '/bitacora'
     | '/catedras'
     | '/clases'
     | '/control'
@@ -175,6 +187,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AgendaRoute: typeof AgendaRoute
   BibliotecaRoute: typeof BibliotecaRoute
+  BitacoraRoute: typeof BitacoraRoute
   CatedrasRoute: typeof CatedrasRoute
   ClasesRoute: typeof ClasesRoute
   ControlRoute: typeof ControlRoute
@@ -207,6 +220,13 @@ declare module '@tanstack/react-router' {
       path: '/biblioteca'
       fullPath: '/biblioteca'
       preLoaderRoute: typeof BibliotecaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bitacora': {
+      id: '/bitacora'
+      path: '/bitacora'
+      fullPath: '/bitacora'
+      preLoaderRoute: typeof BitacoraRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/catedras': {
@@ -279,6 +299,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AgendaRoute: AgendaRoute,
   BibliotecaRoute: BibliotecaRoute,
+  BitacoraRoute: BitacoraRoute,
   CatedrasRoute: CatedrasRoute,
   ClasesRoute: ClasesRoute,
   ControlRoute: ControlRoute,
