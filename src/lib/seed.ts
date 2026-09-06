@@ -289,6 +289,7 @@ export const seedBoard: Board = {
       seats: 3,
       notes: "Para llegar a Romano a las 07:00. Punto: banqueta oriente.",
       ownerAlias: "Ruta 9114",
+      reservations: [],
     },
     {
       id: 2,
@@ -300,6 +301,7 @@ export const seedBoard: Board = {
       seats: 3,
       notes: "Misma ruta. Avisar la noche anterior en el mural.",
       ownerAlias: "Ruta 9114",
+      reservations: [],
     },
     {
       id: 3,
@@ -311,6 +313,7 @@ export const seedBoard: Board = {
       seats: 4,
       notes: "Sale al terminar Ser universitario.",
       ownerAlias: "Ruta 9114",
+      reservations: [],
     },
     {
       id: 4,
@@ -322,6 +325,7 @@ export const seedBoard: Board = {
       seats: 3,
       notes: "Una parada en la biblioteca si hay quien baje.",
       ownerAlias: "Ruta 9114",
+      reservations: [],
     },
     {
       id: 5,
@@ -333,6 +337,7 @@ export const seedBoard: Board = {
       seats: 2,
       notes: "Solo viernes. Llegar con diez minutos.",
       ownerAlias: "Ruta norte",
+      reservations: [],
     },
   ],
   groups: [

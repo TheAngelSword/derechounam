@@ -53,6 +53,12 @@ export type BookItem = {
   createdBy?: string;
 };
 
+export type RideReservation = {
+  userId: string;
+  requesterAlias: string;
+  createdAt: string;
+};
+
 export type RideItem = {
   id: number;
   direction: string;
@@ -64,6 +70,7 @@ export type RideItem = {
   notes: string;
   ownerAlias: string;
   createdBy?: string;
+  reservations: RideReservation[];
 };
 
 export type StudyGroup = {

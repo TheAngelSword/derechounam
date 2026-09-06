@@ -50,7 +50,7 @@ function asIsoDate(value: unknown) {
 
 export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Promise<Board> => {
   const sql = await getSql();
-  const [professors, courses, events, books, rides, groups, notices, posts, materials, services] = await Promise.all([
+  const [professors, courses, events, books, rides, groups, notices, posts, materials, services, rideReservations] = await Promise.all([
     sql<{
       id: number;
       full_title: string;
@@ -174,6 +174,12 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       created_at: string;
       created_by: string;
     }>`select id, title, category, description, price_text, availability_days, delivery_place, order_cutoff, how_to_order, image_url, image_name, seller_alias, created_at, created_by from service_offers order by created_at desc, id desc`,
+    sql<{
+      ride_id: number;
+      user_id: string;
+      requester_alias: string;
+      created_at: string;
+    }>`select ride_id, user_id, requester_alias, created_at from ride_reservations order by created_at, id`,
   ]);
 
   return {
@@ -239,6 +245,13 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       notes: row.notes,
       ownerAlias: row.owner_alias,
       createdBy: row.created_by,
+      reservations: rideReservations
+        .filter((reservation) => reservation.ride_id === row.id)
+        .map((reservation) => ({
+          userId: reservation.user_id,
+          requesterAlias: reservation.requester_alias,
+          createdAt: String(reservation.created_at),
+        })),
     })) satisfies RideItem[],
     groups: groups.map((row) => ({
       id: row.id,
@@ -433,6 +446,41 @@ export const addRide = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+export const requestRideSeat = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(z.object({ rideId: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const me = await activeMember(context.userId);
+    const sql = await getSql();
+    const rides = await sql<{ id: number; seats: number; created_by: string }>`select id, seats, created_by from rides where id = ${data.rideId} limit 1`;
+    const ride = rides[0];
+    if (!ride) throw new Error("Ruta no encontrada");
+    if (ride.created_by === context.userId) throw new Error("No puedes pedir asiento en tu propia ruta");
+
+    const mine = await sql<{ id: number }>`select id from ride_reservations where ride_id = ${data.rideId} and user_id = ${context.userId} limit 1`;
+    if (mine.length) return { ok: true as const, alreadyReserved: true as const };
+
+    const counts = await sql<{ n: number }>`select count(*)::int as n from ride_reservations where ride_id = ${data.rideId}`;
+    if ((counts[0]?.n ?? 0) >= Number(ride.seats)) throw new Error("Esta ruta ya está llena");
+
+    const inserted = await sql<{ id: number }>`insert into ride_reservations (ride_id, user_id, requester_alias)
+      values (${data.rideId}, ${context.userId}, ${me.alias})
+      on conflict (ride_id, user_id) do nothing
+      returning id`;
+    if (!inserted.length) return { ok: true as const, alreadyReserved: true as const };
+    return { ok: true as const, alreadyReserved: false as const };
+  });
+
+export const cancelRideSeat = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(z.object({ rideId: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    await activeMember(context.userId);
+    const sql = await getSql();
+    await sql`delete from ride_reservations where ride_id = ${data.rideId} and user_id = ${context.userId}`;
+    return { ok: true as const };
+  });
+
 const groupInputSchema = z.object({
   name: short,
   course: short,
@@ -558,6 +606,10 @@ export const updateRide = createServerFn({ method: "POST" })
     const rows = await sql<{ created_by: string }>`select created_by from rides where id = ${data.id} limit 1`;
     if (!rows[0]) throw new Error("Publicación no encontrada");
     await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    const reserved = await sql<{ n: number }>`select count(*)::int as n from ride_reservations where ride_id = ${data.id}`;
+    if (data.seats < (reserved[0]?.n ?? 0)) {
+      throw new Error(`No puedes bajar los asientos a ${data.seats}; ya hay ${reserved[0]?.n ?? 0} reservados.`);
+    }
     await sql`update rides set direction = ${data.direction}, from_place = ${data.fromPlace}, to_place = ${data.toPlace}, weekday = ${data.weekday},
       time_slot = ${data.timeSlot}, seats = ${data.seats}, notes = ${data.notes}, owner_alias = ${data.ownerAlias}
       where id = ${data.id}`;

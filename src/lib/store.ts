@@ -5,7 +5,7 @@ import type { BitacoraPost, Board, BookItem, EventItem, Notice, RideItem, StudyG
 type Actions = {
   addEvent: (item: Omit<EventItem, "id">) => void;
   addBook: (item: Omit<BookItem, "id">) => void;
-  addRide: (item: Omit<RideItem, "id">) => void;
+  addRide: (item: Omit<RideItem, "id" | "reservations">) => void;
   addGroup: (item: Omit<StudyGroup, "id">) => void;
   addNotice: (item: Omit<Notice, "id" | "pinned" | "createdAt">) => void;
   addPost: (item: Omit<BitacoraPost, "id" | "createdAt">) => void;
@@ -22,7 +22,7 @@ export const useBoardStore = create<Board & Actions>()((set) => ({
   addBook: (item) =>
     set((state) => ({ books: [...state.books, { ...item, id: nextId(state.books) }] })),
   addRide: (item) =>
-    set((state) => ({ rides: [...state.rides, { ...item, id: nextId(state.rides) }] })),
+    set((state) => ({ rides: [...state.rides, { ...item, id: nextId(state.rides), reservations: [] }] })),
   addGroup: (item) =>
     set((state) => ({ groups: [...state.groups, { ...item, id: nextId(state.groups) }] })),
   addNotice: (item) =>
