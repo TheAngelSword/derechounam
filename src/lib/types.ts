@@ -40,6 +40,15 @@ export type BookItem = {
   course: string | null;
   notes: string;
   ownerAlias: string;
+  publisher?: string | null;
+  publicationYear?: string | null;
+  edition?: string | null;
+  isbn?: string | null;
+  fileUrl?: string | null;
+  fileName?: string | null;
+  externalUrl?: string | null;
+  commerceUrl?: string | null;
+  priceText?: string | null;
 };
 
 export type RideItem = {

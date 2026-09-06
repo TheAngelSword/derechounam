@@ -72,7 +72,16 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       course: string | null;
       notes: string;
       owner_alias: string;
-    }>`select id, title, author, kind, course, notes, owner_alias from books order by id`,
+      publisher: string | null;
+      publication_year: string | null;
+      edition: string | null;
+      isbn: string | null;
+      file_url: string | null;
+      file_name: string | null;
+      external_url: string | null;
+      commerce_url: string | null;
+      price_text: string | null;
+    }>`select id, title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn, file_url, file_name, external_url, commerce_url, price_text from books order by id desc`,
     sql<{
       id: number;
       direction: string;
@@ -141,6 +150,15 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       course: row.course,
       notes: row.notes,
       ownerAlias: row.owner_alias,
+      publisher: row.publisher,
+      publicationYear: row.publication_year,
+      edition: row.edition,
+      isbn: row.isbn,
+      fileUrl: row.file_url,
+      fileName: row.file_name,
+      externalUrl: row.external_url,
+      commerceUrl: row.commerce_url,
+      priceText: row.price_text,
     })) satisfies BookItem[],
     rides: rides.map((row) => ({
       id: row.id,
@@ -240,23 +258,40 @@ export const addEvent = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const optionalUrl = z.union([z.literal(""), z.string().url().max(600)]).optional();
+
 export const addBook = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
     z.object({
       title: short,
       author: short,
-      kind: z.enum(["Préstamo", "Venta", "Recomendación"]),
-      course: z.string().trim().max(80).optional(),
-      notes: mid,
-      ownerAlias: short,
+      kind: z.enum(["Bibliografía", "Préstamo", "Venta", "Recomendación", "Descarga"]),
+      course: z.string().trim().max(120).optional(),
+      notes: z.string().trim().max(600).optional(),
+      ownerAlias: z.string().trim().max(80).optional(),
+      publisher: z.string().trim().max(120).optional(),
+      publicationYear: z.string().trim().max(24).optional(),
+      edition: z.string().trim().max(100).optional(),
+      isbn: z.string().trim().max(40).optional(),
+      fileUrl: optionalUrl,
+      fileName: z.string().trim().max(220).optional(),
+      externalUrl: optionalUrl,
+      commerceUrl: optionalUrl,
+      priceText: z.string().trim().max(80).optional(),
     }),
   )
   .handler(async ({ context, data }) => {
     await activeMember(context.userId);
     const sql = await getSql();
-    await sql`insert into books (title, author, kind, course, notes, owner_alias, created_by)
-      values (${data.title}, ${data.author}, ${data.kind}, ${data.course || null}, ${data.notes}, ${data.ownerAlias}, ${context.userId})`;
+    await sql`insert into books (
+      title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn,
+      file_url, file_name, external_url, commerce_url, price_text, created_by
+    ) values (
+      ${data.title}, ${data.author}, ${data.kind}, ${data.course || null}, ${data.notes || ""}, ${data.ownerAlias || "Biblioteca 9114"},
+      ${data.publisher || null}, ${data.publicationYear || null}, ${data.edition || null}, ${data.isbn || null},
+      ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${data.commerceUrl || null}, ${data.priceText || null}, ${context.userId}
+    )`;
     return { ok: true as const };
   });
 

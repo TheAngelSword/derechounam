@@ -102,6 +102,7 @@ function Home() {
                   <span className="inline-flex items-center gap-2"><MapPin className="size-4" />{focusCourse.place}</span>
                   <span className="inline-flex items-center gap-2"><GraduationCap className="size-4" />{focusCourse.code}</span>
                 </div>
+                <p className="mt-3 text-sm text-bg/65">Docente: {focusCourse.chair}</p>
               </>
             ) : (
               <h2 className="mt-2 font-display text-4xl">Sin clases programadas.</h2>

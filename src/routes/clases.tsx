@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Building2, Clock3, MapPin } from "lucide-react";
+import { ArrowRight, Building2, Clock3, MapPin, UserRound } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { useBoard } from "@/components/board-context";
 import { useAreaVisit } from "@/components/directory";
@@ -41,7 +41,7 @@ function ClasesPage() {
               <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-semibold">Presencial</span>
             </div>
             <h2 className="mt-5 font-display text-3xl">Bloque académico 07:00–14:00</h2>
-            <p className="mt-2 max-w-xl text-sm text-bg/70">Seis materias en D-106 y el cierre de jornada en E-003.</p>
+            <p className="mt-2 max-w-xl text-sm text-bg/70">Siete materias con docente, clave, horario y salón. Seis se imparten en D-106 y la última en E-003.</p>
             <div className="mt-5 max-w-2xl">
               <div className="mb-2 flex justify-between text-xs text-bg/55"><span>07:00</span><span>{Math.round(progress)}%</span><span>14:00</span></div>
               <div className="h-2 rounded-full bg-white/10"><div className="h-full rounded-full bg-clay-soft transition-[width] duration-700" style={{ width: `${progress}%` }} /></div>
@@ -82,7 +82,7 @@ function ClasesPage() {
                     {changeBuilding ? <Pill tone="clay">Cambio de edificio</Pill> : null}
                   </div>
                   <h2 className="mt-2 font-display text-2xl leading-tight">{course.name}</h2>
-                  <p className="mt-1 text-sm text-muted">{course.chair}</p>
+                  <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-muted"><UserRound className="size-3.5" />Docente: {course.chair}</p>
                   <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-xs text-muted sm:hidden">
                     <span className="inline-flex items-center gap-1.5"><Clock3 className="size-3.5" />{course.timeSlot}</span>
                     <span className="inline-flex items-center gap-1.5"><MapPin className="size-3.5" />{course.place}</span>
