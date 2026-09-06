@@ -21,6 +21,16 @@ import {
 
 export const Route = createFileRoute("/control")({ component: ControlPage });
 
+function normalizePersonName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es-MX")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 function ControlPage() {
   const { user, isPending } = useCurrentUserState();
   if (isPending) {
@@ -40,6 +50,8 @@ function ControlBody() {
   const { directory } = useDirectory();
   const mod = isModerator(directory);
   const [error, setError] = useState<string | null>(null);
+  const activeChairNames = new Set(board.professors.map((item) => normalizePersonName(item.fullTitle)));
+  const availableCatedras = board.courses.filter((course) => !activeChairNames.has(normalizePersonName(course.chair)));
 
   async function onCourse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,8 +149,15 @@ function ControlBody() {
 
         <PublishGate area="catedras">
           <FormBox title="Subir una cátedra" onSubmit={onChair}>
-            <Field label="Nombre de la cátedra">
-              <Input name="fullTitle" required placeholder="Cátedra de Romano II" />
+            <Field label="Materia / docente">
+              <Select name="fullTitle" required defaultValue="">
+                <option value="" disabled>Selecciona una materia</option>
+                {availableCatedras.map((course) => (
+                  <option key={course.id} value={course.chair}>
+                    {course.code} · {course.name} — {course.chair}
+                  </option>
+                ))}
+              </Select>
             </Field>
             <Field label="Área">
               <Input name="area" required placeholder="Histórico" />
@@ -163,13 +182,20 @@ function ControlBody() {
 
       <div className="mt-8 grid gap-4">
         <Inventory
-          title="Clases"
+          title="Horarios / materias"
           rows={board.courses.map((item) => ({ id: item.id, label: `${item.code} · ${item.name}`, meta: `${item.timeSlot} · ${item.place}` }))}
           onRemove={mod ? async (id) => { await removeCourse({ data: { id } }); await refresh(); } : undefined}
         />
         <Inventory
-          title="Cátedras"
-          rows={board.professors.map((item) => ({ id: item.id, label: item.fullTitle, meta: item.office }))}
+          title="Cátedras visibles"
+          rows={board.professors.map((item) => {
+            const course = board.courses.find((candidate) => normalizePersonName(candidate.chair) === normalizePersonName(item.fullTitle));
+            return {
+              id: item.id,
+              label: course ? `${course.code} · ${course.name}` : item.fullTitle,
+              meta: course ? `${item.fullTitle} · ${course.timeSlot} · ${course.place}` : `${item.fullTitle} · ${item.office}`,
+            };
+          })}
           onRemove={mod ? async (id) => { await removeProfessor({ data: { id } }); await refresh(); } : undefined}
         />
         <Inventory
@@ -198,6 +224,10 @@ function ControlBody() {
           onRemove={mod ? async (id) => { await removeNotice({ data: { id } }); await refresh(); } : undefined}
         />
       </div>
+
+      <p className="mt-6 rounded-lg border border-line bg-bg-warm/70 p-4 text-sm text-muted">
+        <strong className="text-ink">Cómo funciona Cátedras:</strong> quitar una cátedra aquí sólo la oculta del directorio de Cátedras y de su expediente de clase; no borra la materia del horario. Para eliminar también el horario, quita la materia en “Horarios / materias”.
+      </p>
 
       <p className="mt-6 text-sm text-muted">
         El padrón de alumnos y profesores está en{" "}

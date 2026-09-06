@@ -39,6 +39,16 @@ function normalizeUrl(value: string) {
   return `https://${trimmed}`;
 }
 
+function normalizePersonName(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es-MX")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 function kindIcon(kind: ClassMaterial["kind"]) {
   if (kind === "Apuntes") return NotebookPen;
   if (kind === "Tarea") return BookOpenCheck;
@@ -53,11 +63,21 @@ function isImageFile(material: ClassMaterial) {
 }
 
 function CatedrasPage() {
-  const { courses, materials } = useBoard();
+  const { courses, professors, materials } = useBoard();
   const refresh = useRefreshBoard();
   const { user, directory } = useDirectory();
   useAreaVisit("catedras");
-  const ordered = [...courses].sort((a, b) => a.timeSlot.localeCompare(b.timeSlot));
+  const activeChairNames = useMemo(
+    () => new Set(professors.map((professor) => normalizePersonName(professor.fullTitle))),
+    [professors],
+  );
+  const ordered = useMemo(
+    () =>
+      courses
+        .filter((course) => activeChairNames.has(normalizePersonName(course.chair)))
+        .sort((a, b) => a.timeSlot.localeCompare(b.timeSlot)),
+    [courses, activeChairNames],
+  );
   const [selectedCourse, setSelectedCourse] = useState<string>("Todos");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -65,7 +85,16 @@ function CatedrasPage() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingMaterial, setEditingMaterial] = useState<ClassMaterial | null>(null);
 
-  const visibleMaterials = useMemo(() => materials.filter((item) => selectedCourse === "Todos" || item.courseCode === selectedCourse), [materials, selectedCourse]);
+  const activeCourseCodes = useMemo(() => new Set(ordered.map((course) => course.code)), [ordered]);
+  const visibleMaterials = useMemo(
+    () =>
+      materials.filter(
+        (item) =>
+          activeCourseCodes.has(item.courseCode) &&
+          (selectedCourse === "Todos" || item.courseCode === selectedCourse),
+      ),
+    [materials, selectedCourse, activeCourseCodes],
+  );
 
   async function uploadAttachment(file: FormDataEntryValue | null, courseCode: string) {
     if (!(file instanceof File) || file.size === 0) return null;
@@ -118,6 +147,12 @@ function CatedrasPage() {
   return (
     <Shell eyebrow="Cátedras · Grupo 9114" title="Las siete materias, sus docentes y lo visto en clase." lead="Cada cátedra funciona ahora como un expediente vivo: docente, horario y salón, más apuntes, tareas, fotos, archivos y materiales complementarios fechados por sesión.">
       <div className="stagger-children grid gap-4 md:grid-cols-2">
+        {!ordered.length ? (
+          <Card className="md:col-span-2">
+            <p className="font-display text-2xl">No hay cátedras activas.</p>
+            <p className="mt-2 text-sm text-muted">Activa o vuelve a agregar una cátedra desde Control. El horario de la materia puede seguir existiendo sin que aparezca aquí.</p>
+          </Card>
+        ) : null}
         {ordered.map((course) => { const count = materials.filter((item) => item.courseCode === course.code).length; const active = selectedCourse === course.code; return <button key={course.id} type="button" onClick={() => setSelectedCourse(active ? "Todos" : course.code)} className="text-left"><Card interactive className={cn("motion-sheen group soft-raise min-h-full transition-all duration-250", active && "border-forest/35 bg-forest-soft shadow-float")}><div className="flex flex-wrap items-center justify-between gap-2"><Pill tone="forest">{course.code}</Pill><span className="text-xs font-medium text-muted">{course.semester}</span></div><h2 className="mt-3 font-display text-2xl leading-tight">{course.name}</h2><p className="mt-3 inline-flex items-start gap-2 text-sm font-semibold text-forest"><UserRound className="mt-0.5 size-4 shrink-0" />{course.chair}</p><div className="mt-5 grid gap-2 border-t border-line pt-4 text-sm text-ink-soft sm:grid-cols-2"><span className="inline-flex items-center gap-2"><Clock3 className="size-4 text-muted" />{course.timeSlot}</span><span className="inline-flex items-center gap-2"><MapPin className="size-4 text-muted" />{course.place}</span><span className="inline-flex items-center gap-2 sm:col-span-2"><GraduationCap className="size-4 text-muted" />{course.weekday} · Grupo {course.group}</span></div><div className="mt-4 flex items-center justify-between rounded-lg bg-bg-warm/70 px-3 py-2 text-xs"><span className="font-medium text-ink-soft">Contenido guardado</span><span className="rounded-full bg-white px-2.5 py-1 font-bold text-forest shadow-sm">{count}</span></div></Card></button>; })}
       </div>
 
