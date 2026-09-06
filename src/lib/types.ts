@@ -110,10 +110,13 @@ export type ClassMaterial = {
   id: number;
   courseCode: string;
   courseName: string;
+  professorName: string;
   classDate: string;
-  kind: "Apuntes" | "Tarea" | "Foto" | "Material" | "Aviso";
+  kind: "Apuntes" | "Tarea" | "Foto" | "Material" | "Aviso" | "Referencia" | "Bibliografía";
   title: string;
   body: string;
+  referencesText: string | null;
+  bibliographyText: string | null;
   fileUrl: string | null;
   fileName: string | null;
   externalUrl: string | null;

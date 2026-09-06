@@ -148,16 +148,19 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       course_code: string;
       course_name: string;
       class_date: string;
+      professor_name: string;
       kind: string;
       title: string;
       body: string;
+      references_text: string | null;
+      bibliography_text: string | null;
       file_url: string | null;
       file_name: string | null;
       external_url: string | null;
       author_alias: string;
       created_at: string;
       created_by: string;
-    }>`select id, course_code, course_name, class_date, kind, title, body, file_url, file_name, external_url, author_alias, created_at, created_by from class_materials order by class_date desc, created_at desc`,
+    }>`select id, course_code, course_name, class_date, professor_name, kind, title, body, references_text, bibliography_text, file_url, file_name, external_url, author_alias, created_at, created_by from class_materials order by class_date desc, created_at desc`,
     sql<{
       id: number;
       title: string;
@@ -287,9 +290,12 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       courseCode: row.course_code,
       courseName: row.course_name,
       classDate: asIsoDate(row.class_date),
+      professorName: row.professor_name,
       kind: row.kind as ClassMaterial["kind"],
       title: row.title,
       body: row.body,
+      referencesText: row.references_text,
+      bibliographyText: row.bibliography_text,
       fileUrl: row.file_url,
       fileName: row.file_name,
       externalUrl: row.external_url,
@@ -538,10 +544,13 @@ export const addBitacoraPost = createServerFn({ method: "POST" })
 const classMaterialInputSchema = z.object({
   courseCode: z.string().trim().min(2).max(12),
   courseName: z.string().trim().min(2).max(180),
+  professorName: z.string().trim().min(2).max(240),
   classDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  kind: z.enum(["Apuntes", "Tarea", "Foto", "Material", "Aviso"]),
+  kind: z.enum(["Apuntes", "Tarea", "Foto", "Material", "Aviso", "Referencia", "Bibliografía"]),
   title: z.string().trim().min(2).max(240),
-  body: z.string().trim().min(3).max(2400),
+  body: z.string().trim().min(3).max(4000),
+  referencesText: z.string().trim().max(3000).optional(),
+  bibliographyText: z.string().trim().max(3000).optional(),
   fileUrl: optionalUrl,
   fileName: z.string().trim().max(220).optional(),
   externalUrl: optionalUrl,
@@ -553,8 +562,8 @@ export const addClassMaterial = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     const sql = await getSql();
-    await sql`insert into class_materials (course_code, course_name, class_date, kind, title, body, file_url, file_name, external_url, author_alias, created_by)
-      values (${data.courseCode}, ${data.courseName}, ${data.classDate}, ${data.kind}, ${data.title}, ${data.body}, ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${me.alias}, ${context.userId})`;
+    await sql`insert into class_materials (course_code, course_name, professor_name, class_date, kind, title, body, references_text, bibliography_text, file_url, file_name, external_url, author_alias, created_by)
+      values (${data.courseCode}, ${data.courseName}, ${data.professorName}, ${data.classDate}, ${data.kind}, ${data.title}, ${data.body}, ${data.referencesText || null}, ${data.bibliographyText || null}, ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${me.alias}, ${context.userId})`;
     return { ok: true as const };
   });
 
@@ -683,9 +692,9 @@ export const updateClassMaterial = createServerFn({ method: "POST" })
     if (!rows[0]) throw new Error("Publicación no encontrada");
     await canEditOwnedOrModerator(context.userId, rows[0].created_by);
     await sql`update class_materials set
-      course_code = ${data.courseCode}, course_name = ${data.courseName}, class_date = ${data.classDate}, kind = ${data.kind},
-      title = ${data.title}, body = ${data.body}, file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null},
-      external_url = ${data.externalUrl || null}
+      course_code = ${data.courseCode}, course_name = ${data.courseName}, professor_name = ${data.professorName}, class_date = ${data.classDate}, kind = ${data.kind},
+      title = ${data.title}, body = ${data.body}, references_text = ${data.referencesText || null}, bibliography_text = ${data.bibliographyText || null},
+      file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null}, external_url = ${data.externalUrl || null}
       where id = ${data.id}`;
     return { ok: true as const };
   });
