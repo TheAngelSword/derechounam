@@ -280,27 +280,29 @@ export const addEvent = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-const optionalUrl = z.union([z.literal(""), z.string().url().max(600)]).optional();
+const optionalUrl = z.union([z.literal(""), z.string().url().max(1500)]).optional();
+const bookTitle = z.string().trim().min(2).max(300);
+const bookAuthor = z.string().trim().min(2).max(400);
 
 export const addBook = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(
     z.object({
-      title: short,
-      author: short,
+      title: bookTitle,
+      author: bookAuthor,
       kind: z.enum(["Bibliografía", "Préstamo", "Venta", "Recomendación", "Descarga"]),
-      course: z.string().trim().max(120).optional(),
-      notes: z.string().trim().max(600).optional(),
-      ownerAlias: z.string().trim().max(80).optional(),
-      publisher: z.string().trim().max(120).optional(),
-      publicationYear: z.string().trim().max(24).optional(),
-      edition: z.string().trim().max(100).optional(),
-      isbn: z.string().trim().max(40).optional(),
+      course: z.string().trim().max(180).optional(),
+      notes: z.string().trim().max(1800).optional(),
+      ownerAlias: z.string().trim().max(160).optional(),
+      publisher: z.string().trim().max(240).optional(),
+      publicationYear: z.string().trim().max(40).optional(),
+      edition: z.string().trim().max(240).optional(),
+      isbn: z.string().trim().max(80).optional(),
       fileUrl: optionalUrl,
       fileName: z.string().trim().max(220).optional(),
       externalUrl: optionalUrl,
       commerceUrl: optionalUrl,
-      priceText: z.string().trim().max(80).optional(),
+      priceText: z.string().trim().max(120).optional(),
     }),
   )
   .handler(async ({ context, data }) => {

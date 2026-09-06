@@ -42,6 +42,29 @@ function safeUploadName(name: string) {
     .slice(-140) || "libro.pdf";
 }
 
+function normalizeOptionalUrl(value: FormDataEntryValue | null) {
+  const raw = String(value ?? "").trim();
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `https://${raw}`;
+}
+
+function friendlyLibraryError(message: string) {
+  if (/path[^\n]*author|\"author\"/i.test(message) && /too_big|maximum/i.test(message)) {
+    return "El campo Autor es demasiado largo. Ya ampliamos el límite para nombres institucionales y referencias jurídicas extensas.";
+  }
+  if (/path[^\n]*title|\"title\"/i.test(message) && /too_big|maximum/i.test(message)) {
+    return "El título es demasiado largo. Se amplió el límite para nombres completos de leyes, decretos y documentos jurídicos.";
+  }
+  if (/invalid.*url|invalid_format|url/i.test(message)) {
+    return "Revisa la liga. Puedes pegarla con o sin https://; Atrio la completará automáticamente.";
+  }
+  if (/too_big|maximum/i.test(message)) {
+    return "Uno de los campos supera el tamaño permitido. Reduce el texto o vuelve a intentarlo.";
+  }
+  return message;
+}
+
 function BibliotecaPage() {
   const { books, courses } = useBoard();
   const refresh = useRefreshBoard();
@@ -133,8 +156,8 @@ function BibliotecaPage() {
           isbn: String(data.get("isbn") ?? "").trim(),
           fileUrl,
           fileName,
-          externalUrl: String(data.get("externalUrl") ?? "").trim(),
-          commerceUrl: String(data.get("commerceUrl") ?? "").trim(),
+          externalUrl: normalizeOptionalUrl(data.get("externalUrl")),
+          commerceUrl: normalizeOptionalUrl(data.get("commerceUrl")),
           priceText: String(data.get("priceText") ?? "").trim(),
         },
       });
@@ -150,7 +173,7 @@ function BibliotecaPage() {
       } else if (/authorized|padrón|unauthorized/i.test(message)) {
         setError("Debes iniciar sesión y estar activo en el padrón para publicar.");
       } else {
-        setError(message);
+        setError(friendlyLibraryError(message));
       }
     } finally {
       setBusy(false);
@@ -297,10 +320,10 @@ function BibliotecaPage() {
               </div>
 
               <Field label="Título">
-                <Input name="title" required placeholder="Introducción al estudio del derecho" />
+                <Input name="title" required maxLength={300} placeholder="Introducción al estudio del derecho" />
               </Field>
               <Field label="Autor">
-                <Input name="author" required placeholder="Eduardo García Máynez" />
+                <Input name="author" required maxLength={400} placeholder="Eduardo García Máynez o H. Congreso de la Unión" />
               </Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Tipo">
@@ -324,16 +347,16 @@ function BibliotecaPage() {
                 <p className="mb-3 text-xs font-semibold uppercase tracking-[0.12em] text-muted">Datos bibliográficos</p>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
                   <Field label="Editorial">
-                    <Input name="publisher" placeholder="Porrúa" />
+                    <Input name="publisher" maxLength={240} placeholder="Porrúa" />
                   </Field>
                   <Field label="Año">
-                    <Input name="publicationYear" placeholder="2026" />
+                    <Input name="publicationYear" maxLength={40} placeholder="2026" />
                   </Field>
                   <Field label="Edición">
-                    <Input name="edition" placeholder="18.ª edición" />
+                    <Input name="edition" maxLength={240} placeholder="18.ª edición" />
                   </Field>
                   <Field label="ISBN">
-                    <Input name="isbn" placeholder="978-…" />
+                    <Input name="isbn" maxLength={80} placeholder="978-…" />
                   </Field>
                 </div>
               </div>
@@ -349,19 +372,19 @@ function BibliotecaPage() {
               ) : null}
 
               <Field label="Liga de consulta/descarga" hint="opcional">
-                <Input name="externalUrl" type="url" placeholder="https://…" />
+                <Input name="externalUrl" type="text" inputMode="url" maxLength={1500} placeholder="dof.gob.mx/... o https://…" />
               </Field>
               <Field label="Liga para compra o venta" hint="opcional">
-                <Input name="commerceUrl" type="url" placeholder="https://…" />
+                <Input name="commerceUrl" type="text" inputMode="url" maxLength={1500} placeholder="https://…" />
               </Field>
               <Field label="Precio" hint="opcional">
-                <Input name="priceText" placeholder="$350 MXN / A convenir" />
+                <Input name="priceText" maxLength={120} placeholder="$350 MXN / A convenir" />
               </Field>
               <Field label="Notas">
-                <Textarea name="notes" placeholder="Capítulos recomendados, estado físico, instrucciones de préstamo…" />
+                <Textarea name="notes" maxLength={1800} placeholder="Capítulos recomendados, vigencia, reformas, estado físico, instrucciones de préstamo…" />
               </Field>
               <Field label="Alias / responsable">
-                <Input name="ownerAlias" placeholder="Biblioteca 9114" />
+                <Input name="ownerAlias" maxLength={160} placeholder="Biblioteca 9114" />
               </Field>
 
               {error ? <p className="text-sm text-danger">{error}</p> : null}
