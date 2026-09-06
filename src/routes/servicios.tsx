@@ -106,7 +106,7 @@ function ServiciosPage() {
       title="Comida, encargos y servicios entre compañeros."
       lead="Un espacio interno para ofrecer desayunos, comidas, sándwiches, postres, bebidas u otros servicios y entregarlos durante los días de clase."
     >
-      <Card className="animated-orb hero-glow mb-6 bg-forest text-bg" interactive>
+      <Card className="unam-hero-card animated-orb hero-glow mb-6" interactive>
         <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-bg/65">

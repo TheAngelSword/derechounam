@@ -178,7 +178,7 @@ function BibliotecaPage() {
       title="Bibliografía, libros y recursos en un solo lugar."
       lead="Crea fichas bibliográficas por materia, comparte descargas autorizadas y agrega enlaces para compra, venta o consulta externa."
     >
-      <Card className="mb-6 bg-forest text-bg" interactive>
+      <Card className="unam-hero-card hero-glow mb-6" interactive>
         <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-bg/60">

@@ -111,7 +111,7 @@ function BitacoraPage() {
       title="Fotos, evidencias y momentos de clase."
       lead="La bitácora sirve para publicar fotos del salón, actividades, avisos visuales y recuerdos del grupo 9114."
     >
-      <Card className="hero-glow animated-orb mb-6 bg-forest text-bg" interactive>
+      <Card className="unam-hero-card hero-glow animated-orb mb-6" interactive>
         <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.14em] text-bg/65">

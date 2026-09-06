@@ -42,7 +42,7 @@ function ClasesPage() {
       title="Horario completo del grupo 9114."
       lead="La jornada corre de 07:00 a 14:00. Aquí está el bloque académico con docentes, claves, salones y una vista tipo tabla como la que compartiste."
     >
-      <Card className="hero-glow animated-orb mb-6 overflow-hidden bg-forest text-bg" interactive>
+      <Card className="unam-hero-card hero-glow animated-orb mb-6 overflow-hidden" interactive>
         <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
           <div>
             <div className="flex flex-wrap gap-2">

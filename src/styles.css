@@ -243,3 +243,46 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }
 }
+
+/* V6.3: hero cards con contraste estable en producción.
+   El componente Card incluye bg-surface; esta clase usa una regla propia para
+   que el fondo institucional no dependa del orden de utilidades de Tailwind. */
+@layer utilities {
+  .unam-hero-card {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    color: #f8fbff !important;
+    background:
+      linear-gradient(135deg, #003d79 0%, #004b90 54%, #002b57 100%) !important;
+    border-color: rgba(0, 61, 121, 0.42) !important;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.08) inset,
+      0 24px 64px -38px rgba(0, 43, 87, 0.75) !important;
+  }
+
+  .unam-hero-card > * {
+    position: relative;
+    z-index: 3;
+  }
+
+  .unam-hero-card.hero-glow::after {
+    z-index: 1;
+    width: 18rem;
+    height: 18rem;
+    right: -5rem;
+    bottom: -8rem;
+    background: radial-gradient(circle, rgba(213, 159, 15, 0.36), transparent 68%);
+  }
+
+  .unam-hero-card.animated-orb::before {
+    z-index: 1;
+    width: 16rem;
+    height: 16rem;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.14), transparent 66%);
+  }
+
+  .unam-hero-card:hover {
+    border-color: rgba(213, 159, 15, 0.38) !important;
+  }
+}
