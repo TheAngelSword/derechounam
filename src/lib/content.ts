@@ -97,11 +97,17 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       isbn: string | null;
       file_url: string | null;
       file_name: string | null;
+      pdf_url: string | null;
+      pdf_name: string | null;
+      word_url: string | null;
+      word_name: string | null;
+      epub_url: string | null;
+      epub_name: string | null;
       external_url: string | null;
       commerce_url: string | null;
       price_text: string | null;
       created_by: string;
-    }>`select id, title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn, file_url, file_name, external_url, commerce_url, price_text, created_by from books order by id desc`,
+    }>`select id, title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn, file_url, file_name, pdf_url, pdf_name, word_url, word_name, epub_url, epub_name, external_url, commerce_url, price_text, created_by from books order by id desc`,
     sql<{
       id: number;
       direction: string;
@@ -232,6 +238,12 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       isbn: row.isbn,
       fileUrl: row.file_url,
       fileName: row.file_name,
+      pdfUrl: row.pdf_url || (/\.pdf(?:$|\?)/i.test(row.file_url || "") ? row.file_url : null),
+      pdfName: row.pdf_name || (/\.pdf$/i.test(row.file_name || "") ? row.file_name : null),
+      wordUrl: row.word_url || (/\.docx?(?:$|\?)/i.test(row.file_url || "") ? row.file_url : null),
+      wordName: row.word_name || (/\.docx?$/i.test(row.file_name || "") ? row.file_name : null),
+      epubUrl: row.epub_url || (/\.epub(?:$|\?)/i.test(row.file_url || "") ? row.file_url : null),
+      epubName: row.epub_name || (/\.epub$/i.test(row.file_name || "") ? row.file_name : null),
       externalUrl: row.external_url,
       commerceUrl: row.commerce_url,
       priceText: row.price_text,
@@ -408,6 +420,12 @@ const bookInputSchema = z.object({
   isbn: z.string().trim().max(80).optional(),
   fileUrl: optionalUrl,
   fileName: z.string().trim().max(220).optional(),
+  pdfUrl: optionalUrl,
+  pdfName: z.string().trim().max(220).optional(),
+  wordUrl: optionalUrl,
+  wordName: z.string().trim().max(220).optional(),
+  epubUrl: optionalUrl,
+  epubName: z.string().trim().max(220).optional(),
   externalUrl: optionalUrl,
   commerceUrl: optionalUrl,
   priceText: z.string().trim().max(120).optional(),
@@ -421,11 +439,12 @@ export const addBook = createServerFn({ method: "POST" })
     const sql = await getSql();
     await sql`insert into books (
       title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn,
-      file_url, file_name, external_url, commerce_url, price_text, created_by
+      file_url, file_name, pdf_url, pdf_name, word_url, word_name, epub_url, epub_name, external_url, commerce_url, price_text, created_by
     ) values (
       ${data.title}, ${data.author}, ${data.kind}, ${data.course || null}, ${data.notes || ""}, ${data.ownerAlias || "Biblioteca 9114"},
       ${data.publisher || null}, ${data.publicationYear || null}, ${data.edition || null}, ${data.isbn || null},
-      ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${data.commerceUrl || null}, ${data.priceText || null}, ${context.userId}
+      ${data.fileUrl || null}, ${data.fileName || null}, ${data.pdfUrl || null}, ${data.pdfName || null}, ${data.wordUrl || null}, ${data.wordName || null}, ${data.epubUrl || null}, ${data.epubName || null},
+      ${data.externalUrl || null}, ${data.commerceUrl || null}, ${data.priceText || null}, ${context.userId}
     )`;
     return { ok: true as const };
   });
@@ -662,7 +681,9 @@ export const updateBook = createServerFn({ method: "POST" })
       title = ${data.title}, author = ${data.author}, kind = ${data.kind}, course = ${data.course || null},
       notes = ${data.notes || ""}, owner_alias = ${data.ownerAlias || "Biblioteca 9114"}, publisher = ${data.publisher || null},
       publication_year = ${data.publicationYear || null}, edition = ${data.edition || null}, isbn = ${data.isbn || null},
-      file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null}, external_url = ${data.externalUrl || null},
+      file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null},
+      pdf_url = ${data.pdfUrl || null}, pdf_name = ${data.pdfName || null}, word_url = ${data.wordUrl || null}, word_name = ${data.wordName || null},
+      epub_url = ${data.epubUrl || null}, epub_name = ${data.epubName || null}, external_url = ${data.externalUrl || null},
       commerce_url = ${data.commerceUrl || null}, price_text = ${data.priceText || null}
       where id = ${data.id}`;
     return { ok: true as const };

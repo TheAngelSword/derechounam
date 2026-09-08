@@ -47,6 +47,12 @@ export type BookItem = {
   isbn?: string | null;
   fileUrl?: string | null;
   fileName?: string | null;
+  pdfUrl?: string | null;
+  pdfName?: string | null;
+  wordUrl?: string | null;
+  wordName?: string | null;
+  epubUrl?: string | null;
+  epubName?: string | null;
   externalUrl?: string | null;
   commerceUrl?: string | null;
   priceText?: string | null;
