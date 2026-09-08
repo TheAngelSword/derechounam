@@ -222,3 +222,85 @@ export const logAccess = createServerFn({ method: "POST" })
       values (${context.userId}, ${me.alias}, ${data.area}, ${data.action})`;
     return { ok: true as const };
   });
+
+export type MediaSettingsStatus = {
+  configured: boolean;
+  source: "vercel" | "neon" | "none";
+  uploadUrl: string;
+  secretLength: number;
+};
+
+async function requireActiveModerator(userId: string) {
+  const me = await loadMember(userId);
+  if (!me || me.role !== "moderador" || me.status !== "activo") {
+    throw new Error("Solo un moderador activo puede configurar el almacenamiento");
+  }
+  return me;
+}
+
+async function readMediaSettingsFromDatabase() {
+  const sql = await getSql();
+  const rows = await sql<{ setting_key: string; setting_value: string }>`
+    select setting_key, setting_value
+    from app_settings
+    where setting_key in ('media_upload_secret', 'media_upload_url')
+  `;
+  const map = new Map(rows.map((row) => [row.setting_key, row.setting_value]));
+  return {
+    secret: map.get("media_upload_secret")?.trim() || "",
+    uploadUrl: map.get("media_upload_url")?.trim() || "",
+  };
+}
+
+export const loadMediaSettingsStatus = createServerFn({ method: "GET" })
+  .middleware([authMiddleware])
+  .handler(async ({ context }): Promise<MediaSettingsStatus> => {
+    await requireActiveModerator(context.userId);
+
+    const envSecret = process.env.ATRIO_MEDIA_UPLOAD_SECRET?.trim() || "";
+    const envUrl = process.env.ATRIO_MEDIA_UPLOAD_URL?.trim() || "";
+    if (envSecret.length >= 32) {
+      return {
+        configured: true,
+        source: "vercel",
+        uploadUrl: envUrl || "https://media.ge01.com/_upload/upload.php",
+        secretLength: envSecret.length,
+      };
+    }
+
+    const db = await readMediaSettingsFromDatabase();
+    return {
+      configured: db.secret.length >= 32,
+      source: db.secret.length >= 32 ? "neon" : "none",
+      uploadUrl: db.uploadUrl || envUrl || "https://media.ge01.com/_upload/upload.php",
+      secretLength: db.secret.length,
+    };
+  });
+
+export const saveMediaSettings = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(
+    z.object({
+      secret: z.string().trim().min(32, "El secreto debe tener al menos 32 caracteres").max(256),
+      uploadUrl: z.string().trim().url().max(500),
+    }),
+  )
+  .handler(async ({ context, data }) => {
+    await requireActiveModerator(context.userId);
+    const sql = await getSql();
+
+    await sql`
+      insert into app_settings (setting_key, setting_value, updated_by)
+      values ('media_upload_secret', ${data.secret}, ${context.userId})
+      on conflict (setting_key)
+      do update set setting_value = excluded.setting_value, updated_at = now(), updated_by = excluded.updated_by
+    `;
+    await sql`
+      insert into app_settings (setting_key, setting_value, updated_by)
+      values ('media_upload_url', ${data.uploadUrl}, ${context.userId})
+      on conflict (setting_key)
+      do update set setting_value = excluded.setting_value, updated_at = now(), updated_by = excluded.updated_by
+    `;
+
+    return { ok: true as const };
+  });

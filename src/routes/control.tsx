@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useBoard, useRefreshBoard } from "@/components/board-context";
 import { isModerator, useDirectory } from "@/components/directory";
 import { PublishGate } from "@/components/publish-gate";
 import { Shell } from "@/components/shell";
 import { Button, Card, Field, FormBox, Input, Pill, Select } from "@/components/ui";
 import { RedirectToSignIn } from "@/lib/auth/gates";
+import { loadMediaSettingsStatus, saveMediaSettings, type MediaSettingsStatus } from "@/lib/members";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
 import {
   addCourse,
@@ -50,8 +51,36 @@ function ControlBody() {
   const { directory } = useDirectory();
   const mod = isModerator(directory);
   const [error, setError] = useState<string | null>(null);
+  const [mediaStatus, setMediaStatus] = useState<MediaSettingsStatus | null>(null);
+  const [mediaMessage, setMediaMessage] = useState<string | null>(null);
   const activeChairNames = new Set(board.professors.map((item) => normalizePersonName(item.fullTitle)));
   const availableCatedras = board.courses.filter((course) => !activeChairNames.has(normalizePersonName(course.chair)));
+
+  useEffect(() => {
+    if (!mod) return;
+    void loadMediaSettingsStatus()
+      .then(setMediaStatus)
+      .catch(() => setMediaStatus(null));
+  }, [mod]);
+
+  async function onMediaSettings(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMediaMessage(null);
+    setError(null);
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const secret = String(data.get("mediaSecret") ?? "").trim();
+    const uploadUrl = String(data.get("mediaUploadUrl") ?? "").trim();
+    try {
+      await saveMediaSettings({ data: { secret, uploadUrl } });
+      const status = await loadMediaSettingsStatus();
+      setMediaStatus(status);
+      setMediaMessage("Configuración guardada. Atrio ya puede firmar subidas aunque Vercel no entregue la variable al runtime.");
+      form.reset();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "No se pudo guardar la configuración de archivos.");
+    }
+  }
 
   async function onCourse(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -179,6 +208,42 @@ function ControlBody() {
           </FormBox>
         </PublishGate>
       </div>
+
+      {mod ? (
+        <Card className="mt-8">
+          <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Almacenamiento de archivos</p>
+              <h2 className="mt-1 font-display text-2xl">media.ge01.com</h2>
+              <p className="mt-2 max-w-2xl text-sm text-muted">
+                Esta configuración funciona como respaldo server-side cuando Vercel no entrega ATRIO_MEDIA_UPLOAD_SECRET al runtime.
+                El secreto nunca se muestra de vuelta en pantalla.
+              </p>
+            </div>
+            <Pill tone={mediaStatus?.configured ? "forest" : "neutral"}>
+              {mediaStatus?.configured ? `Configurado · ${mediaStatus.source === "vercel" ? "Vercel" : "Neon"}` : "Pendiente"}
+            </Pill>
+          </div>
+
+          <form onSubmit={onMediaSettings} className="grid gap-4 md:grid-cols-2">
+            <Field label="URL de subida">
+              <Input
+                name="mediaUploadUrl"
+                type="url"
+                required
+                defaultValue={mediaStatus?.uploadUrl || "https://media.ge01.com/_upload/upload.php"}
+              />
+            </Field>
+            <Field label="Secreto compartido" hint="Mínimo 32 caracteres · debe ser el mismo de HostGator">
+              <Input name="mediaSecret" type="password" minLength={32} required placeholder="Pega aquí tu secreto de 64 caracteres" />
+            </Field>
+            <div className="md:col-span-2 flex flex-wrap items-center gap-3">
+              <Button type="submit">Guardar configuración de archivos</Button>
+              {mediaMessage ? <p className="text-sm text-forest">{mediaMessage}</p> : null}
+            </div>
+          </form>
+        </Card>
+      ) : null}
 
       <div className="mt-8 grid gap-4">
         <Inventory

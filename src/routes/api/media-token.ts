@@ -44,9 +44,25 @@ export const Route = createFileRoute("/api/media-token")({
       POST: async ({ request }) => {
         try {
           await requireActiveMember(request);
-          const secret = process.env.ATRIO_MEDIA_UPLOAD_SECRET?.trim();
-          if (!secret || secret.length < 32) {
-            throw new Error("Falta configurar ATRIO_MEDIA_UPLOAD_SECRET en Vercel.");
+          let secret = process.env.ATRIO_MEDIA_UPLOAD_SECRET?.trim() || "";
+          let uploadUrl = process.env.ATRIO_MEDIA_UPLOAD_URL?.trim() || "";
+
+          // Fallback seguro: si Vercel no inyecta la variable en este runtime,
+          // usa la configuración guardada por un moderador en Neon.
+          if (secret.length < 32) {
+            const sql = await getSql();
+            const settings = await sql<{ setting_key: string; setting_value: string }>`
+              select setting_key, setting_value
+              from app_settings
+              where setting_key in ('media_upload_secret', 'media_upload_url')
+            `;
+            const map = new Map(settings.map((row) => [row.setting_key, row.setting_value]));
+            secret = map.get("media_upload_secret")?.trim() || "";
+            uploadUrl = map.get("media_upload_url")?.trim() || uploadUrl;
+          }
+
+          if (secret.length < 32) {
+            throw new Error("El almacenamiento de archivos no está configurado. Entra a Control y guarda el secreto de media.ge01.com.");
           }
 
           const body = (await request.json()) as {
@@ -76,7 +92,7 @@ export const Route = createFileRoute("/api/media-token")({
           };
           const encoded = b64url(JSON.stringify(payload));
           const signature = createHmac("sha256", secret).update(encoded).digest("base64url");
-          const uploadUrl = process.env.ATRIO_MEDIA_UPLOAD_URL?.trim() || "https://media.ge01.com/_upload/upload.php";
+          uploadUrl ||= "https://media.ge01.com/_upload/upload.php";
 
           return Response.json({ token: `${encoded}.${signature}`, uploadUrl });
         } catch (error) {
