@@ -438,4 +438,5 @@ export const seedBoard: Board = {
   ],
   materials: [],
   services: [],
+  tasks: [],
 };

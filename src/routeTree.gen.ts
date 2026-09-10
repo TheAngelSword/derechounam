@@ -22,6 +22,7 @@ import { Route as MuralRouteImport } from './routes/mural'
 import { Route as RegistroRouteImport } from './routes/registro'
 import { Route as RutasRouteImport } from './routes/rutas'
 import { Route as ServiciosRouteImport } from './routes/servicios'
+import { Route as TareasRouteImport } from './routes/tareas'
 import { Route as ApiMediaTokenRouteImport } from './routes/api/media-token'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -90,6 +91,11 @@ const ServiciosRoute = ServiciosRouteImport.update({
   path: '/servicios',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TareasRoute = TareasRouteImport.update({
+  id: '/tareas',
+  path: '/tareas',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaTokenRoute = ApiMediaTokenRouteImport.update({
   id: '/api/media-token',
   path: '/api/media-token',
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/registro': typeof RegistroRoute
   '/rutas': typeof RutasRoute
   '/servicios': typeof ServiciosRoute
+  '/tareas': typeof TareasRoute
   '/api/media-token': typeof ApiMediaTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -132,6 +139,7 @@ export interface FileRoutesByTo {
   '/registro': typeof RegistroRoute
   '/rutas': typeof RutasRoute
   '/servicios': typeof ServiciosRoute
+  '/tareas': typeof TareasRoute
   '/api/media-token': typeof ApiMediaTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -150,6 +158,7 @@ export interface FileRoutesById {
   '/registro': typeof RegistroRoute
   '/rutas': typeof RutasRoute
   '/servicios': typeof ServiciosRoute
+  '/tareas': typeof TareasRoute
   '/api/media-token': typeof ApiMediaTokenRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -169,6 +178,7 @@ export interface FileRouteTypes {
     | '/registro'
     | '/rutas'
     | '/servicios'
+    | '/tareas'
     | '/api/media-token'
     | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
     | '/registro'
     | '/rutas'
     | '/servicios'
+    | '/tareas'
     | '/api/media-token'
     | '/api/auth/$'
   id:
@@ -203,6 +214,7 @@ export interface FileRouteTypes {
     | '/registro'
     | '/rutas'
     | '/servicios'
+    | '/tareas'
     | '/api/media-token'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -221,6 +233,7 @@ export interface RootRouteChildren {
   RegistroRoute: typeof RegistroRoute
   RutasRoute: typeof RutasRoute
   ServiciosRoute: typeof ServiciosRoute
+  TareasRoute: typeof TareasRoute
   ApiMediaTokenRoute: typeof ApiMediaTokenRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -318,6 +331,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServiciosRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tareas': {
+      id: '/tareas'
+      path: '/tareas'
+      fullPath: '/tareas'
+      preLoaderRoute: typeof TareasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media-token': {
       id: '/api/media-token'
       path: '/api/media-token'
@@ -349,6 +369,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegistroRoute: RegistroRoute,
   RutasRoute: RutasRoute,
   ServiciosRoute: ServiciosRoute,
+  TareasRoute: TareasRoute,
   ApiMediaTokenRoute: ApiMediaTokenRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

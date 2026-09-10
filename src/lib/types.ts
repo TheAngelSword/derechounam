@@ -148,6 +148,26 @@ export type ServiceOffer = {
   createdBy?: string;
 };
 
+
+export type TaskItem = {
+  id: number;
+  professorName: string;
+  courseCode: string;
+  courseName: string;
+  assignedDate: string;
+  dueDate: string;
+  title: string;
+  instructions: string;
+  deliveryMethod: "A mano" | "Computadora / archivo digital" | "Impresa" | "En línea / plataforma" | "Oral / exposición" | "Otro";
+  deliveryDetails: string | null;
+  bookId: number | null;
+  resourceTitle: string | null;
+  documentationText: string | null;
+  authorAlias: string;
+  createdAt: string;
+  createdBy?: string;
+};
+
 export type Board = {
   professors: Professor[];
   courses: Course[];
@@ -159,4 +179,5 @@ export type Board = {
   posts: BitacoraPost[];
   materials: ClassMaterial[];
   services: ServiceOffer[];
+  tasks: TaskItem[];
 };

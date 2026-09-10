@@ -18,6 +18,7 @@ import {
   removeNotice,
   removeProfessor,
   removeRide,
+  removeTask,
 } from "@/lib/content";
 
 export const Route = createFileRoute("/control")({ component: ControlPage });
@@ -272,6 +273,11 @@ function ControlBody() {
           title="Libros"
           rows={board.books.map((item) => ({ id: item.id, label: item.title, meta: item.kind }))}
           onRemove={mod ? async (id) => { await removeBook({ data: { id } }); await refresh(); } : undefined}
+        />
+        <Inventory
+          title="Tareas"
+          rows={board.tasks.map((item) => ({ id: item.id, label: item.title, meta: `${item.professorName} · entrega ${item.dueDate}` }))}
+          onRemove={mod ? async (id) => { await removeTask({ data: { id } }); await refresh(); } : undefined}
         />
         <Inventory
           title="Rutas"

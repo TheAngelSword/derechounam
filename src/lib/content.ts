@@ -14,6 +14,7 @@ import type {
   RideItem,
   ServiceOffer,
   StudyGroup,
+  TaskItem,
 } from "@/lib/types";
 
 type MemberRow = { alias: string; role: string; status: string };
@@ -50,7 +51,7 @@ function asIsoDate(value: unknown) {
 
 export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Promise<Board> => {
   const sql = await getSql();
-  const [professors, courses, events, books, rides, groups, notices, posts, materials, services, rideReservations] = await Promise.all([
+  const [professors, courses, events, books, rides, groups, notices, posts, materials, services, tasks, rideReservations] = await Promise.all([
     sql<{
       id: number;
       full_title: string;
@@ -183,6 +184,24 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       created_at: string;
       created_by: string;
     }>`select id, title, category, description, price_text, availability_days, delivery_place, order_cutoff, how_to_order, image_url, image_name, seller_alias, created_at, created_by from service_offers order by created_at desc, id desc`,
+    sql<{
+      id: number;
+      professor_name: string;
+      course_code: string;
+      course_name: string;
+      assigned_date: string;
+      due_date: string;
+      title: string;
+      instructions: string;
+      delivery_method: string;
+      delivery_details: string | null;
+      book_id: number | null;
+      resource_title: string | null;
+      documentation_text: string | null;
+      author_alias: string;
+      created_at: string;
+      created_by: string;
+    }>`select id, professor_name, course_code, course_name, assigned_date, due_date, title, instructions, delivery_method, delivery_details, book_id, resource_title, documentation_text, author_alias, created_at, created_by from tasks order by due_date, assigned_date desc, id desc`,
     sql<{
       ride_id: number;
       user_id: string;
@@ -331,6 +350,24 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       createdAt: String(row.created_at),
       createdBy: row.created_by,
     })) satisfies ServiceOffer[],
+    tasks: tasks.map((row) => ({
+      id: row.id,
+      professorName: row.professor_name,
+      courseCode: row.course_code,
+      courseName: row.course_name,
+      assignedDate: asIsoDate(row.assigned_date),
+      dueDate: asIsoDate(row.due_date),
+      title: row.title,
+      instructions: row.instructions,
+      deliveryMethod: row.delivery_method as TaskItem["deliveryMethod"],
+      deliveryDetails: row.delivery_details,
+      bookId: row.book_id === null ? null : Number(row.book_id),
+      resourceTitle: row.resource_title,
+      documentationText: row.documentation_text,
+      authorAlias: row.author_alias,
+      createdAt: String(row.created_at),
+      createdBy: row.created_by,
+    })) satisfies TaskItem[],
   };
 });
 
@@ -733,6 +770,97 @@ export const updateServiceOffer = createServerFn({ method: "POST" })
       availability_days = ${data.availabilityDays}, delivery_place = ${data.deliveryPlace}, order_cutoff = ${data.orderCutoff || null},
       how_to_order = ${data.howToOrder}, image_url = ${data.imageUrl || null}, image_name = ${data.imageName || null}
       where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+const taskBaseSchema = z.object({
+  professorName: z.string().trim().min(2).max(180),
+  courseCode: z.string().trim().min(2).max(20),
+  courseName: z.string().trim().min(2).max(180),
+  assignedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  title: z.string().trim().min(2).max(220),
+  instructions: z.string().trim().min(3).max(2500),
+  deliveryMethod: z.enum([
+    "A mano",
+    "Computadora / archivo digital",
+    "Impresa",
+    "En línea / plataforma",
+    "Oral / exposición",
+    "Otro",
+  ]),
+  deliveryDetails: z.string().trim().max(600).optional(),
+  bookId: z.number().int().positive().nullable().optional(),
+  resourceTitle: z.string().trim().max(300).optional(),
+  documentationText: z.string().trim().max(1500).optional(),
+});
+
+function validateTaskDates(data: { assignedDate: string; dueDate: string }, ctx: { addIssue: (issue: { code: "custom"; path: string[]; message: string }) => void }) {
+  if (data.dueDate < data.assignedDate) {
+    ctx.addIssue({ code: "custom", path: ["dueDate"], message: "La fecha de entrega no puede ser anterior a la fecha en que se dejó la tarea." });
+  }
+}
+
+const taskInputSchema = taskBaseSchema.superRefine(validateTaskDates);
+const taskUpdateSchema = taskBaseSchema.extend({ id: z.number().int().positive() }).superRefine(validateTaskDates);
+
+async function resolveTaskReferences(sql: Awaited<ReturnType<typeof getSql>>, data: { professorName: string; courseCode: string; bookId?: number | null }) {
+  const courseRows = await sql<{ name: string }>`select name from courses where code = ${data.courseCode} and chair = ${data.professorName} limit 1`;
+  if (!courseRows[0]) throw new Error("La materia seleccionada no corresponde al profesor.");
+  let resourceTitle: string | null = null;
+  if (data.bookId) {
+    const bookRows = await sql<{ title: string }>`select title from books where id = ${data.bookId} limit 1`;
+    if (!bookRows[0]) throw new Error("El libro seleccionado ya no existe en Biblioteca.");
+    resourceTitle = bookRows[0].title;
+  }
+  return { courseName: courseRows[0].name, resourceTitle };
+}
+
+export const addTask = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(taskInputSchema)
+  .handler(async ({ context, data }) => {
+    const me = await activeMember(context.userId);
+    const sql = await getSql();
+    const resolved = await resolveTaskReferences(sql, data);
+    await sql`insert into tasks (
+      professor_name, course_code, course_name, assigned_date, due_date, title, instructions, delivery_method,
+      delivery_details, book_id, resource_title, documentation_text, author_alias, created_by
+    ) values (
+      ${data.professorName}, ${data.courseCode}, ${resolved.courseName}, ${data.assignedDate}, ${data.dueDate}, ${data.title}, ${data.instructions},
+      ${data.deliveryMethod}, ${data.deliveryDetails || null}, ${data.bookId || null}, ${resolved.resourceTitle},
+      ${data.documentationText || null}, ${me.alias}, ${context.userId}
+    )`;
+    return { ok: true as const };
+  });
+
+export const updateTask = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(taskUpdateSchema)
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from tasks where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("Tarea no encontrada");
+    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
+    const resolved = await resolveTaskReferences(sql, data);
+    await sql`update tasks set
+      professor_name = ${data.professorName}, course_code = ${data.courseCode}, course_name = ${resolved.courseName},
+      assigned_date = ${data.assignedDate}, due_date = ${data.dueDate}, title = ${data.title}, instructions = ${data.instructions},
+      delivery_method = ${data.deliveryMethod}, delivery_details = ${data.deliveryDetails || null}, book_id = ${data.bookId || null},
+      resource_title = ${resolved.resourceTitle}, documentation_text = ${data.documentationText || null}, updated_at = now()
+      where id = ${data.id}`;
+    return { ok: true as const };
+  });
+
+export const removeTask = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(z.object({ id: z.number().int().positive() }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from tasks where id = ${data.id} limit 1`;
+    if (!rows[0]) return { ok: true as const };
+    await canControl(context.userId, "tareas", rows[0].created_by);
+    await sql`delete from tasks where id = ${data.id}`;
     return { ok: true as const };
   });
 
