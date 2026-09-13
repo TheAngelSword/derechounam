@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState, type FormEvent } from "react";
 import { Shell } from "@/components/shell";
-import { useBoard, useRefreshBoard } from "@/components/board-context";
+import { useBoard, useBoardStatus, useRefreshBoard } from "@/components/board-context";
 import { canEditPublication, canPublish, useAreaVisit, useDirectory } from "@/components/directory";
 import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea, cn } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
@@ -97,6 +97,7 @@ function weekdayIndex(iso: string) {
 function CatedrasPage() {
   const { courses, professors, materials } = useBoard();
   const refresh = useRefreshBoard();
+  const boardStatus = useBoardStatus();
   const { user, directory } = useDirectory();
   useAreaVisit("catedras");
 
@@ -184,14 +185,19 @@ function CatedrasPage() {
     const data = new FormData(form);
     try {
       const values = readMaterial(data);
-      const uploaded = await uploadAttachment(data.get("attachment"), values.course.code, values.classDate);
+      const attachment = data.get("attachment");
+      const hasAttachment = attachment instanceof File && attachment.size > 0;
+      const hasContent = Boolean(values.title || values.body || values.referencesText || values.bibliographyText || values.audioUrl || values.externalUrl || hasAttachment);
+      if (!hasContent) throw new Error("Agrega al menos un tema, apuntes, audio, archivo, referencia, bibliografía o liga complementaria.");
+      const title = values.title || values.audioLabel || `${values.kind} · ${values.course.name}`;
+      const uploaded = await uploadAttachment(attachment, values.course.code, values.classDate);
       await addClassMaterial({ data: {
         courseCode: values.course.code,
         courseName: values.course.name,
         professorName: values.professorName,
         classDate: values.classDate,
         kind: values.kind,
-        title: values.title,
+        title,
         body: values.body,
         referencesText: values.referencesText,
         bibliographyText: values.bibliographyText,
@@ -219,7 +225,13 @@ function CatedrasPage() {
     const data = new FormData(event.currentTarget);
     try {
       const values = readMaterial(data);
-      const uploaded = await uploadAttachment(data.get("attachment"), values.course.code, values.classDate);
+      const attachment = data.get("attachment");
+      const hasAttachment = attachment instanceof File && attachment.size > 0;
+      const hasExistingResource = Boolean(editingMaterial.fileUrl || editingMaterial.audioUrl || editingMaterial.externalUrl);
+      const hasContent = Boolean(values.title || values.body || values.referencesText || values.bibliographyText || values.audioUrl || values.externalUrl || hasAttachment || hasExistingResource);
+      if (!hasContent) throw new Error("Agrega al menos un tema, apuntes, audio, archivo, referencia, bibliografía o liga complementaria.");
+      const title = values.title || values.audioLabel || editingMaterial.title || `${values.kind} · ${values.course.name}`;
+      const uploaded = await uploadAttachment(attachment, values.course.code, values.classDate);
       await updateClassMaterial({ data: {
         id: editingMaterial.id,
         courseCode: values.course.code,
@@ -227,7 +239,7 @@ function CatedrasPage() {
         professorName: values.professorName,
         classDate: values.classDate,
         kind: values.kind,
-        title: values.title,
+        title,
         body: values.body,
         referencesText: values.referencesText,
         bibliographyText: values.bibliographyText,
@@ -259,6 +271,11 @@ function CatedrasPage() {
       title="Calendario de clases y expediente académico."
       lead="Selecciona un día para revisar qué materias se cursaron y documenta cada sesión con profesor, tema, apuntes, tareas, fotografías, referencias, bibliografía y audios."
     >
+      {boardStatus.isError ? (
+        <div role="alert" className="mb-6 rounded-xl border border-danger/25 bg-red-50 px-4 py-3 text-sm text-danger">
+          <strong>No se pudo sincronizar con la base de datos.</strong> El portal está mostrando datos de respaldo y por eso una publicación o edición puede parecer que no se guardó. Vuelve a desplegar después de aplicar las migraciones pendientes.
+        </div>
+      ) : null}
       {resourceNotice ? (
         <div id="catedras-resource-notice" role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-clay/25 bg-clay/10 px-4 py-3 text-sm text-ink-soft">
           <span className="inline-flex items-center gap-2"><LockKeyhole className="size-4 text-clay" /><strong>Regístrate para poder usar los recursos.</strong> Puedes ver la ficha del audio, pero para abrirlo necesitas una cuenta activa.</span>
@@ -352,7 +369,7 @@ function CatedrasPage() {
                     </div>
                     <div className="mt-4 flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-forest-soft text-forest"><Icon className="size-4" /></span><div><h3 className="font-display text-xl leading-tight">{material.title}</h3><p className="mt-1 text-xs font-medium text-forest">{material.courseName}</p></div></div>
                     <div className="mt-3 grid gap-1 text-xs text-muted"><span className="inline-flex items-center gap-1.5"><UserRound className="size-3.5" />{material.professorName}</span></div>
-                    <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{material.body}</p>
+                    {material.body ? <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{material.body}</p> : null}
                     {material.referencesText ? <div className="mt-4 rounded-lg bg-bg-warm p-3"><p className="text-xs font-semibold uppercase tracking-wide text-forest">Referencias</p><p className="mt-1 whitespace-pre-line text-sm text-muted">{material.referencesText}</p></div> : null}
                     {material.bibliographyText ? <div className="mt-3 rounded-lg border border-clay/15 bg-clay/5 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-clay">Bibliografía</p><p className="mt-1 whitespace-pre-line text-sm text-muted">{material.bibliographyText}</p></div> : null}
                     {material.audioUrl ? <div className="mt-3 rounded-lg border border-forest/15 bg-forest-soft p-3"><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-forest"><Headphones className="size-3.5" />Audio de la clase</p><p className="mt-1 text-sm text-muted">{material.audioLabel || "Audio relacionado con esta sesión"}</p><div className="mt-3"><ProtectedAudioButton href={material.audioUrl} allowed={resourceAllowed} onBlocked={blockResource} /></div></div> : null}
@@ -420,8 +437,8 @@ function MaterialFields({
     <Field label="Materia">{material ? <Select name="courseCode" required defaultValue={courseValue}>{courses.map((course) => <option key={course.code} value={course.code}>{course.code} · {course.name}</option>)}</Select> : <Select name="courseCode" required value={courseValue} onChange={(event) => onCourseChange?.(event.target.value)}>{courses.map((course) => <option key={course.code} value={course.code}>{course.code} · {course.name}</option>)}</Select>}</Field>
     <Field label="Profesor">{material ? <Select name="professorName" required defaultValue={professorValue}>{professorOptions.map((name) => <option key={name} value={name}>{name}</option>)}</Select> : <Select name="professorName" required value={professorValue} onChange={(event) => onProfessorChange?.(event.target.value)}>{professorOptions.map((name) => <option key={name} value={name}>{name}</option>)}</Select>}</Field>
     <Field label="Tipo de registro"><Select name="kind" defaultValue={material?.kind ?? "Apuntes"}>{MATERIAL_KINDS.map((kind) => <option key={kind}>{kind}</option>)}</Select></Field>
-    <Field label="Tema de la clase"><Input name="title" required defaultValue={material?.title ?? ""} placeholder="Ej. Personas en el Derecho Romano" /></Field>
-    <Field label="Apuntes / qué se vio"><Textarea name="body" required defaultValue={material?.body ?? ""} placeholder="Resumen de la clase, conceptos, indicaciones, ejemplos y tareas." /></Field>
+    <Field label="Tema de la clase" hint="Opcional si adjuntas otro recurso"><Input name="title" defaultValue={material?.title ?? ""} placeholder="Ej. Personas en el Derecho Romano" /></Field>
+    <Field label="Apuntes / qué se vio" hint="Opcional si adjuntas audio, archivo o referencia"><Textarea name="body" defaultValue={material?.body ?? ""} placeholder="Resumen de la clase, conceptos, indicaciones, ejemplos y tareas." /></Field>
     <Field label="Referencias" hint="Opcional"><Textarea name="referencesText" defaultValue={material?.referencesText ?? ""} placeholder="Artículos, leyes, páginas, sentencias, autores o ligas mencionadas en clase." /></Field>
     <Field label="Bibliografía" hint="Opcional"><Textarea name="bibliographyText" defaultValue={material?.bibliographyText ?? ""} placeholder="Autor, título, editorial, edición, páginas o capítulos recomendados." /></Field>
     <div className="rounded-lg border border-forest/10 bg-forest-soft p-3">

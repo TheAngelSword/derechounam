@@ -650,7 +650,7 @@ const classMaterialInputSchema = z.object({
   classDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   kind: z.enum(["Apuntes", "Tarea", "Foto", "Material", "Aviso", "Referencia", "Bibliografía"]),
   title: z.string().trim().min(2).max(240),
-  body: z.string().trim().min(3).max(4000),
+  body: z.string().trim().max(12000),
   referencesText: z.string().trim().max(3000).optional(),
   bibliographyText: z.string().trim().max(3000).optional(),
   audioUrl: optionalUrl,
