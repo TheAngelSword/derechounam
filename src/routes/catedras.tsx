@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BookOpenCheck,
   CalendarDays,
@@ -9,7 +9,9 @@ import {
   ExternalLink,
   FileText,
   GraduationCap,
+  Headphones,
   Image as ImageIcon,
+  LockKeyhole,
   Link2,
   MapPin,
   NotebookPen,
@@ -22,7 +24,7 @@ import {
 import { useMemo, useState, type FormEvent } from "react";
 import { Shell } from "@/components/shell";
 import { useBoard, useRefreshBoard } from "@/components/board-context";
-import { canEditPublication, useAreaVisit, useDirectory } from "@/components/directory";
+import { canEditPublication, canPublish, useAreaVisit, useDirectory } from "@/components/directory";
 import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea, cn } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
 import { addClassMaterial, updateClassMaterial } from "@/lib/content";
@@ -114,6 +116,8 @@ function CatedrasPage() {
   const [busy, setBusy] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingMaterial, setEditingMaterial] = useState<ClassMaterial | null>(null);
+  const [resourceNotice, setResourceNotice] = useState(false);
+  const resourceAllowed = canPublish(directory);
 
   const cells = useMemo(() => monthCells(monthCursor), [monthCursor]);
   const entriesByDate = useMemo(() => {
@@ -167,6 +171,8 @@ function CatedrasPage() {
       body: String(data.get("body") ?? "").trim(),
       referencesText: String(data.get("referencesText") ?? "").trim(),
       bibliographyText: String(data.get("bibliographyText") ?? "").trim(),
+      audioUrl: normalizeUrl(String(data.get("audioUrl") ?? "")),
+      audioLabel: String(data.get("audioLabel") ?? "").trim(),
       externalUrl: normalizeUrl(String(data.get("externalUrl") ?? "")),
     };
   }
@@ -189,6 +195,8 @@ function CatedrasPage() {
         body: values.body,
         referencesText: values.referencesText,
         bibliographyText: values.bibliographyText,
+        audioUrl: values.audioUrl,
+        audioLabel: values.audioLabel,
         fileUrl: uploaded?.url ?? "",
         fileName: uploaded?.name ?? "",
         externalUrl: values.externalUrl,
@@ -223,6 +231,8 @@ function CatedrasPage() {
         body: values.body,
         referencesText: values.referencesText,
         bibliographyText: values.bibliographyText,
+        audioUrl: values.audioUrl,
+        audioLabel: values.audioLabel,
         fileUrl: uploaded?.url ?? editingMaterial.fileUrl ?? "",
         fileName: uploaded?.name ?? editingMaterial.fileName ?? "",
         externalUrl: values.externalUrl,
@@ -238,12 +248,23 @@ function CatedrasPage() {
     } finally { setBusy(false); }
   }
 
+  function blockResource() {
+    setResourceNotice(true);
+    window.setTimeout(() => document.getElementById("catedras-resource-notice")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+  }
+
   return (
     <Shell
       eyebrow="Cátedras · Grupo 9114"
       title="Calendario de clases y expediente académico."
-      lead="Selecciona un día para revisar qué materias se cursaron y documenta cada sesión con profesor, tema, apuntes, tareas, fotografías, referencias y bibliografía."
+      lead="Selecciona un día para revisar qué materias se cursaron y documenta cada sesión con profesor, tema, apuntes, tareas, fotografías, referencias, bibliografía y audios."
     >
+      {resourceNotice ? (
+        <div id="catedras-resource-notice" role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-clay/25 bg-clay/10 px-4 py-3 text-sm text-ink-soft">
+          <span className="inline-flex items-center gap-2"><LockKeyhole className="size-4 text-clay" /><strong>Regístrate para poder usar los recursos.</strong> Puedes ver la ficha del audio, pero para abrirlo necesitas una cuenta activa.</span>
+          <Link to="/registro" className="rounded-md bg-forest px-3 py-2 font-semibold text-white">Ir a registro</Link>
+        </div>
+      ) : null}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,.85fr)]">
         <Card className="overflow-hidden p-0">
           <div className="unam-hero px-5 py-5 sm:px-6">
@@ -334,6 +355,7 @@ function CatedrasPage() {
                     <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{material.body}</p>
                     {material.referencesText ? <div className="mt-4 rounded-lg bg-bg-warm p-3"><p className="text-xs font-semibold uppercase tracking-wide text-forest">Referencias</p><p className="mt-1 whitespace-pre-line text-sm text-muted">{material.referencesText}</p></div> : null}
                     {material.bibliographyText ? <div className="mt-3 rounded-lg border border-clay/15 bg-clay/5 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-clay">Bibliografía</p><p className="mt-1 whitespace-pre-line text-sm text-muted">{material.bibliographyText}</p></div> : null}
+                    {material.audioUrl ? <div className="mt-3 rounded-lg border border-forest/15 bg-forest-soft p-3"><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-forest"><Headphones className="size-3.5" />Audio de la clase</p><p className="mt-1 text-sm text-muted">{material.audioLabel || "Audio relacionado con esta sesión"}</p><div className="mt-3"><ProtectedAudioButton href={material.audioUrl} allowed={resourceAllowed} onBlocked={blockResource} /></div></div> : null}
                     <div className="mt-4 flex flex-wrap gap-2">{material.fileUrl ? <a href={material.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md bg-forest px-3 py-2 text-xs font-semibold text-bg">{isImageFile(material) ? <ImageIcon className="size-3.5" /> : <FileText className="size-3.5" />}{material.fileName || "Abrir archivo"}</a> : null}{material.externalUrl ? <a href={material.externalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-forest"><ExternalLink className="size-3.5" />Liga complementaria</a> : null}</div>
                     <p className="mt-4 text-xs text-muted">Registrado por {material.authorAlias}</p>
                   </div>
@@ -402,7 +424,20 @@ function MaterialFields({
     <Field label="Apuntes / qué se vio"><Textarea name="body" required defaultValue={material?.body ?? ""} placeholder="Resumen de la clase, conceptos, indicaciones, ejemplos y tareas." /></Field>
     <Field label="Referencias" hint="Opcional"><Textarea name="referencesText" defaultValue={material?.referencesText ?? ""} placeholder="Artículos, leyes, páginas, sentencias, autores o ligas mencionadas en clase." /></Field>
     <Field label="Bibliografía" hint="Opcional"><Textarea name="bibliographyText" defaultValue={material?.bibliographyText ?? ""} placeholder="Autor, título, editorial, edición, páginas o capítulos recomendados." /></Field>
+    <div className="rounded-lg border border-forest/10 bg-forest-soft p-3">
+      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-forest"><Headphones className="size-3.5" />Audio por enlace</p>
+      <p className="mb-3 text-xs leading-relaxed text-muted">Pega una liga de Google Drive/Docs. El audio no se sube a HostGator; Atrio sólo guarda el enlace.</p>
+      <Field label="Liga del audio" hint="Opcional"><Input name="audioUrl" type="text" inputMode="url" maxLength={2000} defaultValue={material?.audioUrl ?? ""} placeholder="https://drive.google.com/..." /></Field>
+      <Field label="Nombre / descripción del audio" hint="Opcional"><Input name="audioLabel" maxLength={180} defaultValue={material?.audioLabel ?? ""} placeholder="Podcast de la clase / resumen del tema" /></Field>
+    </div>
     <Field label={editMode ? "Reemplazar archivo o foto" : "Archivo o fotografía"} hint={editMode ? "Opcional; si no eliges otro se conserva" : "PDF, DOCX, JPG, PNG o WEBP · máx. 40 MB"}><Input name="attachment" type="file" accept="application/pdf,.docx,image/jpeg,image/png,image/webp" /></Field>
     <Field label="Liga complementaria" hint="Opcional"><Input name="externalUrl" defaultValue={material?.externalUrl ?? ""} placeholder="https://..." /></Field>
   </>;
 }
+
+function ProtectedAudioButton({ href, allowed, onBlocked }: { href: string; allowed: boolean; onBlocked: () => void }) {
+  const className = "inline-flex min-h-10 items-center gap-2 rounded-md bg-forest px-3 text-xs font-semibold text-white transition-transform hover:-translate-y-0.5";
+  if (!allowed) return <button type="button" onClick={onBlocked} className={className}><LockKeyhole className="size-3.5" />Abrir audio</button>;
+  return <a href={href} target="_blank" rel="noopener noreferrer" className={className}><Headphones className="size-3.5" />Abrir audio</a>;
+}
+

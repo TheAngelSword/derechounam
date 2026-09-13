@@ -71,7 +71,10 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       place: string;
       semester: string;
       group_code: string;
-    }>`select id, code, name, chair, modality, weekday, time_slot, place, semester, group_code from courses order by time_slot, id`,
+      professor_phone: string | null;
+      professor_email: string | null;
+      created_by: string;
+    }>`select id, code, name, chair, modality, weekday, time_slot, place, semester, group_code, professor_phone, professor_email, created_by from courses order by time_slot, id`,
     sql<{
       id: number;
       title: string;
@@ -82,8 +85,9 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       modality: string;
       description: string;
       host_alias: string;
+      created_at: string;
       created_by: string;
-    }>`select id, title, kind, event_date, time_slot, place, modality, description, host_alias, created_by from events order by event_date, time_slot`,
+    }>`select id, title, kind, event_date, time_slot, place, modality, description, host_alias, created_at, created_by from events order by event_date, time_slot`,
     sql<{
       id: number;
       title: string;
@@ -107,8 +111,9 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       external_url: string | null;
       commerce_url: string | null;
       price_text: string | null;
+      created_at: string;
       created_by: string;
-    }>`select id, title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn, file_url, file_name, pdf_url, pdf_name, word_url, word_name, epub_url, epub_name, external_url, commerce_url, price_text, created_by from books order by id desc`,
+    }>`select id, title, author, kind, course, notes, owner_alias, publisher, publication_year, edition, isbn, file_url, file_name, pdf_url, pdf_name, word_url, word_name, epub_url, epub_name, external_url, commerce_url, price_text, created_at, created_by from books order by id desc`,
     sql<{
       id: number;
       direction: string;
@@ -161,13 +166,15 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       body: string;
       references_text: string | null;
       bibliography_text: string | null;
+      audio_url: string | null;
+      audio_label: string | null;
       file_url: string | null;
       file_name: string | null;
       external_url: string | null;
       author_alias: string;
       created_at: string;
       created_by: string;
-    }>`select id, course_code, course_name, class_date, professor_name, kind, title, body, references_text, bibliography_text, file_url, file_name, external_url, author_alias, created_at, created_by from class_materials order by class_date desc, created_at desc`,
+    }>`select id, course_code, course_name, class_date, professor_name, kind, title, body, references_text, bibliography_text, audio_url, audio_label, file_url, file_name, external_url, author_alias, created_at, created_by from class_materials order by class_date desc, created_at desc`,
     sql<{
       id: number;
       title: string;
@@ -230,6 +237,9 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       place: row.place,
       semester: row.semester,
       group: row.group_code,
+      professorPhone: row.professor_phone,
+      professorEmail: row.professor_email,
+      createdBy: row.created_by,
     })) satisfies Course[],
     events: events.map((row) => ({
       id: row.id,
@@ -241,6 +251,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       modality: row.modality,
       description: row.description,
       hostAlias: row.host_alias,
+      createdAt: String(row.created_at),
       createdBy: row.created_by,
     })) satisfies EventItem[],
     books: books.map((row) => ({
@@ -266,6 +277,7 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       externalUrl: row.external_url,
       commerceUrl: row.commerce_url,
       priceText: row.price_text,
+      createdAt: String(row.created_at),
       createdBy: row.created_by,
     })) satisfies BookItem[],
     rides: rides.map((row) => ({
@@ -327,6 +339,8 @@ export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Pro
       body: row.body,
       referencesText: row.references_text,
       bibliographyText: row.bibliography_text,
+      audioUrl: row.audio_url,
+      audioLabel: row.audio_label,
       fileUrl: row.file_url,
       fileName: row.file_name,
       externalUrl: row.external_url,
@@ -387,14 +401,46 @@ export const addCourse = createServerFn({ method: "POST" })
       place: short,
       semester: short,
       group: z.string().trim().min(2).max(12),
+      professorPhone: z.string().trim().max(80).optional().default(""),
+      professorEmail: z.string().trim().max(160).optional().default("").refine((value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "Correo electrónico inválido"),
     }),
   )
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     if (me.role === "alumno") throw new Error("Solo cátedra o moderación sube horarios");
     const sql = await getSql();
-    await sql`insert into courses (code, name, chair, modality, weekday, time_slot, place, semester, group_code, created_by)
-      values (${data.code}, ${data.name}, ${data.chair}, ${data.modality}, ${data.weekday}, ${data.timeSlot}, ${data.place}, ${data.semester}, ${data.group}, ${context.userId})`;
+    await sql`insert into courses (code, name, chair, modality, weekday, time_slot, place, semester, group_code, professor_phone, professor_email, created_by)
+      values (${data.code}, ${data.name}, ${data.chair}, ${data.modality}, ${data.weekday}, ${data.timeSlot}, ${data.place}, ${data.semester}, ${data.group}, ${data.professorPhone || null}, ${data.professorEmail || null}, ${context.userId})`;
+    return { ok: true as const };
+  });
+
+const courseInputSchema = z.object({
+  code: z.string().trim().min(2).max(12),
+  name: short,
+  chair: short,
+  modality: z.enum(["Presencial", "En línea", "Híbrido"]),
+  weekday: short,
+  timeSlot: z.string().trim().min(4).max(24),
+  place: short,
+  semester: short,
+  group: z.string().trim().min(2).max(12),
+  professorPhone: z.string().trim().max(80).optional().default(""),
+  professorEmail: z.string().trim().max(160).optional().default("").refine((value) => !value || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value), "Correo electrónico inválido"),
+});
+
+export const updateCourse = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(z.object({ id: z.number().int().positive(), ...courseInputSchema.shape }))
+  .handler(async ({ context, data }) => {
+    const sql = await getSql();
+    const rows = await sql<{ created_by: string }>`select created_by from courses where id = ${data.id} limit 1`;
+    if (!rows[0]) throw new Error("La materia ya no existe");
+    await canControl(context.userId, "clases", rows[0].created_by);
+    await sql`update courses set
+      code = ${data.code}, name = ${data.name}, chair = ${data.chair}, modality = ${data.modality},
+      weekday = ${data.weekday}, time_slot = ${data.timeSlot}, place = ${data.place}, semester = ${data.semester},
+      group_code = ${data.group}, professor_phone = ${data.professorPhone || null}, professor_email = ${data.professorEmail || null}
+      where id = ${data.id}`;
     return { ok: true as const };
   });
 
@@ -607,6 +653,8 @@ const classMaterialInputSchema = z.object({
   body: z.string().trim().min(3).max(4000),
   referencesText: z.string().trim().max(3000).optional(),
   bibliographyText: z.string().trim().max(3000).optional(),
+  audioUrl: optionalUrl,
+  audioLabel: z.string().trim().max(180).optional(),
   fileUrl: optionalUrl,
   fileName: z.string().trim().max(220).optional(),
   externalUrl: optionalUrl,
@@ -618,8 +666,8 @@ export const addClassMaterial = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     const sql = await getSql();
-    await sql`insert into class_materials (course_code, course_name, professor_name, class_date, kind, title, body, references_text, bibliography_text, file_url, file_name, external_url, author_alias, created_by)
-      values (${data.courseCode}, ${data.courseName}, ${data.professorName}, ${data.classDate}, ${data.kind}, ${data.title}, ${data.body}, ${data.referencesText || null}, ${data.bibliographyText || null}, ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${me.alias}, ${context.userId})`;
+    await sql`insert into class_materials (course_code, course_name, professor_name, class_date, kind, title, body, references_text, bibliography_text, audio_url, audio_label, file_url, file_name, external_url, author_alias, created_by)
+      values (${data.courseCode}, ${data.courseName}, ${data.professorName}, ${data.classDate}, ${data.kind}, ${data.title}, ${data.body}, ${data.referencesText || null}, ${data.bibliographyText || null}, ${data.audioUrl || null}, ${data.audioLabel || null}, ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${me.alias}, ${context.userId})`;
     return { ok: true as const };
   });
 
@@ -752,7 +800,7 @@ export const updateClassMaterial = createServerFn({ method: "POST" })
     await sql`update class_materials set
       course_code = ${data.courseCode}, course_name = ${data.courseName}, professor_name = ${data.professorName}, class_date = ${data.classDate}, kind = ${data.kind},
       title = ${data.title}, body = ${data.body}, references_text = ${data.referencesText || null}, bibliography_text = ${data.bibliographyText || null},
-      file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null}, external_url = ${data.externalUrl || null}
+      audio_url = ${data.audioUrl || null}, audio_label = ${data.audioLabel || null}, file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null}, external_url = ${data.externalUrl || null}
       where id = ${data.id}`;
     return { ok: true as const };
   });
@@ -779,8 +827,8 @@ const taskBaseSchema = z.object({
   courseName: z.string().trim().min(2).max(180),
   assignedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   dueDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  title: z.string().trim().min(2).max(220),
-  instructions: z.string().trim().min(3).max(2500),
+  title: z.string().trim().min(2).max(300),
+  instructions: z.string().trim().min(3).max(20000),
   deliveryMethod: z.enum([
     "A mano",
     "Computadora / archivo digital",
@@ -789,10 +837,10 @@ const taskBaseSchema = z.object({
     "Oral / exposición",
     "Otro",
   ]),
-  deliveryDetails: z.string().trim().max(600).optional(),
+  deliveryDetails: z.string().trim().max(20000).optional(),
   bookId: z.number().int().positive().nullable().optional(),
   resourceTitle: z.string().trim().max(300).optional(),
-  documentationText: z.string().trim().max(1500).optional(),
+  documentationText: z.string().trim().max(10000).optional(),
 });
 
 function validateTaskDates(data: { assignedDate: string; dueDate: string }, ctx: { addIssue: (issue: { code: "custom"; path: string[]; message: string }) => void }) {

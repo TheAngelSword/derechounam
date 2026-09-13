@@ -18,6 +18,9 @@ export type Course = {
   place: string;
   semester: string;
   group: string;
+  professorPhone?: string | null;
+  professorEmail?: string | null;
+  createdBy?: string;
 };
 
 export type EventItem = {
@@ -30,6 +33,7 @@ export type EventItem = {
   modality: string;
   description: string;
   hostAlias: string;
+  createdAt?: string;
   createdBy?: string;
 };
 
@@ -56,6 +60,7 @@ export type BookItem = {
   externalUrl?: string | null;
   commerceUrl?: string | null;
   priceText?: string | null;
+  createdAt?: string;
   createdBy?: string;
 };
 
@@ -123,6 +128,8 @@ export type ClassMaterial = {
   body: string;
   referencesText: string | null;
   bibliographyText: string | null;
+  audioUrl: string | null;
+  audioLabel: string | null;
   fileUrl: string | null;
   fileName: string | null;
   externalUrl: string | null;

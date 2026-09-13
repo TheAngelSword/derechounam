@@ -3,8 +3,11 @@ import {
   AlertCircle,
   BookOpen,
   CalendarClock,
+  ChevronDown,
+  ChevronUp,
   ClipboardCheck,
   FileText,
+  History,
   Laptop,
   Pencil,
   X,
@@ -30,14 +33,19 @@ const METHODS: TaskItem["deliveryMethod"][] = [
   "Otro",
 ];
 
-const FILTERS = ["Todas", "Próximas", "Vencidas"] as const;
-
-type Filter = (typeof FILTERS)[number];
+const ACTIVE_FILTERS = ["Todas activas", "Próximas 7 días"] as const;
+type ActiveFilter = (typeof ACTIVE_FILTERS)[number];
 
 function daysBetween(fromIso: string, toIso: string) {
   const from = Date.parse(`${fromIso}T00:00:00Z`);
   const to = Date.parse(`${toIso}T00:00:00Z`);
   return Math.round((to - from) / 86_400_000);
+}
+
+function excerpt(value: string, max = 190) {
+  const clean = value.replace(/\s+/g, " ").trim();
+  if (clean.length <= max) return clean;
+  return `${clean.slice(0, max).trimEnd()}…`;
 }
 
 function TareasPage() {
@@ -47,29 +55,40 @@ function TareasPage() {
   useAreaVisit("tareas");
 
   const today = getTodayIso();
-  const [filter, setFilter] = useState<Filter>("Todas");
+  const [filter, setFilter] = useState<ActiveFilter>("Todas activas");
   const [professorFilter, setProfessorFilter] = useState("Todos");
+  const [showPast, setShowPast] = useState(false);
   const [editing, setEditing] = useState<TaskItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const professors = useMemo(
     () => Array.from(new Set(courses.map((course) => course.chair))).sort((a, b) => a.localeCompare(b, "es-MX")),
     [courses],
   );
 
-  const visible = useMemo(() => {
+  const activeTasks = useMemo(() => {
     return [...tasks]
+      .filter((task) => task.dueDate >= today)
       .filter((task) => professorFilter === "Todos" || task.professorName === professorFilter)
       .filter((task) => {
-        if (filter === "Próximas") return task.dueDate >= today;
-        if (filter === "Vencidas") return task.dueDate < today;
+        if (filter === "Próximas 7 días") {
+          const days = daysBetween(today, task.dueDate);
+          return days >= 0 && days <= 7;
+        }
         return true;
       })
       .sort((a, b) => a.dueDate.localeCompare(b.dueDate) || b.assignedDate.localeCompare(a.assignedDate));
   }, [filter, professorFilter, tasks, today]);
 
-  const overdueCount = tasks.filter((task) => task.dueDate < today).length;
+  const pastTasks = useMemo(() => {
+    return [...tasks]
+      .filter((task) => task.dueDate < today)
+      .filter((task) => professorFilter === "Todos" || task.professorName === professorFilter)
+      .sort((a, b) => b.dueDate.localeCompare(a.dueDate) || b.assignedDate.localeCompare(a.assignedDate));
+  }, [professorFilter, tasks, today]);
+
   const nextSevenCount = tasks.filter((task) => {
     const days = daysBetween(today, task.dueDate);
     return days >= 0 && days <= 7;
@@ -77,40 +96,55 @@ function TareasPage() {
 
   async function onCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const form = event.currentTarget;
     setError(null);
     setSuccess(null);
+    setSaving(true);
     try {
-      const data = readTaskForm(new FormData(event.currentTarget), books, courses);
+      const data = readTaskForm(new FormData(form), books, courses);
       await addTask({ data });
-      event.currentTarget.reset();
+      form.reset();
       setSuccess("Tarea publicada para el grupo.");
       await refresh();
     } catch (cause) {
       setError(taskError(cause));
+    } finally {
+      setSaving(false);
     }
   }
 
   async function onEdit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!editing) return;
+    const form = event.currentTarget;
     setError(null);
     setSuccess(null);
+    setSaving(true);
     try {
-      const data = readTaskForm(new FormData(event.currentTarget), books, courses);
+      const data = readTaskForm(new FormData(form), books, courses);
       await updateTask({ data: { id: editing.id, ...data } });
       setEditing(null);
       setSuccess("Tarea actualizada.");
       await refresh();
     } catch (cause) {
       setError(taskError(cause));
+    } finally {
+      setSaving(false);
     }
+  }
+
+  function beginEdit(task: TaskItem) {
+    setEditing(task);
+    setError(null);
+    setSuccess(null);
+    window.setTimeout(() => document.getElementById("task-editor")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   return (
     <Shell
       eyebrow="Tareas · Grupo 9114"
-      title="Qué dejaron, cuándo lo dejaron y cuándo se entrega."
-      lead="Registra cada tarea por profesor y materia, relaciona libros o documentación y deja claro si debe entregarse a mano, en computadora, impresa, en línea u otro método."
+      title="Trabajos y tareas"
+      lead="Las tareas vigentes permanecen en la pantalla principal. Al llegar su fecha de entrega pasan automáticamente al archivo de Tareas pasadas."
     >
       <Card className="unam-hero mb-6" interactive>
         <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-end">
@@ -118,26 +152,30 @@ function TareasPage() {
             <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-white/70">
               <ClipboardCheck className="size-4" /> Control de entregas 9114
             </div>
-            <h2 className="mt-2 font-display text-3xl text-white">Una lista clara para no perder ninguna tarea.</h2>
+            <h2 className="mt-2 font-display text-3xl text-white">Tareas vigentes al frente; las entregadas pasan al archivo.</h2>
             <p className="mt-2 max-w-2xl text-sm text-white/75">
-              El profesor se selecciona primero; después se relaciona la materia, las fechas, los recursos necesarios y la forma exacta de entrega.
+              Cada publicación queda vinculada con profesor, materia, fechas, bibliografía y método de entrega.
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 text-center">
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-xl border border-white/15 bg-white/10 px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.12em] text-white/55">Activas</p>
+              <p className="mt-1 font-display text-3xl text-white">{tasks.filter((task) => task.dueDate >= today).length}</p>
+            </div>
             <div className="rounded-xl border border-white/15 bg-white/10 px-4 py-3">
               <p className="text-xs uppercase tracking-[0.12em] text-white/55">Próx. 7 días</p>
               <p className="mt-1 font-display text-3xl text-white">{nextSevenCount}</p>
             </div>
             <div className="rounded-xl border border-white/15 bg-white/10 px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-white/55">Vencidas</p>
-              <p className="mt-1 font-display text-3xl text-white">{overdueCount}</p>
+              <p className="text-xs uppercase tracking-[0.12em] text-white/55">Pasadas</p>
+              <p className="mt-1 font-display text-3xl text-white">{tasks.filter((task) => task.dueDate < today).length}</p>
             </div>
           </div>
         </div>
       </Card>
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        {FILTERS.map((item) => (
+        {ACTIVE_FILTERS.map((item) => (
           <button
             key={item}
             type="button"
@@ -157,86 +195,71 @@ function TareasPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(20rem,1fr)]">
-        <div className="stagger-children grid gap-4">
-          {visible.length ? visible.map((task) => {
-            const editable = canEditPublication(directory, user?.id, task.createdBy);
-            const book = task.bookId ? books.find((item) => item.id === task.bookId) : null;
-            const days = daysBetween(today, task.dueDate);
-            const overdue = days < 0;
-            const urgent = days >= 0 && days <= 2;
-            return (
-              <Card key={task.id} interactive className={cn("soft-raise", overdue && "border-danger/30") }>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Pill tone="forest">{task.courseCode}</Pill>
-                    <Pill>{task.deliveryMethod}</Pill>
-                    {overdue ? <span className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-bold text-danger">VENCIDA</span> : urgent ? <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-clay">ENTREGA PRÓXIMA</span> : null}
-                  </div>
-                  {editable ? (
-                    <button type="button" onClick={() => { setEditing(task); setError(null); setSuccess(null); }} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-forest">
-                      <Pencil className="size-3.5" /> Editar
-                    </button>
-                  ) : null}
-                </div>
+        <div className="min-w-0">
+          <div className="mb-3 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Pendientes</p>
+              <h2 className="font-display text-2xl">Tareas activas</h2>
+            </div>
+            <span className="text-sm text-muted">{activeTasks.length} en lista</span>
+          </div>
 
-                <h2 className="mt-3 font-display text-2xl leading-tight">{task.title}</h2>
-                <p className="mt-1 text-sm font-semibold text-forest">{task.professorName}</p>
-                <p className="text-sm text-muted">{task.courseName}</p>
+          <div className="stagger-children grid gap-3">
+            {activeTasks.length ? activeTasks.map((task) => (
+              <TaskListItem
+                key={task.id}
+                task={task}
+                today={today}
+                books={books}
+                editable={canEditPublication(directory, user?.id, task.createdBy)}
+                onEdit={() => beginEdit(task)}
+              />
+            )) : (
+              <Card><p className="text-sm text-muted">No hay tareas activas que coincidan con este filtro.</p></Card>
+            )}
+          </div>
 
-                <div className="mt-4 grid gap-3 rounded-xl bg-bg-warm p-4 sm:grid-cols-2">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">La dejó</p>
-                    <p className="mt-1 text-sm font-semibold">{formatLongDate(task.assignedDate)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Se entrega</p>
-                    <p className={cn("mt-1 text-sm font-semibold", overdue && "text-danger")}>{formatLongDate(task.dueDate)}</p>
-                  </div>
-                </div>
+          <div className="mt-6 border-t border-line pt-5">
+            <button
+              type="button"
+              onClick={() => setShowPast((value) => !value)}
+              className="flex min-h-12 w-full items-center justify-between rounded-xl border border-line bg-white px-4 text-left text-sm font-semibold text-ink-soft transition-all hover:border-forest/25 hover:bg-bg-warm/50"
+              aria-expanded={showPast}
+            >
+              <span className="inline-flex items-center gap-2">
+                <History className="size-4 text-forest" />
+                Tareas pasadas ({pastTasks.length})
+              </span>
+              {showPast ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
+            </button>
 
-                <p className="mt-4 whitespace-pre-line text-sm leading-relaxed text-ink-soft">{task.instructions}</p>
-
-                {(book || task.resourceTitle || task.documentationText || task.deliveryDetails) ? (
-                  <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
-                    {(book || task.resourceTitle) ? (
-                      <div className="rounded-lg border border-line bg-white p-3">
-                        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-forest"><BookOpen className="size-3.5" /> Recurso / libro</p>
-                        <p className="mt-1 text-sm font-semibold">{book?.title || task.resourceTitle}</p>
-                        {book ? <p className="mt-1 text-xs text-muted">{book.author}</p> : null}
-                      </div>
-                    ) : null}
-                    {task.documentationText ? (
-                      <div className="rounded-lg border border-line bg-white p-3">
-                        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-forest"><FileText className="size-3.5" /> Documentación</p>
-                        <p className="mt-1 whitespace-pre-line text-sm text-ink-soft">{task.documentationText}</p>
-                      </div>
-                    ) : null}
-                    {task.deliveryDetails ? (
-                      <div className="rounded-lg border border-line bg-white p-3 sm:col-span-2">
-                        <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.1em] text-forest"><Laptop className="size-3.5" /> Detalle de entrega</p>
-                        <p className="mt-1 text-sm text-ink-soft">{task.deliveryDetails}</p>
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                <p className="mt-4 text-xs text-muted">Registrada por {task.authorAlias}</p>
-              </Card>
-            );
-          }) : (
-            <Card><p className="text-sm text-muted">No hay tareas que coincidan con este filtro.</p></Card>
-          )}
+            {showPast ? (
+              <div className="mt-3 grid gap-3">
+                {pastTasks.length ? pastTasks.map((task) => (
+                  <TaskListItem
+                    key={task.id}
+                    task={task}
+                    today={today}
+                    books={books}
+                    editable={canEditPublication(directory, user?.id, task.createdBy)}
+                    onEdit={() => beginEdit(task)}
+                    past
+                  />
+                )) : <Card><p className="text-sm text-muted">Todavía no hay tareas pasadas con este filtro.</p></Card>}
+              </div>
+            ) : null}
+          </div>
         </div>
 
-        <div>
+        <div id="task-editor" className="scroll-mt-6">
           {editing ? (
             <FormBox title="Editar tarea" onSubmit={onEdit}>
               <div className="flex justify-end">
-                <button type="button" onClick={() => setEditing(null)} className="inline-flex items-center gap-1 text-xs font-semibold text-forest"><X className="size-3.5" />Cancelar</button>
+                <button type="button" onClick={() => { setEditing(null); setError(null); }} className="inline-flex items-center gap-1 text-xs font-semibold text-forest"><X className="size-3.5" />Cancelar</button>
               </div>
               <TaskFields key={`edit-${editing.id}`} courses={courses} books={books} task={editing} />
               {error ? <p className="text-sm text-danger">{error}</p> : null}
-              <Button type="submit"><Pencil className="mr-2 size-4" />Guardar cambios</Button>
+              <Button type="submit" disabled={saving}><Pencil className="mr-2 size-4" />{saving ? "Guardando…" : "Guardar cambios"}</Button>
             </FormBox>
           ) : (
             <PublishGate area="tareas">
@@ -244,13 +267,74 @@ function TareasPage() {
                 <TaskFields courses={courses} books={books} />
                 {error ? <p className="text-sm text-danger">{error}</p> : null}
                 {success ? <p className="rounded-md bg-forest-soft px-3 py-2 text-sm font-medium text-forest-deep">{success}</p> : null}
-                <Button type="submit"><ClipboardCheck className="mr-2 size-4" />Publicar tarea</Button>
+                <Button type="submit" disabled={saving}><ClipboardCheck className="mr-2 size-4" />{saving ? "Publicando…" : "Publicar tarea"}</Button>
               </FormBox>
             </PublishGate>
           )}
         </div>
       </div>
     </Shell>
+  );
+}
+
+function TaskListItem({
+  task,
+  today,
+  books,
+  editable,
+  onEdit,
+  past = false,
+}: {
+  task: TaskItem;
+  today: string;
+  books: BookItem[];
+  editable: boolean;
+  onEdit: () => void;
+  past?: boolean;
+}) {
+  const book = task.bookId ? books.find((item) => item.id === task.bookId) : null;
+  const days = daysBetween(today, task.dueDate);
+  const urgent = !past && days >= 0 && days <= 2;
+
+  return (
+    <Card interactive className={cn("soft-raise px-4 py-4", past && "bg-bg-warm/45 opacity-90") }>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="forest">{task.courseCode}</Pill>
+            <Pill>{task.deliveryMethod}</Pill>
+            {past ? (
+              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-muted">PASADA</span>
+            ) : urgent ? (
+              <span className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-bold text-clay">ENTREGA PRÓXIMA</span>
+            ) : null}
+          </div>
+          <h3 className="mt-2 font-display text-xl leading-tight">{task.title}</h3>
+          <p className="mt-1 text-sm font-semibold text-forest">{task.professorName}</p>
+          <p className="text-xs text-muted">{task.courseName}</p>
+          <p className="mt-3 text-sm leading-relaxed text-ink-soft">{excerpt(task.instructions)}</p>
+        </div>
+
+        <div className="min-w-[9.5rem] rounded-lg bg-bg-warm px-3 py-2 text-right">
+          <p className="flex items-center justify-end gap-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-muted"><CalendarClock className="size-3.5" />Entrega</p>
+          <p className={cn("mt-1 text-sm font-semibold", past ? "text-muted" : urgent ? "text-clay" : "text-ink")}>{formatLongDate(task.dueDate)}</p>
+          <p className="mt-1 text-xs text-muted">Dejada: {formatLongDate(task.assignedDate)}</p>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-3">
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
+          {book || task.resourceTitle ? <span className="inline-flex items-center gap-1"><BookOpen className="size-3.5" />{book?.title || task.resourceTitle}</span> : null}
+          {task.documentationText ? <span className="inline-flex items-center gap-1"><FileText className="size-3.5" />Con documentación</span> : null}
+          <span>Publicó {task.authorAlias}</span>
+        </div>
+        {editable ? (
+          <button type="button" onClick={onEdit} className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition-all hover:-translate-y-0.5 hover:border-forest/30">
+            <Pencil className="size-3.5" />Editar
+          </button>
+        ) : null}
+      </div>
+    </Card>
   );
 }
 
@@ -288,24 +372,48 @@ function TaskFields({ courses, books, task }: { courses: Course[]; books: BookIt
       <Field label="Fecha en que la dejó"><Input name="assignedDate" type="date" required defaultValue={task?.assignedDate || getTodayIso()} /></Field>
       <Field label="Fecha de entrega"><Input name="dueDate" type="date" required defaultValue={task?.dueDate || getTodayIso()} /></Field>
     </div>
-    <Field label="Tarea / título"><Input name="title" required maxLength={220} defaultValue={task?.title || ""} placeholder="Lectura y cuadro comparativo" /></Field>
-    <Field label="Instrucciones"><Textarea name="instructions" required maxLength={2500} defaultValue={task?.instructions || ""} placeholder="Qué hay que hacer, páginas, extensión, requisitos y cualquier indicación del profesor." /></Field>
+    <Field label="Tarea / título"><Input name="title" required maxLength={300} defaultValue={task?.title || ""} placeholder="Lectura, cuestionario, ensayo…" /></Field>
+    <Field label="Instrucciones / contenido completo" hint="Hasta 20,000 caracteres">
+      <Textarea
+        name="instructions"
+        required
+        maxLength={20000}
+        rows={10}
+        className="min-h-52"
+        defaultValue={task?.instructions || ""}
+        placeholder="Escribe aquí todas las instrucciones, preguntas, páginas, extensión, requisitos y cualquier indicación del profesor."
+      />
+    </Field>
     <Field label="Libro o recurso de Biblioteca" hint="Opcional">
       <Select name="bookId" defaultValue={task?.bookId ? String(task.bookId) : ""}>
         <option value="">No depende de un libro del portal</option>
         {books.map((book) => <option key={book.id} value={book.id}>{book.title} — {book.author}</option>)}
       </Select>
     </Field>
-    <Field label="Otra documentación / referencia" hint="Opcional">
-      <Textarea name="documentationText" maxLength={1500} defaultValue={task?.documentationText || ""} placeholder="Ley, artículo, capítulo, liga, fotocopia, material del profesor o cualquier documento necesario." />
+    <Field label="Otra documentación / referencia" hint="Opcional · hasta 10,000 caracteres">
+      <Textarea
+        name="documentationText"
+        maxLength={10000}
+        rows={6}
+        className="min-h-36"
+        defaultValue={task?.documentationText || ""}
+        placeholder="Ley, artículo, capítulo, liga, fotocopia, material del profesor o cualquier documento necesario."
+      />
     </Field>
     <Field label="Método de entrega">
       <Select name="deliveryMethod" required defaultValue={task?.deliveryMethod || "A mano"}>
         {METHODS.map((method) => <option key={method}>{method}</option>)}
       </Select>
     </Field>
-    <Field label="Detalle de entrega" hint="Opcional">
-      <Textarea name="deliveryDetails" maxLength={600} defaultValue={task?.deliveryDetails || ""} placeholder="Ej. a mano en hojas blancas; subir PDF a Moodle; Word por correo; entregar impreso y engargolado." />
+    <Field label="Detalle de entrega" hint="Opcional · hasta 20,000 caracteres">
+      <Textarea
+        name="deliveryDetails"
+        maxLength={20000}
+        rows={10}
+        className="min-h-52"
+        defaultValue={task?.deliveryDetails || ""}
+        placeholder="Ej. a mano en hojas blancas; subir PDF a Moodle; Word por correo; entregar impreso. También puedes poner aquí preguntas o requisitos extensos."
+      />
     </Field>
   </>;
 }
@@ -337,5 +445,6 @@ function taskError(cause: unknown) {
   if (/fecha de entrega/i.test(message)) return "La fecha de entrega no puede ser anterior a la fecha en que se dejó la tarea.";
   if (/autor de la publicación|administrador/i.test(message)) return "Sólo el autor de la tarea o un administrador puede editarla.";
   if (/padrón|acceso/i.test(message)) return "Debes iniciar sesión y estar activo en el padrón para publicar.";
+  if (/too_big|too big|maximum|caracter/i.test(message)) return "El contenido supera el límite permitido. Las instrucciones y el detalle admiten hasta 20,000 caracteres.";
   return message;
 }

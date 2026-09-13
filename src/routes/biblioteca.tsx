@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   BookMarked,
   Check,
@@ -6,6 +6,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  LockKeyhole,
   Pencil,
   Search,
   ShoppingCart,
@@ -17,7 +18,7 @@ import { Shell } from "@/components/shell";
 import { useBoard, useRefreshBoard } from "@/components/board-context";
 import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea, cn } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
-import { canEditPublication, useAreaVisit, useDirectory } from "@/components/directory";
+import { canEditPublication, canPublish, useAreaVisit, useDirectory } from "@/components/directory";
 import { addBook, updateBook } from "@/lib/content";
 import { uploadToAtrioMedia } from "@/lib/media-upload";
 import type { BookItem, Course } from "@/lib/types";
@@ -72,6 +73,8 @@ function BibliotecaPage() {
   const [busy, setBusy] = useState(false);
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [editingBook, setEditingBook] = useState<BookItem | null>(null);
+  const [resourceNotice, setResourceNotice] = useState(false);
+  const resourceAllowed = canPublish(directory);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLocaleLowerCase("es-MX");
@@ -219,6 +222,11 @@ function BibliotecaPage() {
     } finally { setBusy(false); }
   }
 
+  function blockResource() {
+    setResourceNotice(true);
+    window.setTimeout(() => document.getElementById("resource-access-notice")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
+  }
+
   return (
     <Shell eyebrow="Biblioteca · Grupo 9114" title="Bibliografía, libros y recursos en un solo lugar." lead="Crea fichas bibliográficas por materia, comparte archivos autorizados en PDF, Word o EPUB y agrega enlaces de consulta o compra en línea.">
       <Card className="unam-hero-card hero-glow mb-6" interactive>
@@ -235,6 +243,13 @@ function BibliotecaPage() {
           </div>
         </div>
       </Card>
+
+      {resourceNotice ? (
+        <div id="resource-access-notice" role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-clay/25 bg-clay/10 px-4 py-3 text-sm text-ink-soft">
+          <span className="inline-flex items-center gap-2"><LockKeyhole className="size-4 text-clay" /><strong>Regístrate para poder usar los recursos.</strong> Puedes ver las fichas libremente, pero las descargas requieren una cuenta activa.</span>
+          <Link to="/registro" className="rounded-md bg-forest px-3 py-2 font-semibold text-white">Ir a registro</Link>
+        </div>
+      ) : null}
 
       <div className="mb-6 grid gap-3 md:grid-cols-[1fr_auto] md:items-center">
         <label className="relative block">
@@ -267,9 +282,9 @@ function BibliotecaPage() {
                 {book.notes ? <p className="mt-3 text-sm leading-relaxed text-muted">{book.notes}</p> : null}
                 <p className="mt-3 text-xs uppercase tracking-[0.12em] text-clay">{book.ownerAlias}</p>
                 {hasAnyLink ? <div className="mt-auto flex flex-wrap gap-2 pt-5">
-                  {book.pdfUrl ? <ResourceButton href={book.pdfUrl} label="PDF" tone="primary" /> : null}
-                  {book.wordUrl ? <ResourceButton href={book.wordUrl} label="Word editable" tone="secondary" /> : null}
-                  {book.epubUrl ? <ResourceButton href={book.epubUrl} label="EPUB" tone="secondary" /> : null}
+                  {book.pdfUrl ? <ResourceButton href={book.pdfUrl} label="PDF" tone="primary" allowed={resourceAllowed} onBlocked={blockResource} /> : null}
+                  {book.wordUrl ? <ResourceButton href={book.wordUrl} label="Word editable" tone="secondary" allowed={resourceAllowed} onBlocked={blockResource} /> : null}
+                  {book.epubUrl ? <ResourceButton href={book.epubUrl} label="EPUB" tone="secondary" allowed={resourceAllowed} onBlocked={blockResource} /> : null}
                   {book.externalUrl ? <a href={book.externalUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 text-sm font-semibold text-ink-soft"><ExternalLink className="size-4" /> Consultar en línea</a> : null}
                   {book.commerceUrl ? <a href={book.commerceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-md border border-clay/25 bg-clay/10 px-3 text-sm font-semibold text-clay"><ShoppingCart className="size-4" /> Comprar en línea</a> : null}
                 </div> : null}
@@ -344,8 +359,10 @@ function BookFields({ courses, book, editMode = false }: { courses: Course[]; bo
   </>;
 }
 
-function ResourceButton({ href, label, tone }: { href: string; label: string; tone: "primary" | "secondary" }) {
-  return <a href={href} target="_blank" rel="noopener noreferrer" className={cn("inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition-transform hover:-translate-y-0.5", tone === "primary" ? "bg-forest text-bg" : "border border-line-strong bg-surface text-forest")}><Download className="size-4" />{label}</a>;
+function ResourceButton({ href, label, tone, allowed, onBlocked }: { href: string; label: string; tone: "primary" | "secondary"; allowed: boolean; onBlocked: () => void }) {
+  const className = cn("inline-flex min-h-10 items-center gap-2 rounded-md px-3 text-sm font-semibold transition-transform hover:-translate-y-0.5", tone === "primary" ? "bg-forest text-bg" : "border border-line-strong bg-surface text-forest");
+  if (!allowed) return <button type="button" onClick={onBlocked} className={className}><LockKeyhole className="size-4" />{label}</button>;
+  return <a href={href} target="_blank" rel="noopener noreferrer" className={className}><Download className="size-4" />{label}</a>;
 }
 
 function CurrentFile({ label, name }: { label: string; name: string }) {
