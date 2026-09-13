@@ -37,6 +37,20 @@ export const Route = createFileRoute("/catedras")({ component: CatedrasPage });
 const MATERIAL_KINDS = ["Apuntes", "Tarea", "Foto", "Material", "Aviso", "Referencia", "Bibliografía"] as const;
 type MaterialKind = (typeof MATERIAL_KINDS)[number];
 const WEEK_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+const GENERAL_COURSE_CODE = "GENERAL";
+const GENERAL_PROFESSOR = "Todos los profesores · Grupo 9114";
+const GENERAL_COURSE: Course = {
+  id: -9114,
+  code: GENERAL_COURSE_CODE,
+  name: "General · Todas las clases",
+  chair: GENERAL_PROFESSOR,
+  modality: "General",
+  weekday: "Todos los días",
+  timeSlot: "00:00–23:59",
+  place: "Grupo 9114",
+  semester: "Primer semestre",
+  group: "9114",
+};
 
 function normalizeUrl(value: string) {
   const trimmed = value.trim();
@@ -102,8 +116,9 @@ function CatedrasPage() {
   useAreaVisit("catedras");
 
   const ordered = useMemo(() => [...courses].sort((a, b) => a.timeSlot.localeCompare(b.timeSlot)), [courses]);
+  const formCourses = useMemo(() => [GENERAL_COURSE, ...ordered], [ordered]);
   const professorOptions = useMemo(
-    () => Array.from(new Set([...ordered.map((course) => course.chair), ...professors.map((professor) => professor.fullTitle)])).filter(Boolean),
+    () => Array.from(new Set([GENERAL_PROFESSOR, ...ordered.map((course) => course.chair), ...professors.map((professor) => professor.fullTitle)])).filter(Boolean),
     [ordered, professors],
   );
 
@@ -127,7 +142,13 @@ function CatedrasPage() {
     return map;
   }, [materials]);
   const selectedMaterials = useMemo(
-    () => materials.filter((item) => item.classDate === selectedDate).sort((a, b) => a.courseCode.localeCompare(b.courseCode)),
+    () => materials
+      .filter((item) => item.classDate === selectedDate)
+      .sort((a, b) => {
+        if (a.courseCode === GENERAL_COURSE_CODE && b.courseCode !== GENERAL_COURSE_CODE) return -1;
+        if (b.courseCode === GENERAL_COURSE_CODE && a.courseCode !== GENERAL_COURSE_CODE) return 1;
+        return a.courseCode.localeCompare(b.courseCode);
+      }),
     [materials, selectedDate],
   );
   const isClassDay = weekdayIndex(selectedDate) >= 1 && weekdayIndex(selectedDate) <= 5;
@@ -135,7 +156,7 @@ function CatedrasPage() {
 
   function chooseCourse(code: string) {
     setSelectedCourseCode(code);
-    const course = ordered.find((item) => item.code === code);
+    const course = formCourses.find((item) => item.code === code);
     if (course) setSelectedProfessor(course.chair);
   }
 
@@ -159,8 +180,8 @@ function CatedrasPage() {
 
   function readMaterial(data: FormData) {
     const courseCode = String(data.get("courseCode") ?? "");
-    const course = ordered.find((item) => item.code === courseCode);
-    if (!course) throw new Error("Selecciona una materia válida.");
+    const course = formCourses.find((item) => item.code === courseCode);
+    if (!course) throw new Error("Selecciona una materia o la categoría General.");
     const professorName = String(data.get("professorName") ?? "").trim();
     if (!professorName) throw new Error("Selecciona al profesor de la clase.");
     return {
@@ -364,7 +385,7 @@ function CatedrasPage() {
                   {isImageFile(material) ? <div className="h-48 overflow-hidden bg-bg-warm"><img src={material.fileUrl ?? ""} alt={material.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" /></div> : null}
                   <div className="p-5">
                     <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2"><Pill tone={material.kind === "Tarea" ? "clay" : "forest"}>{material.kind}</Pill><Pill>{material.courseCode}</Pill></div>
+                      <div className="flex flex-wrap items-center gap-2"><Pill tone={material.kind === "Tarea" ? "clay" : "forest"}>{material.kind}</Pill><Pill tone={material.courseCode === GENERAL_COURSE_CODE ? "clay" : "neutral"}>{material.courseCode === GENERAL_COURSE_CODE ? "General" : material.courseCode}</Pill></div>
                       {editable ? <button type="button" onClick={() => { setEditingMaterial(material); setSelectedCourseCode(material.courseCode); setSelectedProfessor(material.professorName); setError(null); setSuccess(null); }} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-forest"><Pencil className="size-3.5" />Editar</button> : null}
                     </div>
                     <div className="mt-4 flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-forest-soft text-forest"><Icon className="size-4" /></span><div><h3 className="font-display text-xl leading-tight">{material.title}</h3><p className="mt-1 text-xs font-medium text-forest">{material.courseName}</p></div></div>
@@ -386,7 +407,7 @@ function CatedrasPage() {
             {editingMaterial ? (
               <FormBox title="Editar sesión de clase" onSubmit={onEdit}>
                 <div className="flex items-center justify-between rounded-lg bg-clay/10 p-3 text-xs"><span>Editando un registro existente.</span><button type="button" onClick={() => setEditingMaterial(null)} className="inline-flex items-center gap-1 font-semibold text-forest"><X className="size-3.5" />Cancelar</button></div>
-                <MaterialFields key={`edit-${editingMaterial.id}`} courses={ordered} professorOptions={professorOptions} material={editingMaterial} selectedDate={selectedDate} editMode />
+                <MaterialFields key={`edit-${editingMaterial.id}`} courses={formCourses} professorOptions={professorOptions} material={editingMaterial} selectedDate={selectedDate} editMode />
                 {uploadProgress !== null ? <p className="text-sm text-muted">Subiendo archivo: {uploadProgress}%</p> : null}
                 {error ? <p className="text-sm text-danger">{error}</p> : null}
                 <Button type="submit" disabled={busy} className="gap-2"><Pencil className="size-4" />{busy ? "Guardando…" : "Guardar cambios"}</Button>
@@ -394,7 +415,7 @@ function CatedrasPage() {
             ) : (
               <PublishGate area="catedras">
                 <FormBox title="Registrar lo visto en clase" onSubmit={onSubmit}>
-                  <MaterialFields key={`${selectedDate}-${selectedCourseCode}-${selectedProfessor}`} courses={ordered} professorOptions={professorOptions} selectedDate={selectedDate} selectedCourseCode={selectedCourseCode} selectedProfessor={selectedProfessor} onCourseChange={chooseCourse} onProfessorChange={setSelectedProfessor} />
+                  <MaterialFields key={`${selectedDate}-${selectedCourseCode}-${selectedProfessor}`} courses={formCourses} professorOptions={professorOptions} selectedDate={selectedDate} selectedCourseCode={selectedCourseCode} selectedProfessor={selectedProfessor} onCourseChange={chooseCourse} onProfessorChange={setSelectedProfessor} />
                   {uploadProgress !== null ? <p className="text-sm text-muted">Subiendo archivo: {uploadProgress}%</p> : null}
                   {error ? <p className="text-sm text-danger">{error}</p> : null}
                   {success ? <p className="text-sm text-forest">{success}</p> : null}
@@ -434,7 +455,7 @@ function MaterialFields({
   const professorValue = material?.professorName ?? selectedProfessor ?? courses.find((course) => course.code === courseValue)?.chair ?? professorOptions[0] ?? "";
   return <>
     <Field label="Fecha de la clase"><Input name="classDate" type="date" required defaultValue={material?.classDate ?? selectedDate} /></Field>
-    <Field label="Materia">{material ? <Select name="courseCode" required defaultValue={courseValue}>{courses.map((course) => <option key={course.code} value={course.code}>{course.code} · {course.name}</option>)}</Select> : <Select name="courseCode" required value={courseValue} onChange={(event) => onCourseChange?.(event.target.value)}>{courses.map((course) => <option key={course.code} value={course.code}>{course.code} · {course.name}</option>)}</Select>}</Field>
+    <Field label="Materia / categoría" hint="Usa General si aplica a todo el grupo">{material ? <Select name="courseCode" required defaultValue={courseValue}>{courses.map((course) => <option key={course.code} value={course.code}>{course.code === GENERAL_COURSE_CODE ? course.name : `${course.code} · ${course.name}`}</option>)}</Select> : <Select name="courseCode" required value={courseValue} onChange={(event) => onCourseChange?.(event.target.value)}>{courses.map((course) => <option key={course.code} value={course.code}>{course.code === GENERAL_COURSE_CODE ? course.name : `${course.code} · ${course.name}`}</option>)}</Select>}</Field>
     <Field label="Profesor">{material ? <Select name="professorName" required defaultValue={professorValue}>{professorOptions.map((name) => <option key={name} value={name}>{name}</option>)}</Select> : <Select name="professorName" required value={professorValue} onChange={(event) => onProfessorChange?.(event.target.value)}>{professorOptions.map((name) => <option key={name} value={name}>{name}</option>)}</Select>}</Field>
     <Field label="Tipo de registro"><Select name="kind" defaultValue={material?.kind ?? "Apuntes"}>{MATERIAL_KINDS.map((kind) => <option key={kind}>{kind}</option>)}</Select></Field>
     <Field label="Tema de la clase" hint="Opcional si adjuntas otro recurso"><Input name="title" defaultValue={material?.title ?? ""} placeholder="Ej. Personas en el Derecho Romano" /></Field>
