@@ -151,6 +151,16 @@ function CatedrasPage() {
       }),
     [materials, selectedDate],
   );
+  const latestMaterials = useMemo(
+    () => [...materials]
+      .sort((a, b) => {
+        const createdDelta = Date.parse(b.createdAt) - Date.parse(a.createdAt);
+        if (Number.isFinite(createdDelta) && createdDelta !== 0) return createdDelta;
+        return b.id - a.id;
+      })
+      .slice(0, 6),
+    [materials],
+  );
   const isClassDay = weekdayIndex(selectedDate) >= 1 && weekdayIndex(selectedDate) <= 5;
   const scheduledCourses = isClassDay ? ordered : [];
 
@@ -281,6 +291,15 @@ function CatedrasPage() {
     } finally { setBusy(false); }
   }
 
+  function openRecent(material: ClassMaterial) {
+    setSelectedDate(material.classDate);
+    setMonthCursor(`${material.classDate.slice(0, 7)}-01`);
+    setEditingMaterial(null);
+    setError(null);
+    setSuccess(null);
+    window.setTimeout(() => document.getElementById("catedras-expediente")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+  }
+
   function blockResource() {
     setResourceNotice(true);
     window.setTimeout(() => document.getElementById("catedras-resource-notice")?.scrollIntoView({ behavior: "smooth", block: "center" }), 0);
@@ -370,7 +389,7 @@ function CatedrasPage() {
         </Card>
       </div>
 
-      <section className="mt-7">
+      <section id="catedras-expediente" className="mt-7 scroll-mt-6">
         <div className="mb-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Expediente del {formatLongDate(selectedDate)}</p>
           <h2 className="mt-1 font-display text-3xl">Lo visto en clase</h2>
@@ -425,6 +444,59 @@ function CatedrasPage() {
             )}
           </div>
         </div>
+      </section>
+
+      <section className="mt-10">
+        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Actividad reciente</p>
+            <h2 className="mt-1 font-display text-3xl">Últimas publicaciones</h2>
+            <p className="mt-1 text-sm text-muted">Las 6 entradas más recientes de Cátedras, sin importar la fecha seleccionada en el calendario.</p>
+          </div>
+          <Pill tone="forest">{latestMaterials.length} recientes</Pill>
+        </div>
+
+        <Card className="overflow-hidden p-0">
+          {latestMaterials.length ? (
+            <div className="divide-y divide-line">
+              {latestMaterials.map((material) => {
+                const editable = canEditPublication(directory, user?.id, material.createdBy);
+                const summary = (material.body || material.audioLabel || material.referencesText || material.bibliographyText || "Sin descripción adicional.").replace(/\s+/g, " ").trim();
+                const shortSummary = summary.length > 170 ? `${summary.slice(0, 167).trimEnd()}…` : summary;
+                return (
+                  <div key={`recent-${material.id}`} className="grid gap-4 px-5 py-4 transition-colors hover:bg-bg-warm/55 md:grid-cols-[7rem_minmax(0,1fr)_auto] md:items-center">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">Clase</p>
+                      <p className="mt-1 font-display text-lg capitalize text-ink">{formatLongDate(material.classDate)}</p>
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Pill tone={material.kind === "Tarea" ? "clay" : "forest"}>{material.kind}</Pill>
+                        <Pill tone={material.courseCode === GENERAL_COURSE_CODE ? "clay" : "neutral"}>{material.courseCode === GENERAL_COURSE_CODE ? "General" : material.courseCode}</Pill>
+                        <span className="text-xs text-muted">{material.courseCode === GENERAL_COURSE_CODE ? "Todas las clases" : material.courseName}</span>
+                      </div>
+                      <h3 className="mt-2 font-display text-xl leading-tight text-ink">{material.title}</h3>
+                      <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-forest"><UserRound className="size-3.5" />{material.professorName}</p>
+                      <p className="mt-2 text-sm leading-relaxed text-muted">{shortSummary}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2 md:justify-end">
+                      {editable ? (
+                        <button type="button" onClick={() => { setEditingMaterial(material); setSelectedDate(material.classDate); setMonthCursor(`${material.classDate.slice(0, 7)}-01`); setSelectedCourseCode(material.courseCode); setSelectedProfessor(material.professorName); setError(null); setSuccess(null); window.setTimeout(() => document.getElementById("catedra-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition hover:-translate-y-0.5">
+                          <Pencil className="size-3.5" />Editar
+                        </button>
+                      ) : null}
+                      <button type="button" onClick={() => openRecent(material)} className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5">
+                        <CalendarDays className="size-3.5" />Ver fecha
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-5 text-sm text-muted">Todavía no hay publicaciones en Cátedras.</div>
+          )}
+        </Card>
       </section>
     </Shell>
   );
