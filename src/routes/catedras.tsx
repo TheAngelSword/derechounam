@@ -112,7 +112,7 @@ function CatedrasPage() {
   const { courses, professors, materials, tasks } = useBoard();
   const refresh = useRefreshBoard();
   const boardStatus = useBoardStatus();
-  const { user, directory } = useDirectory();
+  const { user, directory, isSessionPending, isLoading: isDirectoryLoading } = useDirectory();
   useAreaVisit("catedras");
 
   const ordered = useMemo(() => [...courses].sort((a, b) => a.timeSlot.localeCompare(b.timeSlot)), [courses]);
@@ -134,6 +134,7 @@ function CatedrasPage() {
   const [editingMaterial, setEditingMaterial] = useState<ClassMaterial | null>(null);
   const [resourceNotice, setResourceNotice] = useState(false);
   const resourceAllowed = canPublish(directory);
+  const showAccessBanner = !isSessionPending && !isDirectoryLoading && (!user || !directory?.me || directory.me.status !== "activo");
 
   const cells = useMemo(() => monthCells(monthCursor), [monthCursor]);
   const entriesByDate = useMemo(() => {
@@ -352,10 +353,33 @@ function CatedrasPage() {
           <strong>No se pudo sincronizar con la base de datos.</strong> El portal está mostrando datos de respaldo y por eso una publicación o edición puede parecer que no se guardó. Vuelve a desplegar después de aplicar las migraciones pendientes.
         </div>
       ) : null}
+      {showAccessBanner ? (
+        <div className="mb-6 rounded-xl border border-clay/25 bg-clay/10 px-4 py-4 text-sm text-ink-soft">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="font-display text-xl text-ink">Regístrate para tener acceso a todos los recursos del portal.</p>
+              <p className="mt-1 text-sm text-muted">Puedes consultar la información general, pero para abrir audios, tareas y demás recursos necesitas una cuenta activa.</p>
+            </div>
+            {!user ? (
+              <Link to="/login" search={{ mode: "alta" }} className="inline-flex min-h-11 items-center rounded-md bg-forest px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5">
+                Inicia tu registro
+              </Link>
+            ) : (
+              <Link to="/registro" className="inline-flex min-h-11 items-center rounded-md bg-forest px-4 text-sm font-semibold text-white shadow-sm transition hover:-translate-y-0.5">
+                Completa tu registro
+              </Link>
+            )}
+          </div>
+        </div>
+      ) : null}
       {resourceNotice ? (
         <div id="catedras-resource-notice" role="alert" className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-clay/25 bg-clay/10 px-4 py-3 text-sm text-ink-soft">
-          <span className="inline-flex items-center gap-2"><LockKeyhole className="size-4 text-clay" /><strong>Regístrate para poder usar los recursos.</strong> Puedes ver la ficha del audio, pero para abrirlo necesitas una cuenta activa.</span>
-          <Link to="/registro" className="rounded-md bg-forest px-3 py-2 font-semibold text-white">Ir a registro</Link>
+          <span className="inline-flex items-center gap-2"><LockKeyhole className="size-4 text-clay" /><strong>Regístrate para poder usar los recursos.</strong> Puedes ver el resumen, pero para abrir audios, tareas y archivos necesitas una cuenta activa.</span>
+          {!user ? (
+            <Link to="/login" search={{ mode: "alta" }} className="rounded-md bg-forest px-3 py-2 font-semibold text-white">Inicia tu registro</Link>
+          ) : (
+            <Link to="/registro" className="rounded-md bg-forest px-3 py-2 font-semibold text-white">Completa tu registro</Link>
+          )}
         </div>
       ) : null}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,.85fr)]">
@@ -428,59 +452,56 @@ function CatedrasPage() {
 
       <section id="catedras-expediente" className="mt-7 scroll-mt-6">
         <div className="mb-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Expediente del {formatLongDate(selectedDate)}</p>
-          <h2 className="mt-1 font-display text-3xl">Lo visto en clase</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Actividad reciente</p>
+          <h2 className="mt-1 font-display text-3xl">Últimos registros</h2>
+          <p className="mt-1 text-sm text-muted">Las 6 publicaciones académicas más recientes del grupo, incluyendo apuntes, audios, materiales y tareas.</p>
         </div>
+
         <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(21rem,1fr)]">
-          <div className="stagger-children grid content-start gap-4 md:grid-cols-2">
-            {selectedMaterials.map((material) => {
-              const Icon = kindIcon(material.kind);
-              const editable = canEditPublication(directory, user?.id, material.createdBy);
-              return (
-                <Card key={material.id} interactive className="group soft-raise overflow-hidden p-0">
-                  {isImageFile(material) ? <div className="h-48 overflow-hidden bg-bg-warm"><img src={material.fileUrl ?? ""} alt={material.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.04]" /></div> : null}
-                  <div className="p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex flex-wrap items-center gap-2"><Pill tone={material.kind === "Tarea" ? "clay" : "forest"}>{material.kind}</Pill><Pill tone={material.courseCode === GENERAL_COURSE_CODE ? "clay" : "neutral"}>{material.courseCode === GENERAL_COURSE_CODE ? "General" : material.courseCode}</Pill></div>
-                      {editable ? <button type="button" onClick={() => { setEditingMaterial(material); setSelectedCourseCode(material.courseCode); setSelectedProfessor(material.professorName); setError(null); setSuccess(null); }} className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-forest"><Pencil className="size-3.5" />Editar</button> : null}
-                    </div>
-                    <div className="mt-4 flex items-start gap-3"><span className="grid size-9 shrink-0 place-items-center rounded-lg bg-forest-soft text-forest"><Icon className="size-4" /></span><div><h3 className="font-display text-xl leading-tight">{material.title}</h3><p className="mt-1 text-xs font-medium text-forest">{material.courseName}</p></div></div>
-                    <div className="mt-3 grid gap-1 text-xs text-muted"><span className="inline-flex items-center gap-1.5"><UserRound className="size-3.5" />{material.professorName}</span></div>
-                    {material.body ? <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{material.body}</p> : null}
-                    {material.referencesText ? <div className="mt-4 rounded-lg bg-bg-warm p-3"><p className="text-xs font-semibold uppercase tracking-wide text-forest">Referencias</p><p className="mt-1 whitespace-pre-line text-sm text-muted">{material.referencesText}</p></div> : null}
-                    {material.bibliographyText ? <div className="mt-3 rounded-lg border border-clay/15 bg-clay/5 p-3"><p className="text-xs font-semibold uppercase tracking-wide text-clay">Bibliografía</p><p className="mt-1 whitespace-pre-line text-sm text-muted">{material.bibliographyText}</p></div> : null}
-                    {material.audioUrl ? <div className="mt-3 rounded-lg border border-forest/15 bg-forest-soft p-3"><p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-forest"><Headphones className="size-3.5" />Audio de la clase</p><p className="mt-1 text-sm text-muted">{material.audioLabel || "Audio relacionado con esta sesión"}</p><div className="mt-3"><ProtectedAudioButton href={material.audioUrl} allowed={resourceAllowed} onBlocked={blockResource} /></div></div> : null}
-                    <div className="mt-4 flex flex-wrap gap-2">{material.fileUrl ? <a href={material.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md bg-forest px-3 py-2 text-xs font-semibold text-bg">{isImageFile(material) ? <ImageIcon className="size-3.5" /> : <FileText className="size-3.5" />}{material.fileName || "Abrir archivo"}</a> : null}{material.externalUrl ? <a href={material.externalUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 rounded-md border border-line bg-surface px-3 py-2 text-xs font-semibold text-forest"><ExternalLink className="size-3.5" />Liga complementaria</a> : null}</div>
-                    <p className="mt-4 text-xs text-muted">Registrado por {material.authorAlias}</p>
-                  </div>
-                </Card>
-              );
-            })}
-            {selectedTasks.map((task) => {
-              const editable = canEditPublication(directory, user?.id, task.createdBy);
-              const taskSummary = task.instructions.replace(/\s+/g, " ").trim();
-              const shortTaskSummary = taskSummary.length > 420 ? `${taskSummary.slice(0, 417).trimEnd()}…` : taskSummary;
-              return (
-                <Card key={`task-${task.id}`} interactive className="border-clay/20 bg-clay/[0.035]">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="flex flex-wrap items-center gap-2"><Pill tone="clay">Tarea</Pill><Pill>{task.courseCode}</Pill><span className="text-xs font-semibold text-danger">Entrega {formatLongDate(task.dueDate)}</span></div>
-                    <Link to="/tareas" className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-forest">{editable ? <Pencil className="size-3.5" /> : <BookOpenCheck className="size-3.5" />}{editable ? "Editar en Tareas" : "Ver tarea"}</Link>
-                  </div>
-                  <div className="mt-4 flex items-start gap-3">
-                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-clay/10 text-clay"><BookOpenCheck className="size-4" /></span>
-                    <div><h3 className="font-display text-xl leading-tight">{task.title}</h3><p className="mt-1 text-xs font-medium text-forest">{task.courseName}</p></div>
-                  </div>
-                  <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted"><UserRound className="size-3.5" />{task.professorName}</p>
-                  {shortTaskSummary ? <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{shortTaskSummary}</p> : null}
-                  <div className="mt-4 grid gap-2 rounded-lg bg-bg-warm p-3 text-xs text-muted sm:grid-cols-2">
-                    <span><strong className="text-ink">Método:</strong> {task.deliveryMethod}</span>
-                    <span><strong className="text-ink">Registrada por:</strong> {task.authorAlias}</span>
-                  </div>
-                </Card>
-              );
-            })}
-            {!selectedMaterials.length && !selectedTasks.length ? <Card><CalendarDays className="size-5 text-forest" /><p className="mt-3 font-display text-xl">Todavía no hay registro de este día.</p><p className="mt-1 text-sm text-muted">Selecciona una de las clases programadas y agrega el tema, apuntes, fotografías, bibliografía o una tarea.</p></Card> : null}
-          </div>
+          <Card className="overflow-hidden p-0">
+            {latestAcademicItems.length ? (
+              <div className="divide-y divide-line">
+                {latestAcademicItems.map((recent) => {
+                  const summary = recent.detail.replace(/\s+/g, " ").trim();
+                  const shortSummary = summary.length > 190 ? `${summary.slice(0, 187).trimEnd()}…` : summary;
+                  return (
+                    <article key={recent.key} className="px-5 py-4 transition-colors hover:bg-bg-warm/55">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Pill tone={recent.kind === "Tarea" ? "clay" : "forest"}>{recent.kind}</Pill>
+                        <Pill tone={recent.courseCode === GENERAL_COURSE_CODE ? "clay" : "neutral"}>
+                          {recent.courseCode === GENERAL_COURSE_CODE ? "General" : recent.courseCode}
+                        </Pill>
+                        <span className="text-xs text-muted">{formatLongDate(recent.classDate)}</span>
+                        {recent.dueDate ? <span className="text-xs font-semibold text-danger">Entrega {formatLongDate(recent.dueDate)}</span> : null}
+                      </div>
+
+                      <h3 className="mt-2 font-display text-xl leading-tight text-ink">{recent.title}</h3>
+                      <p className="mt-1 text-xs font-medium text-forest">
+                        {recent.courseCode === GENERAL_COURSE_CODE ? "Todas las clases" : recent.courseName} · {recent.professorName}
+                      </p>
+                      {shortSummary ? <p className="mt-2 text-sm leading-relaxed text-muted">{shortSummary}</p> : null}
+
+                      {recent.source === "task" ? (
+                        <div className="mt-3">
+                          {resourceAllowed ? (
+                            <Link to="/tareas" className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5">
+                              <BookOpenCheck className="size-3.5" />Ir a la tarea
+                            </Link>
+                          ) : (
+                            <button type="button" onClick={() => setResourceNotice(true)} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-clay/25 bg-clay/10 px-3 text-xs font-semibold text-clay">
+                              <LockKeyhole className="size-3.5" />Regístrate para abrir
+                            </button>
+                          )}
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="p-5 text-sm text-muted">Todavía no hay registros académicos publicados.</div>
+            )}
+          </Card>
 
           <div id="catedra-form" className="scroll-mt-6 lg:sticky lg:top-6 lg:self-start">
             {editingMaterial ? (
@@ -504,62 +525,6 @@ function CatedrasPage() {
             )}
           </div>
         </div>
-      </section>
-
-      <section className="mt-10">
-        <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Actividad reciente</p>
-            <h2 className="mt-1 font-display text-3xl">Últimas publicaciones</h2>
-            <p className="mt-1 text-sm text-muted">Las 6 publicaciones académicas más recientes, incluyendo apuntes, audios, materiales y tareas publicadas en Trabajos y tareas.</p>
-          </div>
-          <Pill tone="forest">{latestAcademicItems.length} recientes</Pill>
-        </div>
-
-        <Card className="overflow-hidden p-0">
-          {latestAcademicItems.length ? (
-            <div className="divide-y divide-line">
-              {latestAcademicItems.map((recent) => {
-                const summary = recent.detail.replace(/\s+/g, " ").trim();
-                const shortSummary = summary.length > 170 ? `${summary.slice(0, 167).trimEnd()}…` : summary;
-                const editableMaterial = recent.source === "material" && canEditPublication(directory, user?.id, recent.material.createdBy);
-                return (
-                  <div key={recent.key} className="grid gap-4 px-5 py-4 transition-colors hover:bg-bg-warm/55 md:grid-cols-[7rem_minmax(0,1fr)_auto] md:items-center">
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">{recent.source === "task" ? "Se dejó" : "Clase"}</p>
-                      <p className="mt-1 font-display text-lg capitalize text-ink">{formatLongDate(recent.classDate)}</p>
-                      {recent.dueDate ? <p className="mt-1 text-xs font-semibold text-danger">Entrega {formatLongDate(recent.dueDate)}</p> : null}
-                    </div>
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Pill tone={recent.kind === "Tarea" ? "clay" : "forest"}>{recent.kind}</Pill>
-                        <Pill tone={recent.courseCode === GENERAL_COURSE_CODE ? "clay" : "neutral"}>{recent.courseCode === GENERAL_COURSE_CODE ? "General" : recent.courseCode}</Pill>
-                        <span className="text-xs text-muted">{recent.courseCode === GENERAL_COURSE_CODE ? "Todas las clases" : recent.courseName}</span>
-                      </div>
-                      <h3 className="mt-2 font-display text-xl leading-tight text-ink">{recent.title}</h3>
-                      <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-forest"><UserRound className="size-3.5" />{recent.professorName}</p>
-                      <p className="mt-2 text-sm leading-relaxed text-muted">{shortSummary}</p>
-                    </div>
-                    <div className="flex flex-wrap gap-2 md:justify-end">
-                      {recent.source === "task" ? (
-                        <Link to="/tareas" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition hover:-translate-y-0.5"><BookOpenCheck className="size-3.5" />Ver tarea</Link>
-                      ) : editableMaterial ? (
-                        <button type="button" onClick={() => { const material = recent.material; setEditingMaterial(material); setSelectedDate(material.classDate); setMonthCursor(`${material.classDate.slice(0, 7)}-01`); setSelectedCourseCode(material.courseCode); setSelectedProfessor(material.professorName); setError(null); setSuccess(null); window.setTimeout(() => document.getElementById("catedra-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition hover:-translate-y-0.5">
-                          <Pencil className="size-3.5" />Editar
-                        </button>
-                      ) : null}
-                      <button type="button" onClick={() => { setSelectedDate(recent.classDate); setMonthCursor(`${recent.classDate.slice(0, 7)}-01`); setEditingMaterial(null); setError(null); setSuccess(null); window.setTimeout(() => document.getElementById("catedras-expediente")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5">
-                        <CalendarDays className="size-3.5" />Ver fecha
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="p-5 text-sm text-muted">Todavía no hay publicaciones en Cátedras.</div>
-          )}
-        </Card>
       </section>
     </Shell>
   );
