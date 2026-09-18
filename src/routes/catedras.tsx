@@ -109,7 +109,7 @@ function weekdayIndex(iso: string) {
 }
 
 function CatedrasPage() {
-  const { courses, professors, materials } = useBoard();
+  const { courses, professors, materials, tasks } = useBoard();
   const refresh = useRefreshBoard();
   const boardStatus = useBoardStatus();
   const { user, directory } = useDirectory();
@@ -139,8 +139,9 @@ function CatedrasPage() {
   const entriesByDate = useMemo(() => {
     const map = new Map<string, number>();
     for (const material of materials) map.set(material.classDate, (map.get(material.classDate) ?? 0) + 1);
+    for (const task of tasks) map.set(task.assignedDate, (map.get(task.assignedDate) ?? 0) + 1);
     return map;
-  }, [materials]);
+  }, [materials, tasks]);
   const selectedMaterials = useMemo(
     () => materials
       .filter((item) => item.classDate === selectedDate)
@@ -151,16 +152,51 @@ function CatedrasPage() {
       }),
     [materials, selectedDate],
   );
-  const latestMaterials = useMemo(
-    () => [...materials]
+  const selectedTasks = useMemo(
+    () => tasks
+      .filter((task) => task.assignedDate === selectedDate)
+      .sort((a, b) => a.courseCode.localeCompare(b.courseCode) || a.dueDate.localeCompare(b.dueDate)),
+    [tasks, selectedDate],
+  );
+  const latestAcademicItems = useMemo(() => {
+    const materialItems = materials.map((material) => ({
+      key: `material-${material.id}`,
+      source: "material" as const,
+      title: material.title,
+      kind: material.kind,
+      courseCode: material.courseCode,
+      courseName: material.courseName,
+      professorName: material.professorName,
+      classDate: material.classDate,
+      dueDate: null as string | null,
+      detail: material.body || material.audioLabel || material.referencesText || material.bibliographyText || "Sin descripción adicional.",
+      createdAt: material.createdAt,
+      createdBy: material.createdBy,
+      material,
+    }));
+    const taskItems = tasks.map((task) => ({
+      key: `task-${task.id}`,
+      source: "task" as const,
+      title: task.title,
+      kind: "Tarea",
+      courseCode: task.courseCode,
+      courseName: task.courseName,
+      professorName: task.professorName,
+      classDate: task.assignedDate,
+      dueDate: task.dueDate,
+      detail: task.instructions || task.deliveryDetails || task.documentationText || "Tarea sin instrucciones adicionales.",
+      createdAt: task.createdAt,
+      createdBy: task.createdBy,
+      task,
+    }));
+    return [...materialItems, ...taskItems]
       .sort((a, b) => {
         const createdDelta = Date.parse(b.createdAt) - Date.parse(a.createdAt);
         if (Number.isFinite(createdDelta) && createdDelta !== 0) return createdDelta;
-        return b.id - a.id;
+        return b.classDate.localeCompare(a.classDate);
       })
-      .slice(0, 6),
-    [materials],
-  );
+      .slice(0, 6);
+  }, [materials, tasks]);
   const isClassDay = weekdayIndex(selectedDate) >= 1 && weekdayIndex(selectedDate) <= 5;
   const scheduledCourses = isClassDay ? ordered : [];
 
@@ -366,16 +402,17 @@ function CatedrasPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Día seleccionado</p>
               <h2 className="mt-1 font-display text-3xl capitalize">{formatLongDate(selectedDate)}</h2>
             </div>
-            <Pill tone="forest">{selectedMaterials.length} registros</Pill>
+            <Pill tone="forest">{selectedMaterials.length + selectedTasks.length} registros</Pill>
           </div>
           <p className="mt-2 text-sm text-muted">{isClassDay ? `${scheduledCourses.length} materias programadas en el horario del grupo.` : "No hay clases regulares programadas para este día."}</p>
           <div className="mt-5 grid gap-2">
             {scheduledCourses.map((course) => {
               const count = selectedMaterials.filter((item) => item.courseCode === course.code).length;
+              const taskCount = selectedTasks.filter((task) => task.courseCode === course.code).length;
               return (
                 <div key={course.code} className="grid gap-3 rounded-xl border border-line bg-bg-warm/55 p-3 sm:grid-cols-[1fr_auto] sm:items-center">
                   <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-2"><Pill>{course.code}</Pill>{count ? <Pill tone="clay">{count} guardado{count === 1 ? "" : "s"}</Pill> : null}</div>
+                    <div className="flex flex-wrap items-center gap-2"><Pill>{course.code}</Pill>{count ? <Pill tone="forest">{count} registro{count === 1 ? "" : "s"}</Pill> : null}{taskCount ? <Pill tone="clay">{taskCount} tarea{taskCount === 1 ? "" : "s"}</Pill> : null}</div>
                     <p className="mt-2 font-semibold">{course.name}</p>
                     <p className="mt-1 text-xs text-muted">{course.timeSlot} · {course.place}</p>
                     <p className="mt-1 text-xs font-medium text-forest">{course.chair}</p>
@@ -419,7 +456,30 @@ function CatedrasPage() {
                 </Card>
               );
             })}
-            {!selectedMaterials.length ? <Card><CalendarDays className="size-5 text-forest" /><p className="mt-3 font-display text-xl">Todavía no hay registro de este día.</p><p className="mt-1 text-sm text-muted">Selecciona una de las clases programadas y agrega el tema, apuntes, fotografías o bibliografía.</p></Card> : null}
+            {selectedTasks.map((task) => {
+              const editable = canEditPublication(directory, user?.id, task.createdBy);
+              const taskSummary = task.instructions.replace(/\s+/g, " ").trim();
+              const shortTaskSummary = taskSummary.length > 420 ? `${taskSummary.slice(0, 417).trimEnd()}…` : taskSummary;
+              return (
+                <Card key={`task-${task.id}`} interactive className="border-clay/20 bg-clay/[0.035]">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2"><Pill tone="clay">Tarea</Pill><Pill>{task.courseCode}</Pill><span className="text-xs font-semibold text-danger">Entrega {formatLongDate(task.dueDate)}</span></div>
+                    <Link to="/tareas" className="inline-flex items-center gap-1 rounded-md border border-line bg-white px-2.5 py-1.5 text-xs font-semibold text-forest">{editable ? <Pencil className="size-3.5" /> : <BookOpenCheck className="size-3.5" />}{editable ? "Editar en Tareas" : "Ver tarea"}</Link>
+                  </div>
+                  <div className="mt-4 flex items-start gap-3">
+                    <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-clay/10 text-clay"><BookOpenCheck className="size-4" /></span>
+                    <div><h3 className="font-display text-xl leading-tight">{task.title}</h3><p className="mt-1 text-xs font-medium text-forest">{task.courseName}</p></div>
+                  </div>
+                  <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted"><UserRound className="size-3.5" />{task.professorName}</p>
+                  {shortTaskSummary ? <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-muted">{shortTaskSummary}</p> : null}
+                  <div className="mt-4 grid gap-2 rounded-lg bg-bg-warm p-3 text-xs text-muted sm:grid-cols-2">
+                    <span><strong className="text-ink">Método:</strong> {task.deliveryMethod}</span>
+                    <span><strong className="text-ink">Registrada por:</strong> {task.authorAlias}</span>
+                  </div>
+                </Card>
+              );
+            })}
+            {!selectedMaterials.length && !selectedTasks.length ? <Card><CalendarDays className="size-5 text-forest" /><p className="mt-3 font-display text-xl">Todavía no hay registro de este día.</p><p className="mt-1 text-sm text-muted">Selecciona una de las clases programadas y agrega el tema, apuntes, fotografías, bibliografía o una tarea.</p></Card> : null}
           </div>
 
           <div id="catedra-form" className="scroll-mt-6 lg:sticky lg:top-6 lg:self-start">
@@ -451,41 +511,44 @@ function CatedrasPage() {
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.14em] text-clay">Actividad reciente</p>
             <h2 className="mt-1 font-display text-3xl">Últimas publicaciones</h2>
-            <p className="mt-1 text-sm text-muted">Las 6 entradas más recientes de Cátedras, sin importar la fecha seleccionada en el calendario.</p>
+            <p className="mt-1 text-sm text-muted">Las 6 publicaciones académicas más recientes, incluyendo apuntes, audios, materiales y tareas publicadas en Trabajos y tareas.</p>
           </div>
-          <Pill tone="forest">{latestMaterials.length} recientes</Pill>
+          <Pill tone="forest">{latestAcademicItems.length} recientes</Pill>
         </div>
 
         <Card className="overflow-hidden p-0">
-          {latestMaterials.length ? (
+          {latestAcademicItems.length ? (
             <div className="divide-y divide-line">
-              {latestMaterials.map((material) => {
-                const editable = canEditPublication(directory, user?.id, material.createdBy);
-                const summary = (material.body || material.audioLabel || material.referencesText || material.bibliographyText || "Sin descripción adicional.").replace(/\s+/g, " ").trim();
+              {latestAcademicItems.map((recent) => {
+                const summary = recent.detail.replace(/\s+/g, " ").trim();
                 const shortSummary = summary.length > 170 ? `${summary.slice(0, 167).trimEnd()}…` : summary;
+                const editableMaterial = recent.source === "material" && canEditPublication(directory, user?.id, recent.material.createdBy);
                 return (
-                  <div key={`recent-${material.id}`} className="grid gap-4 px-5 py-4 transition-colors hover:bg-bg-warm/55 md:grid-cols-[7rem_minmax(0,1fr)_auto] md:items-center">
+                  <div key={recent.key} className="grid gap-4 px-5 py-4 transition-colors hover:bg-bg-warm/55 md:grid-cols-[7rem_minmax(0,1fr)_auto] md:items-center">
                     <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">Clase</p>
-                      <p className="mt-1 font-display text-lg capitalize text-ink">{formatLongDate(material.classDate)}</p>
+                      <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">{recent.source === "task" ? "Se dejó" : "Clase"}</p>
+                      <p className="mt-1 font-display text-lg capitalize text-ink">{formatLongDate(recent.classDate)}</p>
+                      {recent.dueDate ? <p className="mt-1 text-xs font-semibold text-danger">Entrega {formatLongDate(recent.dueDate)}</p> : null}
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
-                        <Pill tone={material.kind === "Tarea" ? "clay" : "forest"}>{material.kind}</Pill>
-                        <Pill tone={material.courseCode === GENERAL_COURSE_CODE ? "clay" : "neutral"}>{material.courseCode === GENERAL_COURSE_CODE ? "General" : material.courseCode}</Pill>
-                        <span className="text-xs text-muted">{material.courseCode === GENERAL_COURSE_CODE ? "Todas las clases" : material.courseName}</span>
+                        <Pill tone={recent.kind === "Tarea" ? "clay" : "forest"}>{recent.kind}</Pill>
+                        <Pill tone={recent.courseCode === GENERAL_COURSE_CODE ? "clay" : "neutral"}>{recent.courseCode === GENERAL_COURSE_CODE ? "General" : recent.courseCode}</Pill>
+                        <span className="text-xs text-muted">{recent.courseCode === GENERAL_COURSE_CODE ? "Todas las clases" : recent.courseName}</span>
                       </div>
-                      <h3 className="mt-2 font-display text-xl leading-tight text-ink">{material.title}</h3>
-                      <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-forest"><UserRound className="size-3.5" />{material.professorName}</p>
+                      <h3 className="mt-2 font-display text-xl leading-tight text-ink">{recent.title}</h3>
+                      <p className="mt-1 inline-flex items-center gap-1.5 text-xs font-medium text-forest"><UserRound className="size-3.5" />{recent.professorName}</p>
                       <p className="mt-2 text-sm leading-relaxed text-muted">{shortSummary}</p>
                     </div>
                     <div className="flex flex-wrap gap-2 md:justify-end">
-                      {editable ? (
-                        <button type="button" onClick={() => { setEditingMaterial(material); setSelectedDate(material.classDate); setMonthCursor(`${material.classDate.slice(0, 7)}-01`); setSelectedCourseCode(material.courseCode); setSelectedProfessor(material.professorName); setError(null); setSuccess(null); window.setTimeout(() => document.getElementById("catedra-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition hover:-translate-y-0.5">
+                      {recent.source === "task" ? (
+                        <Link to="/tareas" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition hover:-translate-y-0.5"><BookOpenCheck className="size-3.5" />Ver tarea</Link>
+                      ) : editableMaterial ? (
+                        <button type="button" onClick={() => { const material = recent.material; setEditingMaterial(material); setSelectedDate(material.classDate); setMonthCursor(`${material.classDate.slice(0, 7)}-01`); setSelectedCourseCode(material.courseCode); setSelectedProfessor(material.professorName); setError(null); setSuccess(null); window.setTimeout(() => document.getElementById("catedra-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition hover:-translate-y-0.5">
                           <Pencil className="size-3.5" />Editar
                         </button>
                       ) : null}
-                      <button type="button" onClick={() => openRecent(material)} className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5">
+                      <button type="button" onClick={() => { setSelectedDate(recent.classDate); setMonthCursor(`${recent.classDate.slice(0, 7)}-01`); setEditingMaterial(null); setError(null); setSuccess(null); window.setTimeout(() => document.getElementById("catedras-expediente")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0); }} className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5">
                         <CalendarDays className="size-3.5" />Ver fecha
                       </button>
                     </div>
