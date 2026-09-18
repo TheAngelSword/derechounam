@@ -8,12 +8,15 @@ import {
   Headphones,
   Megaphone,
   ShoppingBasket,
+  UserPlus,
+  LogIn,
   type LucideIcon,
 } from "lucide-react";
 import { Shell } from "@/components/shell";
 import { Card, Pill } from "@/components/ui";
 import { useBoard } from "@/components/board-context";
 import { formatLongDate } from "@/lib/format";
+import { useCurrentUserState } from "@/lib/auth/use-current-user";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -55,6 +58,85 @@ function newest(items: ActivityItem[]) {
 }
 
 function Home() {
+  const { user, isPending } = useCurrentUserState();
+
+  if (isPending) {
+    return (
+      <Shell
+        eyebrow="Grupo 9114 · Facultad de Derecho"
+        title="Portal académico del grupo 9114"
+        lead="Comprobando tu sesión…"
+      >
+        <Card className="min-h-48 animate-pulse bg-bg-warm" />
+      </Shell>
+    );
+  }
+
+  if (!user) return <GuestHome />;
+  return <AuthenticatedHome />;
+}
+
+function GuestHome() {
+  return (
+    <Shell
+      eyebrow="Grupo 9114 · Facultad de Derecho"
+      title="Regístrate para tener acceso a todos los recursos del portal."
+      lead="El resumen de actividades y los recursos del grupo están disponibles al iniciar sesión con una cuenta del portal."
+    >
+      <Card className="unam-hero-card hero-glow overflow-hidden p-0">
+        <div className="grid gap-8 px-6 py-8 sm:px-8 sm:py-10 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-bg/60">Comunidad académica · Grupo 9114</p>
+            <h2 className="mt-3 max-w-3xl font-display text-3xl leading-tight sm:text-4xl">Tu material del semestre en un solo lugar.</h2>
+            <p className="mt-3 max-w-2xl text-sm leading-relaxed text-bg/75 sm:text-base">
+              Regístrate para consultar las últimas actividades, libros, audios, tareas, apuntes, avisos y demás recursos compartidos por el grupo.
+            </p>
+            <p className="mt-4 text-sm font-semibold text-clay-soft">Sólo se necesita tu correo y una contraseña.</p>
+          </div>
+
+          <div className="grid min-w-[15rem] gap-3">
+            <Link
+              to="/login"
+              search={{ mode: "alta" }}
+              className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-white px-5 text-sm font-bold text-forest shadow-md transition-all hover:-translate-y-0.5 hover:shadow-lg"
+            >
+              <UserPlus className="size-4" />
+              Inicia tu registro
+            </Link>
+            <Link
+              to="/login"
+              search={{ mode: "entrar" }}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-white/20 bg-white/10 px-5 text-sm font-semibold text-white transition hover:bg-white/15"
+            >
+              <LogIn className="size-4" />
+              Ya tengo cuenta
+            </Link>
+          </div>
+        </div>
+      </Card>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-3">
+        <Card>
+          <BookOpen className="size-5 text-forest" />
+          <p className="mt-3 font-display text-xl">Libros y documentos</p>
+          <p className="mt-1 text-sm text-muted">Consulta la biblioteca académica del grupo después de entrar.</p>
+        </Card>
+        <Card>
+          <Headphones className="size-5 text-forest" />
+          <p className="mt-3 font-display text-xl">Audios y apuntes</p>
+          <p className="mt-1 text-sm text-muted">Revisa materiales vinculados a las clases y al calendario académico.</p>
+        </Card>
+        <Card>
+          <ClipboardCheck className="size-5 text-forest" />
+          <p className="mt-3 font-display text-xl">Trabajos y actividades</p>
+          <p className="mt-1 text-sm text-muted">Mantén a la mano tareas, fechas y publicaciones recientes del grupo.</p>
+        </Card>
+      </div>
+    </Shell>
+  );
+}
+
+function AuthenticatedHome() {
   const board = useBoard();
 
   const audioItems = newest(board.materials.filter((material) => Boolean(material.audioUrl)).map((material) => ({

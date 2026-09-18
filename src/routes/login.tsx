@@ -3,10 +3,16 @@ import { useState, type FormEvent } from "react";
 import { AUTH_PROVIDERS, authClient, authEnabled, googleAuthEnabled, signIn } from "@/lib/auth/client";
 import { Button, Field, Input } from "@/components/ui";
 
-export const Route = createFileRoute("/login")({ component: Login });
+export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    mode: search.mode === "alta" ? ("alta" as const) : ("entrar" as const),
+  }),
+  component: Login,
+});
 
 function Login() {
-  const [mode, setMode] = useState<"entrar" | "alta">("entrar");
+  const { mode: initialMode } = Route.useSearch();
+  const [mode, setMode] = useState<"entrar" | "alta">(initialMode);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -16,7 +22,6 @@ function Login() {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
-    const name = String(form.get("name") ?? "").trim();
     if (!email || password.length < 8) {
       setError("Usa un correo y una clave de al menos 8 caracteres.");
       return;
@@ -27,7 +32,7 @@ function Login() {
         const result = await authClient.signUp.email({
           email,
           password,
-          name: name || email.split("@")[0] || "Alumno",
+          name: email.split("@")[0] || "Alumno",
           callbackURL: "/registro",
         });
         if (result.error) throw new Error(result.error.message || "No se pudo dar de alta");
@@ -97,11 +102,6 @@ function Login() {
             </button>
           </div>
           <form className="grid gap-3" onSubmit={onEmail}>
-            {mode === "alta" ? (
-              <Field label="Cómo te conocen en clase">
-                <Input name="name" placeholder="Mesa 9114" />
-              </Field>
-            ) : null}
             <Field label="Correo">
               <Input name="email" type="email" required placeholder="nombre@correo.com" />
             </Field>
