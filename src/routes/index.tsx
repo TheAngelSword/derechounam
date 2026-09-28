@@ -17,6 +17,7 @@ import { Card, Pill } from "@/components/ui";
 import { useBoard } from "@/components/board-context";
 import { formatLongDate } from "@/lib/format";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
+import { APP_VERSION } from "@/lib/app-version";
 
 export const Route = createFileRoute("/")({ component: Home });
 
@@ -223,7 +224,7 @@ function AuthenticatedHome() {
       title="Las últimas actividades"
       lead="Lo más reciente del portal en un solo lugar: audios, libros, tareas, servicios, agenda, bitácora y avisos. Se muestran como máximo cinco categorías, con las últimas tres publicaciones de cada una."
     >
-      <Card className="unam-hero-card hero-glow mb-7" interactive>
+      <Card className="unam-hero-card hero-glow relative mb-7 pb-8" interactive>
         <div className="grid gap-5 md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.15em] text-bg/60">Actividad reciente · Grupo 9114</p>
@@ -236,6 +237,9 @@ function AuthenticatedHome() {
             <HeroStat value={board.tasks.length} label="tareas" />
           </div>
         </div>
+        <span className="absolute bottom-3 right-4 text-[10px] font-semibold tracking-[0.12em] text-bg/45">
+          V{APP_VERSION}
+        </span>
       </Card>
 
       {sections.length ? (
