@@ -16,6 +16,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   Users,
+  Vote,
   X,
 } from "lucide-react";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
@@ -27,6 +28,7 @@ const NAV = [
   { to: "/clases", label: "Horarios", icon: GraduationCap },
   { to: "/catedras", label: "Cátedras", icon: Landmark },
   { to: "/agenda", label: "Agenda", icon: CalendarDays },
+  { to: "/votaciones", label: "Votaciones", icon: Vote },
   { to: "/tareas", label: "Tareas", icon: ClipboardCheck },
   { to: "/biblioteca", label: "Libros", icon: BookOpen },
   { to: "/bitacora", label: "Bitácora", icon: Camera },
