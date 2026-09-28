@@ -12,7 +12,7 @@ import {
   Pencil,
   X,
 } from "lucide-react";
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Shell } from "@/components/shell";
 import { useBoard, useRefreshBoard } from "@/components/board-context";
 import { canEditPublication, useAreaVisit, useDirectory } from "@/components/directory";
@@ -58,6 +58,7 @@ function TareasPage() {
   const [filter, setFilter] = useState<ActiveFilter>("Todas activas");
   const [professorFilter, setProfessorFilter] = useState("Todos");
   const [showPast, setShowPast] = useState(false);
+  const [expandedTaskId, setExpandedTaskId] = useState<number | null>(null);
   const [editing, setEditing] = useState<TaskItem | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -93,6 +94,22 @@ function TareasPage() {
     const days = daysBetween(today, task.dueDate);
     return days >= 0 && days <= 7;
   }).length;
+
+  useEffect(() => {
+    function openTaskFromHash() {
+      const match = window.location.hash.match(/^#tarea-(\d+)$/);
+      if (!match) return;
+      const id = Number(match[1]);
+      const task = tasks.find((item) => item.id === id);
+      if (!task) return;
+      setExpandedTaskId(id);
+      if (task.dueDate < today) setShowPast(true);
+      window.setTimeout(() => document.getElementById(`tarea-${id}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+    }
+    openTaskFromHash();
+    window.addEventListener("hashchange", openTaskFromHash);
+    return () => window.removeEventListener("hashchange", openTaskFromHash);
+  }, [tasks, today]);
 
   async function onCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -213,6 +230,8 @@ function TareasPage() {
                 books={books}
                 editable={canEditPublication(directory, user?.id, task.createdBy)}
                 onEdit={() => beginEdit(task)}
+                expanded={expandedTaskId === task.id}
+                onToggle={() => setExpandedTaskId((current) => current === task.id ? null : task.id)}
               />
             )) : (
               <Card><p className="text-sm text-muted">No hay tareas activas que coincidan con este filtro.</p></Card>
@@ -243,6 +262,8 @@ function TareasPage() {
                     books={books}
                     editable={canEditPublication(directory, user?.id, task.createdBy)}
                     onEdit={() => beginEdit(task)}
+                    expanded={expandedTaskId === task.id}
+                    onToggle={() => setExpandedTaskId((current) => current === task.id ? null : task.id)}
                     past
                   />
                 )) : <Card><p className="text-sm text-muted">Todavía no hay tareas pasadas con este filtro.</p></Card>}
@@ -283,6 +304,8 @@ function TaskListItem({
   books,
   editable,
   onEdit,
+  expanded,
+  onToggle,
   past = false,
 }: {
   task: TaskItem;
@@ -290,6 +313,8 @@ function TaskListItem({
   books: BookItem[];
   editable: boolean;
   onEdit: () => void;
+  expanded: boolean;
+  onToggle: () => void;
   past?: boolean;
 }) {
   const book = task.bookId ? books.find((item) => item.id === task.bookId) : null;
@@ -297,7 +322,8 @@ function TaskListItem({
   const urgent = !past && days >= 0 && days <= 2;
 
   return (
-    <Card interactive className={cn("soft-raise px-4 py-4", past && "bg-bg-warm/45 opacity-90") }>
+    <Card interactive className={cn("soft-raise scroll-mt-24 px-4 py-4", past && "bg-bg-warm/45 opacity-90", expanded && "border-forest/35 ring-2 ring-forest/10")} >
+      <div id={`tarea-${task.id}`} className="relative -top-24" aria-hidden="true" />
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
@@ -328,12 +354,43 @@ function TaskListItem({
           {task.documentationText ? <span className="inline-flex items-center gap-1"><FileText className="size-3.5" />Con documentación</span> : null}
           <span>Publicó {task.authorAlias}</span>
         </div>
-        {editable ? (
-          <button type="button" onClick={onEdit} className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition-all hover:-translate-y-0.5 hover:border-forest/30">
-            <Pencil className="size-3.5" />Editar
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={onToggle} className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition-all hover:-translate-y-0.5 hover:border-forest/30">
+            <FileText className="size-3.5" />{expanded ? "Ocultar tarea" : "Ver tarea completa"}
           </button>
-        ) : null}
+          {editable ? (
+            <button type="button" onClick={onEdit} className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition-all hover:-translate-y-0.5 hover:border-forest/30">
+              <Pencil className="size-3.5" />Editar
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      {expanded ? (
+        <div className="mt-4 grid gap-3 border-t border-line pt-4">
+          <div className="rounded-xl border border-line bg-bg-warm/45 p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay">Instrucciones completas</p>
+            <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{task.instructions}</p>
+          </div>
+          {task.documentationText ? (
+            <div className="rounded-xl border border-line bg-bg-warm/45 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay">Documentación / referencia</p>
+              <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{task.documentationText}</p>
+            </div>
+          ) : null}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="rounded-xl border border-line bg-bg-warm/45 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay">Método de entrega</p>
+              <p className="mt-2 text-sm font-semibold text-ink">{task.deliveryMethod}</p>
+              {task.deliveryDetails ? <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted">{task.deliveryDetails}</p> : null}
+            </div>
+            <div className="rounded-xl border border-line bg-bg-warm/45 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay">Libro / recurso</p>
+              <p className="mt-2 text-sm text-ink-soft">{book?.title || task.resourceTitle || "No depende de un libro del portal."}</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </Card>
   );
 }

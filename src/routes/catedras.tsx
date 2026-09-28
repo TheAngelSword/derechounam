@@ -30,7 +30,7 @@ import { PublishGate } from "@/components/publish-gate";
 import { addClassMaterial, updateClassMaterial } from "@/lib/content";
 import { uploadToAtrioMedia } from "@/lib/media-upload";
 import { formatLongDate, getTodayIso } from "@/lib/format";
-import type { ClassMaterial, Course } from "@/lib/types";
+import type { ClassMaterial, Course, TaskItem } from "@/lib/types";
 
 export const Route = createFileRoute("/catedras")({ component: CatedrasPage });
 
@@ -39,6 +39,38 @@ type MaterialKind = (typeof MATERIAL_KINDS)[number];
 const WEEK_LABELS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 const GENERAL_COURSE_CODE = "GENERAL";
 const GENERAL_PROFESSOR = "Todos los profesores · Grupo 9114";
+
+type AcademicItem =
+  | {
+      key: string;
+      source: "material";
+      title: string;
+      kind: ClassMaterial["kind"];
+      courseCode: string;
+      courseName: string;
+      professorName: string;
+      classDate: string;
+      dueDate: null;
+      detail: string;
+      createdAt: string;
+      createdBy?: string;
+      material: ClassMaterial;
+    }
+  | {
+      key: string;
+      source: "task";
+      title: string;
+      kind: "Tarea";
+      courseCode: string;
+      courseName: string;
+      professorName: string;
+      classDate: string;
+      dueDate: string;
+      detail: string;
+      createdAt: string;
+      createdBy?: string;
+      task: TaskItem;
+    };
 const GENERAL_COURSE: Course = {
   id: -9114,
   code: GENERAL_COURSE_CODE,
@@ -133,6 +165,7 @@ function CatedrasPage() {
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [editingMaterial, setEditingMaterial] = useState<ClassMaterial | null>(null);
   const [resourceNotice, setResourceNotice] = useState(false);
+  const [expandedAcademicKey, setExpandedAcademicKey] = useState<string | null>(null);
   const resourceAllowed = canPublish(directory);
   const showAccessBanner = !isSessionPending && !isDirectoryLoading && (!user || !directory?.me || directory.me.status !== "activo");
 
@@ -159,25 +192,25 @@ function CatedrasPage() {
       .sort((a, b) => a.courseCode.localeCompare(b.courseCode) || a.dueDate.localeCompare(b.dueDate)),
     [tasks, selectedDate],
   );
-  const latestAcademicItems = useMemo(() => {
-    const materialItems = materials.map((material) => ({
+  const academicItems = useMemo<AcademicItem[]>(() => {
+    const materialItems: AcademicItem[] = materials.map((material) => ({
       key: `material-${material.id}`,
-      source: "material" as const,
+      source: "material",
       title: material.title,
       kind: material.kind,
       courseCode: material.courseCode,
       courseName: material.courseName,
       professorName: material.professorName,
       classDate: material.classDate,
-      dueDate: null as string | null,
+      dueDate: null,
       detail: material.body || material.audioLabel || material.referencesText || material.bibliographyText || "Sin descripción adicional.",
       createdAt: material.createdAt,
       createdBy: material.createdBy,
       material,
     }));
-    const taskItems = tasks.map((task) => ({
+    const taskItems: AcademicItem[] = tasks.map((task) => ({
       key: `task-${task.id}`,
-      source: "task" as const,
+      source: "task",
       title: task.title,
       kind: "Tarea",
       courseCode: task.courseCode,
@@ -190,14 +223,21 @@ function CatedrasPage() {
       createdBy: task.createdBy,
       task,
     }));
-    return [...materialItems, ...taskItems]
-      .sort((a, b) => {
-        const createdDelta = Date.parse(b.createdAt) - Date.parse(a.createdAt);
-        if (Number.isFinite(createdDelta) && createdDelta !== 0) return createdDelta;
-        return b.classDate.localeCompare(a.classDate);
-      })
-      .slice(0, 6);
+    return [...materialItems, ...taskItems].sort((a, b) => {
+      const createdDelta = Date.parse(b.createdAt) - Date.parse(a.createdAt);
+      if (Number.isFinite(createdDelta) && createdDelta !== 0) return createdDelta;
+      return b.classDate.localeCompare(a.classDate);
+    });
   }, [materials, tasks]);
+  const latestAcademicItems = useMemo(() => academicItems.slice(0, 6), [academicItems]);
+  const selectedAcademicItems = useMemo(
+    () => academicItems.filter((item) => item.classDate === selectedDate),
+    [academicItems, selectedDate],
+  );
+  const expandedAcademicItem = useMemo(
+    () => academicItems.find((item) => item.key === expandedAcademicKey) ?? null,
+    [academicItems, expandedAcademicKey],
+  );
   const isClassDay = weekdayIndex(selectedDate) >= 1 && weekdayIndex(selectedDate) <= 5;
   const scheduledCourses = isClassDay ? ordered : [];
 
@@ -328,13 +368,14 @@ function CatedrasPage() {
     } finally { setBusy(false); }
   }
 
-  function openRecent(material: ClassMaterial) {
-    setSelectedDate(material.classDate);
-    setMonthCursor(`${material.classDate.slice(0, 7)}-01`);
+  function openAcademicItem(item: AcademicItem) {
+    setSelectedDate(item.classDate);
+    setMonthCursor(`${item.classDate.slice(0, 7)}-01`);
+    setExpandedAcademicKey(item.key);
     setEditingMaterial(null);
     setError(null);
     setSuccess(null);
-    window.setTimeout(() => document.getElementById("catedras-expediente")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+    window.setTimeout(() => document.getElementById("catedras-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
   }
 
   function blockResource() {
@@ -447,6 +488,31 @@ function CatedrasPage() {
             })}
             {!scheduledCourses.length ? <p className="rounded-xl bg-bg-warm p-4 text-sm text-muted">Puedes elegir otra fecha del calendario o registrar una actividad extraordinaria usando el formulario.</p> : null}
           </div>
+
+          {selectedAcademicItems.length ? (
+            <div className="mt-5 border-t border-line pt-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-clay">Registros de este día</p>
+              <div className="mt-3 grid gap-2">
+                {selectedAcademicItems.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => openAcademicItem(item)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-3 text-left transition-all hover:-translate-y-0.5 hover:border-forest/30 hover:bg-white",
+                      expandedAcademicKey === item.key ? "border-forest/35 bg-forest-soft" : "border-line bg-bg-warm/55",
+                    )}
+                  >
+                    <span className="min-w-0">
+                      <span className="flex flex-wrap items-center gap-2"><Pill tone={item.source === "task" ? "clay" : "forest"}>{item.kind}</Pill><span className="text-xs text-muted">{item.courseCode === GENERAL_COURSE_CODE ? "General" : item.courseCode}</span></span>
+                      <span className="mt-1 block truncate text-sm font-semibold text-ink">{item.title}</span>
+                    </span>
+                    <span className="shrink-0 text-xs font-semibold text-forest">Ver contenido</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </Card>
       </div>
 
@@ -481,19 +547,26 @@ function CatedrasPage() {
                       </p>
                       {shortSummary ? <p className="mt-2 text-sm leading-relaxed text-muted">{shortSummary}</p> : null}
 
-                      {recent.source === "task" ? (
-                        <div className="mt-3">
-                          {resourceAllowed ? (
-                            <Link to="/tareas" className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5">
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => openAcademicItem(recent)}
+                          className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest transition hover:-translate-y-0.5 hover:border-forest/30"
+                        >
+                          <ExternalLink className="size-3.5" />Ver contenido
+                        </button>
+                        {recent.source === "task" ? (
+                          resourceAllowed ? (
+                            <a href={`/tareas#tarea-${recent.task.id}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5">
                               <BookOpenCheck className="size-3.5" />Ir a la tarea
-                            </Link>
+                            </a>
                           ) : (
-                            <button type="button" onClick={() => setResourceNotice(true)} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-clay/25 bg-clay/10 px-3 text-xs font-semibold text-clay">
+                            <button type="button" onClick={blockResource} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-clay/25 bg-clay/10 px-3 text-xs font-semibold text-clay">
                               <LockKeyhole className="size-3.5" />Regístrate para abrir
                             </button>
-                          )}
-                        </div>
-                      ) : null}
+                          )
+                        ) : null}
+                      </div>
                     </article>
                   );
                 })}
@@ -502,6 +575,24 @@ function CatedrasPage() {
               <div className="p-5 text-sm text-muted">Todavía no hay registros académicos publicados.</div>
             )}
           </Card>
+
+          {expandedAcademicItem ? (
+            <AcademicDetail
+              item={expandedAcademicItem}
+              resourceAllowed={resourceAllowed}
+              canEditMaterial={expandedAcademicItem.source === "material" && canEditPublication(directory, user?.id, expandedAcademicItem.material.createdBy)}
+              onEditMaterial={(material) => {
+                setEditingMaterial(material);
+                setSelectedDate(material.classDate);
+                setMonthCursor(`${material.classDate.slice(0, 7)}-01`);
+                setSelectedCourseCode(material.courseCode);
+                setSelectedProfessor(material.professorName);
+                window.setTimeout(() => document.getElementById("catedra-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 0);
+              }}
+              onBlockResource={blockResource}
+              onClose={() => setExpandedAcademicKey(null)}
+            />
+          ) : null}
 
           <div id="catedra-form" className="scroll-mt-6 lg:sticky lg:top-6 lg:self-start">
             {editingMaterial ? (
@@ -528,6 +619,97 @@ function CatedrasPage() {
       </section>
     </Shell>
   );
+}
+
+function AcademicDetail({
+  item,
+  resourceAllowed,
+  canEditMaterial,
+  onEditMaterial,
+  onBlockResource,
+  onClose,
+}: {
+  item: AcademicItem;
+  resourceAllowed: boolean;
+  canEditMaterial: boolean;
+  onEditMaterial: (material: ClassMaterial) => void;
+  onBlockResource: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Card id="catedras-detail" className="scroll-mt-6 lg:col-span-2">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone={item.source === "task" ? "clay" : "forest"}>{item.kind}</Pill>
+            <Pill>{item.courseCode === GENERAL_COURSE_CODE ? "General" : item.courseCode}</Pill>
+            <span className="text-xs text-muted">{formatLongDate(item.classDate)}</span>
+            {item.dueDate ? <span className="text-xs font-semibold text-danger">Entrega {formatLongDate(item.dueDate)}</span> : null}
+          </div>
+          <h3 className="mt-3 font-display text-3xl leading-tight">{item.title}</h3>
+          <p className="mt-1 text-sm font-semibold text-forest">{item.courseName} · {item.professorName}</p>
+        </div>
+        <button type="button" onClick={onClose} className="grid size-9 place-items-center rounded-full border border-line bg-white text-muted" aria-label="Cerrar contenido"><X className="size-4" /></button>
+      </div>
+
+      {item.source === "material" ? (
+        <div className="mt-5 grid gap-4">
+          {item.material.body ? <DetailBlock title="Apuntes / contenido"><p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{item.material.body}</p></DetailBlock> : null}
+          {item.material.referencesText ? <DetailBlock title="Referencias"><p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{item.material.referencesText}</p></DetailBlock> : null}
+          {item.material.bibliographyText ? <DetailBlock title="Bibliografía"><p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{item.material.bibliographyText}</p></DetailBlock> : null}
+
+          {(item.material.audioUrl || item.material.fileUrl || item.material.externalUrl) ? (
+            <DetailBlock title="Recursos y enlaces">
+              <div className="flex flex-wrap gap-2">
+                {item.material.audioUrl ? (
+                  resourceAllowed ? <a href={item.material.audioUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white"><Headphones className="size-3.5" />{item.material.audioLabel || "Abrir audio"}</a>
+                    : <LockedResourceButton onClick={onBlockResource} label="Audio protegido" />
+                ) : null}
+                {item.material.fileUrl ? (
+                  resourceAllowed ? <a href={item.material.fileUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest"><FileText className="size-3.5" />{item.material.fileName || (isImageFile(item.material) ? "Ver fotografía" : "Abrir archivo")}</a>
+                    : <LockedResourceButton onClick={onBlockResource} label="Archivo protegido" />
+                ) : null}
+                {item.material.externalUrl ? (
+                  resourceAllowed ? <a href={item.material.externalUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest"><ExternalLink className="size-3.5" />Abrir liga complementaria</a>
+                    : <LockedResourceButton onClick={onBlockResource} label="Liga protegida" />
+                ) : null}
+              </div>
+            </DetailBlock>
+          ) : null}
+
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-xs text-muted">
+            <span>Publicado por {item.material.authorAlias}</span>
+            {canEditMaterial ? <button type="button" onClick={() => onEditMaterial(item.material)} className="inline-flex min-h-9 items-center gap-1 rounded-md border border-line bg-white px-3 font-semibold text-forest"><Pencil className="size-3.5" />Editar registro</button> : null}
+          </div>
+        </div>
+      ) : (
+        <div className="mt-5 grid gap-4">
+          <DetailBlock title="Instrucciones de la tarea"><p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{item.task.instructions}</p></DetailBlock>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <DetailBlock title="Entrega"><p className="text-sm text-ink-soft">{formatLongDate(item.task.dueDate)} · {item.task.deliveryMethod}</p>{item.task.deliveryDetails ? <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-muted">{item.task.deliveryDetails}</p> : null}</DetailBlock>
+            <DetailBlock title="Recurso asociado"><p className="text-sm text-ink-soft">{item.task.resourceTitle || "No depende de un libro del portal."}</p></DetailBlock>
+          </div>
+          {item.task.documentationText ? <DetailBlock title="Documentación / referencia"><p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{item.task.documentationText}</p></DetailBlock> : null}
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+            <span className="text-xs text-muted">Publicó {item.task.authorAlias}</span>
+            {resourceAllowed ? (
+              <a href={`/tareas#tarea-${item.task.id}`} className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white transition hover:-translate-y-0.5"><BookOpenCheck className="size-3.5" />Ir a la tarea completa</a>
+            ) : (
+              <LockedResourceButton onClick={onBlockResource} label="Regístrate para abrir la tarea" />
+            )}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
+}
+
+function DetailBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return <div className="rounded-xl border border-line bg-bg-warm/45 p-4"><p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-clay">{title}</p>{children}</div>;
+}
+
+function LockedResourceButton({ onClick, label }: { onClick: () => void; label: string }) {
+  return <button type="button" onClick={onClick} className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-clay/25 bg-clay/10 px-3 text-xs font-semibold text-clay"><LockKeyhole className="size-3.5" />{label}</button>;
 }
 
 function MaterialFields({
