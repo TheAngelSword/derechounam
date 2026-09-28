@@ -25,12 +25,25 @@ import {
   updatePoll,
   updateVoteResponse,
   type ActivityPoll,
+  type AvailabilityMode,
   type VoteResponse,
 } from "@/lib/votaciones";
 
 export const Route = createFileRoute("/votaciones")({ component: VotacionesPage });
 
 const DEFAULT_PROMPT = "¿Qué día y hora puedes asistir?";
+
+const WEEKDAYS = [
+  { value: "lunes", label: "Lunes" },
+  { value: "martes", label: "Martes" },
+  { value: "miercoles", label: "Miércoles" },
+  { value: "jueves", label: "Jueves" },
+  { value: "viernes", label: "Viernes" },
+  { value: "sabado", label: "Sábado" },
+  { value: "domingo", label: "Domingo" },
+] as const;
+
+const WEEKDAY_LABELS = Object.fromEntries(WEEKDAYS.map((day) => [day.value, day.label])) as Record<string, string>;
 
 function VotacionesPage() {
   const { user, directory } = useDirectory();
@@ -212,7 +225,11 @@ function PollCard({
   onEditResponse: (id: number | null) => void;
 }) {
   const [localMessage, setLocalMessage] = useState<string | null>(null);
+  const [availabilityMode, setAvailabilityMode] = useState<AvailabilityMode>("specific");
+  const [preferredWeekdays, setPreferredWeekdays] = useState<string[]>([]);
   const slots = useMemo(() => summarizeSlots(poll.responses), [poll.responses]);
+  const weekdaySummary = useMemo(() => summarizeWeekdays(poll.responses), [poll.responses]);
+  const flexibleCount = useMemo(() => poll.responses.filter((response) => response.availabilityMode === "flexible").length, [poll.responses]);
 
   async function onVote(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -223,8 +240,10 @@ function PollCard({
       await savePublicVote({ data: {
         pollId: poll.id,
         participantName: String(data.get("participantName") ?? "").trim(),
+        availabilityMode,
         availableDate: String(data.get("availableDate") ?? ""),
         availableTime: String(data.get("availableTime") ?? ""),
+        preferredWeekdays: data.getAll("preferredWeekdays").map(String),
         note: String(data.get("note") ?? "").trim(),
         website: String(data.get("website") ?? ""),
       } });
@@ -243,8 +262,10 @@ function PollCard({
       await updateVoteResponse({ data: {
         id: response.id,
         participantName: String(data.get("participantName") ?? "").trim(),
+        availabilityMode: String(data.get("availabilityMode") ?? "specific") as AvailabilityMode,
         availableDate: String(data.get("availableDate") ?? ""),
         availableTime: String(data.get("availableTime") ?? ""),
+        preferredWeekdays: data.getAll("preferredWeekdays").map(String),
         note: String(data.get("note") ?? "").trim(),
       } });
       onEditResponse(null);
@@ -308,19 +329,45 @@ function PollCard({
       <div className="grid gap-6 p-5 sm:p-6 xl:grid-cols-[minmax(19rem,.8fr)_minmax(0,1.2fr)]">
         <div>
           <h3 className="font-display text-2xl">Disponibilidad</h3>
-          {slots.length ? (
-            <div className="mt-3 grid gap-2">
+          {!slots.length && !weekdaySummary.length && !flexibleCount ? (
+            <p className="mt-3 text-sm text-muted">Todavía no hay personas registradas.</p>
+          ) : (
+            <div className="mt-3 grid gap-3">
+              {flexibleCount ? (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-forest/15 bg-forest-soft px-3 py-3">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-forest">Flexibles</p>
+                    <p className="mt-1 font-semibold">Me adapto · cualquier día y hora</p>
+                  </div>
+                  <span className="grid min-w-10 place-items-center rounded-full bg-forest px-3 py-2 text-sm font-bold text-white">{flexibleCount}</span>
+                </div>
+              ) : null}
+
+              {weekdaySummary.length ? (
+                <div className="rounded-lg border border-line bg-bg-warm/45 p-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">Días con más disponibilidad</p>
+                  <div className="mt-2 grid gap-2">
+                    {weekdaySummary.map((day) => (
+                      <div key={day.day} className="flex items-center justify-between gap-3 text-sm">
+                        <span className="font-medium">{WEEKDAY_LABELS[day.day] ?? day.day}</span>
+                        <span className="rounded-full bg-white px-2.5 py-1 font-semibold text-forest shadow-sm">{day.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
               {slots.slice(0, 6).map((slot, index) => (
                 <div key={slot.key} className="flex items-center justify-between gap-3 rounded-lg border border-line bg-bg-warm/55 px-3 py-3">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">{index === 0 ? "Mayor coincidencia" : "Opción"}</p>
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">{index === 0 ? "Fecha/hora más elegida" : "Fecha y hora"}</p>
                     <p className="mt-1 font-semibold">{formatLongDate(slot.date)} · {slot.time}</p>
                   </div>
                   <span className="grid min-w-10 place-items-center rounded-full bg-forest px-3 py-2 text-sm font-bold text-white">{slot.count}</span>
                 </div>
               ))}
             </div>
-          ) : <p className="mt-3 text-sm text-muted">Todavía no hay personas registradas.</p>}
+          )}
 
           <div className="mt-5">
             <h3 className="font-display text-xl">Personas registradas</h3>
@@ -328,17 +375,17 @@ function PollCard({
               {poll.responses.map((response) => (
                 <div key={response.id} className="rounded-lg border border-line bg-white p-3">
                   {editingResponseId === response.id && admin ? (
-                    <form onSubmit={(event) => onUpdateResponse(event, response)} className="grid gap-3">
-                      <Field label="Nombre"><Input name="participantName" required defaultValue={response.participantName} /></Field>
-                      <div className="grid grid-cols-2 gap-2"><Field label="Día"><Input name="availableDate" type="date" required defaultValue={response.availableDate} /></Field><Field label="Hora"><Input name="availableTime" type="time" required defaultValue={response.availableTime} /></Field></div>
-                      <Field label="Nota" hint="Opcional"><Input name="note" maxLength={240} defaultValue={response.note ?? ""} /></Field>
-                      <div className="flex gap-2"><Button type="submit" disabled={busy}>Guardar</Button><button type="button" onClick={() => onEditResponse(null)} className="px-3 text-xs font-semibold text-muted">Cancelar</button></div>
-                    </form>
+                    <ResponseEditForm
+                      response={response}
+                      busy={busy}
+                      onSubmit={(event) => onUpdateResponse(event, response)}
+                      onCancel={() => onEditResponse(null)}
+                    />
                   ) : (
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="inline-flex items-center gap-1.5 font-semibold"><UserRound className="size-4 text-forest" />{response.participantName}</p>
-                        <p className="mt-1 text-sm text-muted">{formatLongDate(response.availableDate)} · {response.availableTime}</p>
+                        <p className="mt-1 text-sm text-muted">{describeAvailability(response)}</p>
                         {response.note ? <p className="mt-1 text-xs text-muted">{response.note}</p> : null}
                       </div>
                       {admin ? <div className="flex gap-1"><button type="button" onClick={() => onEditResponse(response.id)} className="grid size-8 place-items-center rounded-md border border-line text-forest" aria-label="Editar participación"><Pencil className="size-3.5" /></button><button type="button" onClick={() => onRemoveResponse(response)} className="grid size-8 place-items-center rounded-md border border-danger/20 text-danger" aria-label="Eliminar participación"><Trash2 className="size-3.5" /></button></div> : null}
@@ -354,13 +401,16 @@ function PollCard({
           {poll.isOpen ? (
             <FormBox title="Anotar mi disponibilidad" onSubmit={onVote}>
               <div className="rounded-lg border border-forest/10 bg-forest-soft p-3 text-sm text-forest-deep">
-                <strong>No necesitas registrarte.</strong> Escribe tu nombre y selecciona el día y la hora que te funcionan mejor.
+                <strong>No necesitas registrarte.</strong> Puedes indicar una fecha exacta, marcar varios días de la semana o elegir <strong>Me adapto</strong>.
               </div>
               <Field label="Tu nombre"><Input name="participantName" required minLength={2} maxLength={80} placeholder="Nombre y apellido" /></Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Día disponible"><Input name="availableDate" type="date" required defaultValue={poll.eventDate ?? getTodayIso()} /></Field>
-                <Field label="Hora disponible"><Input name="availableTime" type="time" required /></Field>
-              </div>
+              <AvailabilityFields
+                mode={availabilityMode}
+                onModeChange={setAvailabilityMode}
+                selectedWeekdays={preferredWeekdays}
+                onWeekdaysChange={setPreferredWeekdays}
+                defaultDate={poll.eventDate ?? getTodayIso()}
+              />
               <Field label="Comentario" hint="Opcional"><Textarea name="note" maxLength={240} placeholder="Ej. También puedo una hora después." /></Field>
               <div className="hidden" aria-hidden="true"><Input name="website" tabIndex={-1} autoComplete="off" /></div>
               {localMessage ? <p className="inline-flex items-center gap-2 text-sm font-medium text-forest"><CheckCircle2 className="size-4" />{localMessage}</p> : null}
@@ -378,13 +428,159 @@ function PollCard({
   );
 }
 
+function ResponseEditForm({
+  response,
+  busy,
+  onSubmit,
+  onCancel,
+}: {
+  response: VoteResponse;
+  busy: boolean;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onCancel: () => void;
+}) {
+  const [mode, setMode] = useState<AvailabilityMode>(response.availabilityMode);
+  const [weekdays, setWeekdays] = useState<string[]>(response.preferredWeekdays);
+  return (
+    <form onSubmit={onSubmit} className="grid gap-3">
+      <Field label="Nombre"><Input name="participantName" required defaultValue={response.participantName} /></Field>
+      <AvailabilityFields
+        mode={mode}
+        onModeChange={setMode}
+        selectedWeekdays={weekdays}
+        onWeekdaysChange={setWeekdays}
+        defaultDate={response.availableDate ?? getTodayIso()}
+        defaultTime={response.availableTime ?? ""}
+      />
+      <Field label="Nota" hint="Opcional"><Input name="note" maxLength={240} defaultValue={response.note ?? ""} /></Field>
+      <div className="flex gap-2"><Button type="submit" disabled={busy}>Guardar</Button><button type="button" onClick={onCancel} className="px-3 text-xs font-semibold text-muted">Cancelar</button></div>
+    </form>
+  );
+}
+
+function AvailabilityFields({
+  mode,
+  onModeChange,
+  selectedWeekdays,
+  onWeekdaysChange,
+  defaultDate,
+  defaultTime = "",
+}: {
+  mode: AvailabilityMode;
+  onModeChange: (mode: AvailabilityMode) => void;
+  selectedWeekdays: string[];
+  onWeekdaysChange: (days: string[]) => void;
+  defaultDate: string;
+  defaultTime?: string;
+}) {
+  function toggleWeekday(day: string) {
+    onWeekdaysChange(selectedWeekdays.includes(day) ? selectedWeekdays.filter((item) => item !== day) : [...selectedWeekdays, day]);
+  }
+
+  return (
+    <div className="grid gap-3">
+      <div>
+        <p className="mb-2 text-sm font-medium text-ink-soft">Cómo te acomoda</p>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {[
+            { value: "specific" as const, label: "Fecha y hora" },
+            { value: "flexible" as const, label: "Me adapto" },
+            { value: "weekdays" as const, label: "Varios días" },
+          ].map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => onModeChange(option.value)}
+              className={mode === option.value
+                ? "min-h-11 rounded-md border border-forest bg-forest px-3 text-sm font-semibold text-white shadow-sm"
+                : "min-h-11 rounded-md border border-line bg-white px-3 text-sm font-semibold text-ink-soft transition hover:border-forest/40"}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        <input type="hidden" name="availabilityMode" value={mode} />
+      </div>
+
+      {mode === "specific" ? (
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Día disponible"><Input name="availableDate" type="date" required defaultValue={defaultDate} /></Field>
+          <Field label="Hora disponible"><Input name="availableTime" type="time" required defaultValue={defaultTime} /></Field>
+        </div>
+      ) : null}
+
+      {mode === "flexible" ? (
+        <div className="rounded-lg border border-forest/15 bg-forest-soft px-4 py-3 text-sm text-forest-deep">
+          <strong>Me adapto.</strong> No necesitas seleccionar día ni hora; quedará registrado que puedes ajustarte a la opción que el grupo decida.
+        </div>
+      ) : null}
+
+      {mode === "weekdays" ? (
+        <div className="grid gap-3 rounded-lg border border-line bg-white p-3">
+          <div>
+            <p className="text-sm font-medium text-ink-soft">Días que te funcionan</p>
+            <p className="mt-1 text-xs text-muted">Puedes marcar varios, por ejemplo lunes, miércoles y domingo.</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {WEEKDAYS.map((day) => {
+              const selected = selectedWeekdays.includes(day.value);
+              return (
+                <label
+                  key={day.value}
+                  className={selected
+                    ? "cursor-pointer rounded-full border border-forest bg-forest px-3 py-2 text-xs font-semibold text-white"
+                    : "cursor-pointer rounded-full border border-line bg-bg-warm px-3 py-2 text-xs font-semibold text-ink-soft"}
+                >
+                  <input
+                    type="checkbox"
+                    name="preferredWeekdays"
+                    value={day.value}
+                    checked={selected}
+                    onChange={() => toggleWeekday(day.value)}
+                    className="sr-only"
+                  />
+                  {day.label}
+                </label>
+              );
+            })}
+          </div>
+          <Field label="Hora preferida" hint="Opcional">
+            <Input name="availableTime" type="time" defaultValue={defaultTime} />
+          </Field>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function describeAvailability(response: VoteResponse) {
+  if (response.availabilityMode === "flexible") return "Me adapto · cualquier día y hora";
+  if (response.availabilityMode === "weekdays") {
+    const days = response.preferredWeekdays.map((day) => WEEKDAY_LABELS[day] ?? day).join(", ");
+    return `${days || "Varios días"}${response.availableTime ? ` · Preferencia ${response.availableTime}` : " · cualquier hora"}`;
+  }
+  return `${response.availableDate ? formatLongDate(response.availableDate) : "Fecha por definir"}${response.availableTime ? ` · ${response.availableTime}` : ""}`;
+}
+
 function summarizeSlots(responses: VoteResponse[]) {
   const map = new Map<string, { key: string; date: string; time: string; count: number }>();
   for (const response of responses) {
+    if (response.availabilityMode !== "specific" || !response.availableDate || !response.availableTime) continue;
     const key = `${response.availableDate}|${response.availableTime}`;
     const current = map.get(key) ?? { key, date: response.availableDate, time: response.availableTime, count: 0 };
     current.count += 1;
     map.set(key, current);
   }
   return [...map.values()].sort((a, b) => b.count - a.count || a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+}
+
+function summarizeWeekdays(responses: VoteResponse[]) {
+  const counts = new Map<string, number>();
+  for (const response of responses) {
+    if (response.availabilityMode !== "weekdays") continue;
+    for (const day of response.preferredWeekdays) counts.set(day, (counts.get(day) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([day, count]) => ({ day, count }))
+    .sort((a, b) => b.count - a.count || WEEKDAYS.findIndex((item) => item.value === a.day) - WEEKDAYS.findIndex((item) => item.value === b.day));
 }

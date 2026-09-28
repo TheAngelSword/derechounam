@@ -3,12 +3,16 @@ import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
 
+export type AvailabilityMode = "specific" | "flexible" | "weekdays";
+
 export type VoteResponse = {
   id: number;
   pollId: number;
   participantName: string;
-  availableDate: string;
-  availableTime: string;
+  availabilityMode: AvailabilityMode;
+  availableDate: string | null;
+  availableTime: string | null;
+  preferredWeekdays: string[];
   note: string | null;
   createdAt: string;
   updatedAt: string;
@@ -40,6 +44,34 @@ type MemberRow = {
 const titleSchema = z.string().trim().min(2).max(180);
 const promptSchema = z.string().trim().min(2).max(300);
 const descriptionSchema = z.string().trim().max(1200).optional();
+const availabilityModeSchema = z.enum(["specific", "flexible", "weekdays"]);
+const optionalDateSchema = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional();
+const optionalTimeSchema = z.union([z.literal(""), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)]).optional();
+const weekdaysSchema = z.array(z.enum(["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"])).max(7).optional();
+
+const responseFields = {
+  participantName: z.string().trim().min(2).max(80),
+  availabilityMode: availabilityModeSchema,
+  availableDate: optionalDateSchema,
+  availableTime: optionalTimeSchema,
+  preferredWeekdays: weekdaysSchema,
+  note: z.string().trim().max(240).optional(),
+};
+
+function refineAvailability(data: {
+  availabilityMode: AvailabilityMode;
+  availableDate?: string;
+  availableTime?: string;
+  preferredWeekdays?: string[];
+}, ctx: z.RefinementCtx) {
+  if (data.availabilityMode === "specific") {
+    if (!data.availableDate) ctx.addIssue({ code: "custom", path: ["availableDate"], message: "Selecciona el día disponible." });
+    if (!data.availableTime) ctx.addIssue({ code: "custom", path: ["availableTime"], message: "Selecciona la hora disponible." });
+  }
+  if (data.availabilityMode === "weekdays" && !data.preferredWeekdays?.length) {
+    ctx.addIssue({ code: "custom", path: ["preferredWeekdays"], message: "Selecciona por lo menos un día de la semana." });
+  }
+}
 
 function asIsoDate(value: unknown) {
   if (typeof value === "string") return value.slice(0, 10);
@@ -53,6 +85,25 @@ function asTime(value: unknown) {
 
 function participantKey(value: string) {
   return value.normalize("NFKC").toLocaleLowerCase("es-MX").replace(/\s+/g, " ").trim();
+}
+
+function normalizeWeekdays(values: string[] | undefined) {
+  const allowed = ["lunes", "martes", "miercoles", "jueves", "viernes", "sabado", "domingo"];
+  return [...new Set((values ?? []).filter((value) => allowed.includes(value)))];
+}
+
+function storageAvailability(data: {
+  availabilityMode: AvailabilityMode;
+  availableDate?: string;
+  availableTime?: string;
+  preferredWeekdays?: string[];
+}) {
+  const weekdays = data.availabilityMode === "weekdays" ? normalizeWeekdays(data.preferredWeekdays) : [];
+  return {
+    date: data.availabilityMode === "specific" ? data.availableDate || null : null,
+    time: data.availabilityMode === "specific" || data.availabilityMode === "weekdays" ? data.availableTime || null : null,
+    weekdays: weekdays.join(","),
+  };
 }
 
 async function activeMember(userId: string) {
@@ -117,15 +168,18 @@ export const loadPolls = createServerFn({ method: "GET" }).handler(async (): Pro
       id: number;
       poll_id: number;
       participant_name: string;
-      available_date: string;
-      available_time: string;
+      availability_mode: AvailabilityMode;
+      available_date: string | null;
+      available_time: string | null;
+      preferred_weekdays: string | null;
       note: string | null;
       created_at: string;
       updated_at: string;
     }>`
-      select id, poll_id, participant_name, available_date, available_time, note, created_at, updated_at
+      select id, poll_id, participant_name, availability_mode, available_date, available_time,
+             preferred_weekdays, note, created_at, updated_at
       from activity_poll_responses
-      order by available_date, available_time, participant_name
+      order by poll_id, created_at, participant_name
     `,
   ]);
 
@@ -135,8 +189,10 @@ export const loadPolls = createServerFn({ method: "GET" }).handler(async (): Pro
       id: row.id,
       pollId: row.poll_id,
       participantName: row.participant_name,
-      availableDate: asIsoDate(row.available_date),
-      availableTime: asTime(row.available_time),
+      availabilityMode: row.availability_mode || "specific",
+      availableDate: row.available_date ? asIsoDate(row.available_date) : null,
+      availableTime: row.available_time ? asTime(row.available_time) : null,
+      preferredWeekdays: row.preferred_weekdays ? row.preferred_weekdays.split(",").filter(Boolean) : [],
       note: row.note,
       createdAt: String(row.created_at),
       updatedAt: String(row.updated_at),
@@ -225,17 +281,14 @@ export const removePoll = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
+const publicVoteSchema = z.object({
+  pollId: z.number().int().positive(),
+  ...responseFields,
+  website: z.string().max(0).optional(),
+}).superRefine(refineAvailability);
+
 export const savePublicVote = createServerFn({ method: "POST" })
-  .validator(
-    z.object({
-      pollId: z.number().int().positive(),
-      participantName: z.string().trim().min(2).max(80),
-      availableDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      availableTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-      note: z.string().trim().max(240).optional(),
-      website: z.string().max(0).optional(),
-    }),
-  )
+  .validator(publicVoteSchema)
   .handler(async ({ data }) => {
     const sql = await getSql();
     const polls = await sql<{ is_open: boolean }>`select is_open from activity_polls where id = ${data.pollId} limit 1`;
@@ -251,41 +304,43 @@ export const savePublicVote = createServerFn({ method: "POST" })
       if ((countRows[0]?.n ?? 0) >= 250) throw new Error("Esta votación alcanzó el límite de participantes.");
     }
 
+    const stored = storageAvailability(data);
     await sql`
       insert into activity_poll_responses (
-        poll_id, participant_name, participant_key, available_date, available_time, note
+        poll_id, participant_name, participant_key, availability_mode, available_date, available_time, preferred_weekdays, note
       ) values (
-        ${data.pollId}, ${data.participantName.trim()}, ${key}, ${data.availableDate}, ${data.availableTime}, ${data.note ?? null}
+        ${data.pollId}, ${data.participantName.trim()}, ${key}, ${data.availabilityMode}, ${stored.date}, ${stored.time}, ${stored.weekdays}, ${data.note ?? null}
       )
       on conflict (poll_id, participant_key)
       do update set
         participant_name = excluded.participant_name,
+        availability_mode = excluded.availability_mode,
         available_date = excluded.available_date,
         available_time = excluded.available_time,
+        preferred_weekdays = excluded.preferred_weekdays,
         note = excluded.note,
         updated_at = now()
     `;
     return { ok: true as const };
   });
 
+const updateVoteResponseSchema = z.object({
+  id: z.number().int().positive(),
+  ...responseFields,
+}).superRefine(refineAvailability);
+
 export const updateVoteResponse = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
-  .validator(
-    z.object({
-      id: z.number().int().positive(),
-      participantName: z.string().trim().min(2).max(80),
-      availableDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-      availableTime: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),
-      note: z.string().trim().max(240).optional(),
-    }),
-  )
+  .validator(updateVoteResponseSchema)
   .handler(async ({ context, data }) => {
     await requireModerator(context.userId);
     const sql = await getSql();
+    const stored = storageAvailability(data);
     await sql`
       update activity_poll_responses
       set participant_name = ${data.participantName.trim()}, participant_key = ${participantKey(data.participantName)},
-          available_date = ${data.availableDate}, available_time = ${data.availableTime}, note = ${data.note ?? null}, updated_at = now()
+          availability_mode = ${data.availabilityMode}, available_date = ${stored.date}, available_time = ${stored.time},
+          preferred_weekdays = ${stored.weekdays}, note = ${data.note ?? null}, updated_at = now()
       where id = ${data.id}
     `;
     return { ok: true as const };
