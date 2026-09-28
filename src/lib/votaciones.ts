@@ -32,6 +32,11 @@ export type ActivityPoll = {
   eventDate: string | null;
   eventTime: string | null;
   eventPlace: string | null;
+  scheduledDate: string | null;
+  scheduledTime: string | null;
+  locationText: string | null;
+  mapsUrl: string | null;
+  notes: string;
   responses: VoteResponse[];
 };
 
@@ -43,7 +48,12 @@ type MemberRow = {
 
 const titleSchema = z.string().trim().min(2).max(180);
 const promptSchema = z.string().trim().min(2).max(300);
-const descriptionSchema = z.string().trim().max(1200).optional();
+const descriptionSchema = z.string().trim().max(2400).optional();
+const notesSchema = z.string().trim().max(4000).optional();
+const locationSchema = z.string().trim().max(240).optional();
+const mapsUrlSchema = z.union([z.literal(""), z.string().url().max(1200)]).optional();
+const scheduledDateSchema = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional();
+const scheduledTimeSchema = z.string().trim().max(80).optional();
 const availabilityModeSchema = z.enum(["specific", "flexible", "weekdays"]);
 const optionalDateSchema = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional();
 const optionalTimeSchema = z.union([z.literal(""), z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/)]).optional();
@@ -156,9 +166,14 @@ export const loadPolls = createServerFn({ method: "GET" }).handler(async (): Pro
       event_date: string | null;
       event_time: string | null;
       event_place: string | null;
+      scheduled_date: string | null;
+      scheduled_time: string | null;
+      location_text: string | null;
+      maps_url: string | null;
+      notes: string | null;
     }>`
       select p.id, p.event_id, p.title, p.prompt, p.description, p.is_open, p.created_by,
-             p.created_at, p.updated_at,
+             p.created_at, p.updated_at, p.scheduled_date, p.scheduled_time, p.location_text, p.maps_url, p.notes,
              e.title as event_title, e.event_date, e.time_slot as event_time, e.place as event_place
       from activity_polls p
       left join events e on e.id = p.event_id
@@ -216,6 +231,11 @@ export const loadPolls = createServerFn({ method: "GET" }).handler(async (): Pro
     eventDate: row.event_date ? asIsoDate(row.event_date) : null,
     eventTime: row.event_time,
     eventPlace: row.event_place,
+    scheduledDate: row.scheduled_date ? asIsoDate(row.scheduled_date) : null,
+    scheduledTime: row.scheduled_time || null,
+    locationText: row.location_text || null,
+    mapsUrl: row.maps_url || null,
+    notes: row.notes || "",
     responses: responsesByPoll.get(row.id) ?? [],
   }));
 });
@@ -228,6 +248,11 @@ export const createPoll = createServerFn({ method: "POST" })
       title: titleSchema,
       prompt: promptSchema,
       description: descriptionSchema,
+      scheduledDate: scheduledDateSchema,
+      scheduledTime: scheduledTimeSchema,
+      locationText: locationSchema,
+      mapsUrl: mapsUrlSchema,
+      notes: notesSchema,
     }),
   )
   .handler(async ({ context, data }) => {
@@ -241,8 +266,14 @@ export const createPoll = createServerFn({ method: "POST" })
     }
 
     const rows = await sql<{ id: number }>`
-      insert into activity_polls (event_id, title, prompt, description, created_by)
-      values (${data.eventId ?? null}, ${data.title}, ${data.prompt}, ${data.description ?? ""}, ${context.userId})
+      insert into activity_polls (
+        event_id, title, prompt, description, scheduled_date, scheduled_time, location_text, maps_url, notes, created_by
+      )
+      values (
+        ${data.eventId ?? null}, ${data.title}, ${data.prompt}, ${data.description ?? ""},
+        ${data.scheduledDate || null}, ${data.scheduledTime || null}, ${data.locationText || null},
+        ${data.mapsUrl || null}, ${data.notes ?? ""}, ${context.userId}
+      )
       returning id
     `;
     return { ok: true as const, id: rows[0].id };
@@ -256,6 +287,11 @@ export const updatePoll = createServerFn({ method: "POST" })
       title: titleSchema,
       prompt: promptSchema,
       description: descriptionSchema,
+      scheduledDate: scheduledDateSchema,
+      scheduledTime: scheduledTimeSchema,
+      locationText: locationSchema,
+      mapsUrl: mapsUrlSchema,
+      notes: notesSchema,
       isOpen: z.boolean(),
     }),
   )
@@ -265,6 +301,8 @@ export const updatePoll = createServerFn({ method: "POST" })
     await sql`
       update activity_polls
       set title = ${data.title}, prompt = ${data.prompt}, description = ${data.description ?? ""},
+          scheduled_date = ${data.scheduledDate || null}, scheduled_time = ${data.scheduledTime || null},
+          location_text = ${data.locationText || null}, maps_url = ${data.mapsUrl || null}, notes = ${data.notes ?? ""},
           is_open = ${data.isOpen}, updated_at = now()
       where id = ${data.id}
     `;
