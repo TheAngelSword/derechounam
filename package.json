@@ -1,5 +1,5 @@
 {
-  "name": "app-builder-workspace",
+  "name": "faculta-derecho",
   "private": true,
   "sideEffects": false,
   "type": "module",
@@ -18,7 +18,11 @@
     "check:auth": "node scripts/check-auth-invariant.mjs",
     "test": "node --test 'scripts/**/*.test.mjs' && node --experimental-strip-types --test src/lib/app-data/app-data.test.ts src/lib/auth/gate-identity.test.ts src/lib/auth/sign-in-gate.test.ts",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:v7": "node --experimental-strip-types --test tests/v7/*.test.ts",
+    "drive:authorize": "node scripts/authorize-drive.mjs",
+    "check:syntax": "node scripts/check-v7-syntax.mjs",
+    "build:code": "node scripts/with-app-env.mjs vite build"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.4",
@@ -71,8 +75,7 @@
     "tw-animate-css": "^1.3.4",
     "vaul": "^1.1.2",
     "zod": "^4.4.0",
-    "zustand": "^5.0.0",
-    "@vercel/blob": "^2.8.0"
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.20.0",
@@ -94,5 +97,6 @@
     "typescript": "^5.7.0",
     "typescript-eslint": "^8.56.1",
     "vite": "^8.2.0"
-  }
+  },
+  "version": "7.0.0"
 }

@@ -49,7 +49,8 @@ function asIsoDate(value: unknown) {
   return String(value ?? "").slice(0, 10);
 }
 
-export const loadBoard = createServerFn({ method: "GET" }).handler(async (): Promise<Board> => {
+export const loadBoard = createServerFn({ method: "GET" }).middleware([authMiddleware]).handler(async ({ context }): Promise<Board> => {
+  await activeMember(context.userId);
   const sql = await getSql();
   const [professors, courses, events, books, rides, groups, notices, posts, materials, services, tasks, rideReservations] = await Promise.all([
     sql<{
@@ -486,7 +487,7 @@ export const addEvent = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-const optionalUrl = z.union([z.literal(""), z.string().url().max(1500)]).optional();
+const optionalUrl = z.union([z.literal(""), z.string().url().max(4000)]).optional();
 const bookTitle = z.string().trim().min(2).max(300);
 const bookAuthor = z.string().trim().min(2).max(400);
 
@@ -666,9 +667,29 @@ export const addClassMaterial = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     const sql = await getSql();
-    await sql`insert into class_materials (course_code, course_name, professor_name, class_date, kind, title, body, references_text, bibliography_text, audio_url, audio_label, file_url, file_name, external_url, author_alias, created_by)
-      values (${data.courseCode}, ${data.courseName}, ${data.professorName}, ${data.classDate}, ${data.kind}, ${data.title}, ${data.body}, ${data.referencesText || null}, ${data.bibliographyText || null}, ${data.audioUrl || null}, ${data.audioLabel || null}, ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${me.alias}, ${context.userId})`;
-    return { ok: true as const };
+    const rows = await sql<{
+      id: number;
+      audio_url: string | null;
+      audio_label: string | null;
+      file_url: string | null;
+      file_name: string | null;
+      external_url: string | null;
+    }>`insert into class_materials (course_code, course_name, professor_name, class_date, kind, title, body, references_text, bibliography_text, audio_url, audio_label, file_url, file_name, external_url, author_alias, created_by)
+      values (${data.courseCode}, ${data.courseName}, ${data.professorName}, ${data.classDate}, ${data.kind}, ${data.title}, ${data.body}, ${data.referencesText || null}, ${data.bibliographyText || null}, ${data.audioUrl || null}, ${data.audioLabel || null}, ${data.fileUrl || null}, ${data.fileName || null}, ${data.externalUrl || null}, ${me.alias}, ${context.userId})
+      returning id, audio_url, audio_label, file_url, file_name, external_url`;
+    const saved = rows[0];
+    if (!saved) throw new Error("No se pudo confirmar el registro guardado.");
+    if (data.audioUrl && saved.audio_url !== data.audioUrl) throw new Error("La sesión se guardó, pero la liga del audio no quedó persistida. Intenta nuevamente.");
+    if (data.externalUrl && saved.external_url !== data.externalUrl) throw new Error("La sesión se guardó, pero la liga complementaria no quedó persistida. Intenta nuevamente.");
+    return {
+      ok: true as const,
+      id: Number(saved.id),
+      audioUrl: saved.audio_url,
+      audioLabel: saved.audio_label,
+      fileUrl: saved.file_url,
+      fileName: saved.file_name,
+      externalUrl: saved.external_url,
+    };
   });
 
 
@@ -794,15 +815,35 @@ export const updateClassMaterial = createServerFn({ method: "POST" })
   .validator(classMaterialInputSchema.extend({ id: z.number().int().positive() }))
   .handler(async ({ context, data }) => {
     const sql = await getSql();
-    const rows = await sql<{ created_by: string }>`select created_by from class_materials where id = ${data.id} limit 1`;
-    if (!rows[0]) throw new Error("Publicación no encontrada");
-    await canEditOwnedOrModerator(context.userId, rows[0].created_by);
-    await sql`update class_materials set
+    const existing = await sql<{ created_by: string }>`select created_by from class_materials where id = ${data.id} limit 1`;
+    if (!existing[0]) throw new Error("Publicación no encontrada");
+    await canEditOwnedOrModerator(context.userId, existing[0].created_by);
+    const rows = await sql<{
+      id: number;
+      audio_url: string | null;
+      audio_label: string | null;
+      file_url: string | null;
+      file_name: string | null;
+      external_url: string | null;
+    }>`update class_materials set
       course_code = ${data.courseCode}, course_name = ${data.courseName}, professor_name = ${data.professorName}, class_date = ${data.classDate}, kind = ${data.kind},
       title = ${data.title}, body = ${data.body}, references_text = ${data.referencesText || null}, bibliography_text = ${data.bibliographyText || null},
       audio_url = ${data.audioUrl || null}, audio_label = ${data.audioLabel || null}, file_url = ${data.fileUrl || null}, file_name = ${data.fileName || null}, external_url = ${data.externalUrl || null}
-      where id = ${data.id}`;
-    return { ok: true as const };
+      where id = ${data.id}
+      returning id, audio_url, audio_label, file_url, file_name, external_url`;
+    const saved = rows[0];
+    if (!saved) throw new Error("No se pudo confirmar la sesión actualizada.");
+    if (data.audioUrl && saved.audio_url !== data.audioUrl) throw new Error("La sesión se actualizó, pero la liga del audio no quedó persistida. Intenta nuevamente.");
+    if (data.externalUrl && saved.external_url !== data.externalUrl) throw new Error("La sesión se actualizó, pero la liga complementaria no quedó persistida. Intenta nuevamente.");
+    return {
+      ok: true as const,
+      id: Number(saved.id),
+      audioUrl: saved.audio_url,
+      audioLabel: saved.audio_label,
+      fileUrl: saved.file_url,
+      fileName: saved.file_name,
+      externalUrl: saved.external_url,
+    };
   });
 
 export const updateServiceOffer = createServerFn({ method: "POST" })

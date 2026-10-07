@@ -1,5 +1,5 @@
 /**
- * Social providers exposed by Atrio.
+ * Social providers exposed by Faculta de Derecho.
  *
  * Production uses Better Auth's native Google provider so the deployment does
  * not depend on the Grok preview OAuth broker.

@@ -1,5 +1,5 @@
 /**
- * Self-hosted Better Auth for Atrio (server-only).
+ * Self-hosted Better Auth for Faculta de Derecho (server-only).
  *
  * Production authentication is persisted in PostgreSQL. Email/password is
  * enabled locally and Google OAuth can be enabled with GOOGLE_CLIENT_ID and
@@ -20,11 +20,11 @@ import { PREVIEW_ALLOWED_HOSTS } from "./preview";
 void ensureDbReady();
 
 const globalAuthRef = globalThis as typeof globalThis & {
-  __atrioAuthPreviewSecret__?: string;
+  __facultaAuthPreviewSecret__?: string;
 };
 function previewAuthSecret(): string {
-  globalAuthRef.__atrioAuthPreviewSecret__ ??= randomBytes(32).toString("hex");
-  return globalAuthRef.__atrioAuthPreviewSecret__;
+  globalAuthRef.__facultaAuthPreviewSecret__ ??= randomBytes(32).toString("hex");
+  return globalAuthRef.__facultaAuthPreviewSecret__;
 }
 
 const env = (key: string): string | undefined => {
@@ -107,7 +107,7 @@ const database = databaseUrl
   ? new Pool({ connectionString: databaseUrl })
   : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
 
-export const SESSION_TOKEN_COOKIE = "__Host-atrio-auth.session_token";
+export const SESSION_TOKEN_COOKIE = "__Host-faculta-auth.session_token";
 
 export const auth = betterAuth({
   baseURL,
@@ -144,9 +144,9 @@ export const auth = betterAuth({
     defaultCookieAttributes: { secure: true, sameSite: "lax", path: "/" },
     cookies: {
       session_token: { name: SESSION_TOKEN_COOKIE },
-      session_data: { name: "__Host-atrio-auth.session_data" },
-      account_data: { name: "__Host-atrio-auth.account_data" },
-      dont_remember: { name: "__Host-atrio-auth.dont_remember" },
+      session_data: { name: "__Host-faculta-auth.session_data" },
+      account_data: { name: "__Host-faculta-auth.account_data" },
+      dont_remember: { name: "__Host-faculta-auth.dont_remember" },
     },
   },
 

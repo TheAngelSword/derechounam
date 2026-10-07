@@ -7,7 +7,7 @@ import { canEditPublication, useAreaVisit, useDirectory } from "@/components/dir
 import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea, cn } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
 import { addServiceOffer, updateServiceOffer } from "@/lib/content";
-import { uploadToAtrioMedia } from "@/lib/media-upload";
+import { uploadToDrive } from "@/lib/media-upload";
 import type { ServiceOffer } from "@/lib/types";
 
 export const Route = createFileRoute("/servicios")({ component: ServiciosPage });
@@ -41,7 +41,7 @@ function ServiciosPage() {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("La foto debe ser JPG, PNG o WEBP.");
     if (file.size > 15 * 1024 * 1024) throw new Error("La imagen supera 15 MB.");
     const now = new Date();
-    const stored = await uploadToAtrioMedia({ file, category: "servicios", subfolder: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`, onProgress: setUploadProgress });
+    const stored = await uploadToDrive({ file, category: "servicios", subfolder: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`, onProgress: setUploadProgress });
     return { url: stored.url, name: file.name };
   }
 
