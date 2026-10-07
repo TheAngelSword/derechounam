@@ -10,6 +10,12 @@ export const PORTAL_NAV=[
  {to:"/agenda",label:"Agenda",icon:CalendarDays,group:"Comunidad"},{to:"/votaciones",label:"Votaciones",icon:Vote,group:"Comunidad"},{to:"/bitacora",label:"Bitácora",icon:Camera,group:"Comunidad"},{to:"/mesas",label:"Mesas de estudio",icon:Users,group:"Comunidad"},{to:"/mural",label:"Mural",icon:Megaphone,group:"Comunidad"},{to:"/servicios",label:"Servicios",icon:ShoppingBasket,group:"Comunidad"},{to:"/rutas",label:"Rutas",icon:CarFront,group:"Comunidad"},
  {to:"/registro",label:"Registro",icon:Shield,group:"Gestión"},{to:"/control",label:"Control",icon:SlidersHorizontal,group:"Gestión"},
 ] as const;
+/** Keep the server and first browser render identical while the session store resolves. */
+function SidebarAccount(){
+ const [mounted,setMounted]=useState(false);
+ useEffect(()=>setMounted(true),[]);
+ return <div className="fd-sidebar-account" style={{minHeight:36}}>{mounted?<><SignedIn><UserButton/></SignedIn><SignedOut><Link to="/login" search={{mode:"entrar"}} className="fd-signin">Entrar a mi cuenta <ArrowUpRight size={16}/></Link></SignedOut></>:null}</div>;
+}
 export function Shell({eyebrow,title,lead,children}:{eyebrow:string;title:string;lead:string;children:ReactNode}){
  const pathname=useRouterState({select:s=>s.location.pathname}).replace(/\/+$/,"")||"/";
  const SectionIcon=PORTAL_NAV.find(n=>n.to===pathname)?.icon??Shield;
@@ -30,7 +36,7 @@ export function Shell({eyebrow,title,lead,children}:{eyebrow:string;title:string
    <Link to="/" className="fd-brand"><span className="fd-monogram"><img src="/brand/justicia-emblema.webp" alt="" width="320" height="424"/></span><span className="fd-brand-copy">Facultad de<br/>Derecho<small>COMUNIDAD ACADÉMICA</small></span></Link>
    <div className="fd-cohort"><span className="fd-live-dot"/><span>Grupo <strong>9114</strong><small>Universidad Abierta · UNAM</small></span></div>
    <nav className="fd-navigation" aria-label="Navegación principal">{["Tu espacio","Academia","Comunidad","Gestión"].map(group=><div key={group}><p className="fd-nav-heading">{group}</p>{PORTAL_NAV.filter(n=>n.group===group).map(n=><Link to={n.to} key={n.to} title={collapsed?n.label:undefined} aria-current={pathname===n.to?"page":undefined} className={`fd-nav-link ${pathname===n.to?"active":""}`}><n.icon size={18} strokeWidth={1.6}/><span>{n.label}</span>{n.to==="/noticias"?<i className="fd-nav-new">NUEVO</i>:null}</Link>)}</div>)}</nav>
-   <div className="fd-sidebar-bottom"><SignedIn><UserButton/></SignedIn><SignedOut><Link to="/login" search={{mode:"entrar"}} className="fd-signin">Entrar a mi cuenta <ArrowUpRight size={16}/></Link></SignedOut><p>Portal estudiantil independiente.<br/>No es un sitio oficial de la UNAM.</p></div>
+   <div className="fd-sidebar-bottom"><SidebarAccount/><p>Portal estudiantil independiente.<br/>No es un sitio oficial de la UNAM.</p></div>
   </aside>
   <div className="fd-workspace">
    <header className="fd-topbar"><div className="fd-topbar-start"><button className="fd-icon-button fd-mobile-toggle" onClick={()=>setMenu(!menu)} aria-label={menu?"Cerrar navegación":"Abrir navegación"} aria-expanded={menu}>{menu?<X size={20}/>:<Menu size={20}/>}</button><button className="fd-icon-button fd-desktop-toggle" onClick={toggleCollapse} aria-label={collapsed?"Expandir barra lateral":"Contraer barra lateral"}>{collapsed?<PanelLeftOpen size={19}/>:<PanelLeftClose size={19}/>}</button><span className="fd-breadcrumb">Mi campus <span>/</span> <strong>{PORTAL_NAV.find(n=>n.to===pathname)?.label??"Comunidad"}</strong></span></div><div className="fd-topbar-tools"><button className="fd-search-trigger" onClick={()=>setSearch(true)}><Search size={16}/><span>Buscar en el portal</span><kbd>Ctrl K</kbd></button><button className="fd-icon-button" onClick={()=>setDark(!dark)} aria-label={dark?"Activar tema claro":"Activar tema oscuro"}>{dark?<Sun size={19}/>:<Moon size={19}/>}</button><span className="fd-avatar" title="Grupo 9114">FD</span></div></header>
