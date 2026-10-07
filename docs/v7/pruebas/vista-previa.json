@@ -1,0 +1,67 @@
+[
+  {
+    "width": 1440,
+    "view": "inicio",
+    "viewport": 1440,
+    "scroll": 1440,
+    "cards": 3
+  },
+  {
+    "width": 1440,
+    "view": "noticias",
+    "viewport": 1440,
+    "scroll": 1440,
+    "cards": 4
+  },
+  {
+    "width": 1440,
+    "view": "plan",
+    "viewport": 1440,
+    "scroll": 1440,
+    "cards": 51
+  },
+  {
+    "width": 1440,
+    "view": "optativas",
+    "viewport": 1440,
+    "scroll": 1440,
+    "cards": 87
+  },
+  {
+    "width": 390,
+    "view": "inicio",
+    "viewport": 390,
+    "scroll": 390,
+    "cards": 3
+  },
+  {
+    "width": 390,
+    "view": "noticias",
+    "viewport": 390,
+    "scroll": 390,
+    "cards": 4
+  },
+  {
+    "width": 390,
+    "view": "plan",
+    "viewport": 390,
+    "scroll": 390,
+    "cards": 51
+  },
+  {
+    "width": 390,
+    "view": "optativas",
+    "viewport": 390,
+    "scroll": 390,
+    "cards": 87
+  },
+  {
+    "mobileMenu": true
+  },
+  {
+    "theme": "dark"
+  },
+  {
+    "pageErrors": []
+  }
+]

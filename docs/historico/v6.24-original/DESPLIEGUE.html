@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Atrio — Despliegue en derechounam.com</title>
+  <link rel="stylesheet" href="./print.css" />
+</head>
+<body>
+  <header>
+    <p class="kicker">derechounam.com</p>
+    <h1>Cómo poner el sitio en el hosting</h1>
+    <p class="meta">Node.js 22 + PostgreSQL. No es una carpeta PHP para public_html.</p>
+  </header>
+  <h2>Instalación</h2>
+  <pre>unzip atrio-derechounam.zip
+cd atrio-derechounam
+npm install</pre>
+  <h2>Variables</h2>
+  <pre>export DATABASE_URL="postgres://USUARIO:CLAVE@HOST:5432/atrio"
+export BETTER_AUTH_URL="https://derechounam.com"
+export BETTER_AUTH_SECRET="una-cadena-larga-y-aleatoria"
+export NODE_ENV="production"</pre>
+  <p>El correo con clave ya está encendido. Google y X son opcionales.</p>
+  <h2>Base, build y proxy</h2>
+  <pre>npm run db:migrate
+npm run build
+npx vite preview --host 0.0.0.0 --port 3000</pre>
+  <p>Nginx o Caddy debe mandar derechounam.com a ese puerto con HTTPS. El detalle y el ejemplo de servidor están en DESPLIEGUE.md.</p>
+  <footer>Atrio · instructivo técnico · 5 de septiembre de 2026</footer>
+</body>
+</html>
