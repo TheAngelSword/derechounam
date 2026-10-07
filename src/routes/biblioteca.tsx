@@ -20,7 +20,7 @@ import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea, cn } from 
 import { PublishGate } from "@/components/publish-gate";
 import { canEditPublication, canPublish, useAreaVisit, useDirectory } from "@/components/directory";
 import { addBook, updateBook } from "@/lib/content";
-import { uploadToAtrioMedia } from "@/lib/media-upload";
+import { uploadToDrive } from "@/lib/media-upload";
 import type { BookItem, Course } from "@/lib/types";
 
 export const Route = createFileRoute("/biblioteca")({ component: BibliotecaPage });
@@ -115,7 +115,7 @@ function BibliotecaPage() {
     const now = new Date();
     setUploadLabel(format === "Word" ? "Word editable" : format);
     setUploadProgress(0);
-    const stored = await uploadToAtrioMedia({
+    const stored = await uploadToDrive({
       file,
       category: "biblioteca",
       subfolder: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`,

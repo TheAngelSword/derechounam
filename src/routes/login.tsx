@@ -62,8 +62,8 @@ function Login() {
           <img src="/unam-logo.png" alt="Universidad Nacional Autónoma de México" className="h-16 w-auto object-contain" />
         </div>
         <div className="p-6">
-        <p className="text-xs font-medium uppercase tracking-[0.16em] text-clay">Atrio · Grupo 9114</p>
-        <h1 className="mt-2 font-display text-4xl">Entrar al atrio</h1>
+        <p className="text-xs font-medium uppercase tracking-[0.16em] text-clay">Faculta de Derecho · Grupo 9114</p>
+        <h1 className="mt-2 font-display text-4xl">Entrar al faculta</h1>
         <p className="mt-2 text-sm text-muted">
           El registro de alumnos, cátedras y moderadores pide cuenta. El mural se puede leer sin entrar.
         </p>

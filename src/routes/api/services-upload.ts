@@ -1,12 +1,2 @@
 import { createFileRoute } from "@tanstack/react-router";
-
-export const Route = createFileRoute("/api/services-upload")({
-  server: {
-    handlers: {
-      POST: async () => Response.json(
-        { error: "Endpoint retirado. Atrio ahora guarda los archivos en media.ge01.com." },
-        { status: 410 },
-      ),
-    },
-  },
-});
+export const Route=createFileRoute("/api/services-upload")({server:{handlers:{POST:async()=>Response.json({error:"Ruta antigua retirada. Actualiza el portal: las nuevas cargas se realizan en Google Drive."},{status:410})}}});

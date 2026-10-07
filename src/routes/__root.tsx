@@ -5,7 +5,7 @@ import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { AuthProvider } from "@/lib/auth/provider";
 import appCss from "../styles.css?url";
 
-const APP_NAME = "Atrio";
+const APP_NAME = "Faculta de Derecho";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -15,9 +15,9 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content: "Comunidad del grupo 9114: horarios, cátedras con apuntes y tareas, agenda, biblioteca, bitácora, rutas y servicios entre compañeros.",
+        content: "Portal estudiantil del grupo 9114: plan de estudios 2125, noticias de Derecho y Universidad Abierta, materiales en Drive, horarios y comunidad. No es un sitio oficial de la UNAM.",
       },
-      { name: "theme-color", content: "#003D79" },
+      { name: "theme-color", content: "#11243a" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -28,7 +28,7 @@ export const Route = createRootRoute({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap",
       },
     ],
   }),

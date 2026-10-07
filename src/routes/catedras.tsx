@@ -28,7 +28,7 @@ import { canEditPublication, canPublish, useAreaVisit, useDirectory } from "@/co
 import { Button, Card, Field, FormBox, Input, Pill, Select, Textarea, cn } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
 import { addClassMaterial, updateClassMaterial } from "@/lib/content";
-import { uploadToAtrioMedia } from "@/lib/media-upload";
+import { uploadToDrive } from "@/lib/media-upload";
 import { formatLongDate, getTodayIso } from "@/lib/format";
 import type { ClassMaterial, Course, TaskItem } from "@/lib/types";
 
@@ -85,7 +85,7 @@ const GENERAL_COURSE: Course = {
 };
 
 function normalizeUrl(value: string) {
-  const trimmed = value.trim();
+  const trimmed = value.trim().replace(/\s+/g, "");
   if (!trimmed) return "";
   if (/^https?:\/\//i.test(trimmed)) return trimmed;
   return `https://${trimmed}`;
@@ -257,11 +257,11 @@ function CatedrasPage() {
 
   async function uploadAttachment(file: FormDataEntryValue | null, courseCode: string, classDate: string) {
     if (!(file instanceof File) || file.size === 0) return null;
-    const allowed = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png", "image/webp"];
-    if (!allowed.includes(file.type)) throw new Error("El archivo debe ser PDF, DOCX, JPG, PNG o WEBP.");
-    if (file.size > 40 * 1024 * 1024) throw new Error("El archivo supera el límite de 40 MB.");
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    if (!ext || !["pdf","doc","docx","txt","jpg","jpeg","png","webp","mp3","m4a","ogg","wav","mp4","webm"].includes(ext)) throw new Error("Formato no permitido. Usa un documento, foto, audio o video compatible.");
+    if (file.size > 512 * 1024 * 1024) throw new Error("El archivo supera el límite de 512 MB.");
     const [year, month] = classDate.split("-");
-    const stored = await uploadToAtrioMedia({ file, category: "catedras", subfolder: `${courseCode}/${year}/${month}`, onProgress: setUploadProgress });
+    const stored = await uploadToDrive({ file, category: "catedras", subfolder: `${courseCode}/${year}/${month}`, onProgress: setUploadProgress });
     return { url: stored.url, name: file.name };
   }
 
@@ -283,6 +283,8 @@ function CatedrasPage() {
       audioUrl: normalizeUrl(String(data.get("audioUrl") ?? "")),
       audioLabel: String(data.get("audioLabel") ?? "").trim(),
       externalUrl: normalizeUrl(String(data.get("externalUrl") ?? "")),
+      removeAudioUrl: data.get("removeAudioUrl") === "on",
+      removeExternalUrl: data.get("removeExternalUrl") === "on",
     };
   }
 
@@ -295,11 +297,15 @@ function CatedrasPage() {
       const values = readMaterial(data);
       const attachment = data.get("attachment");
       const hasAttachment = attachment instanceof File && attachment.size > 0;
-      const hasContent = Boolean(values.title || values.body || values.referencesText || values.bibliographyText || values.audioUrl || values.externalUrl || hasAttachment);
+      const audioFile = data.get("audioFile");
+      const hasAudioFile = audioFile instanceof File && audioFile.size > 0;
+      if (hasAudioFile && !/\.(mp3|m4a|ogg|wav)$/i.test(audioFile.name)) throw new Error("Para audio usa MP3, M4A, OGG o WAV.");
+      const hasContent = Boolean(values.title || values.body || values.referencesText || values.bibliographyText || values.audioUrl || values.externalUrl || hasAttachment || hasAudioFile);
       if (!hasContent) throw new Error("Agrega al menos un tema, apuntes, audio, archivo, referencia, bibliografía o liga complementaria.");
       const title = values.title || values.audioLabel || `${values.kind} · ${values.course.name}`;
       const uploaded = await uploadAttachment(attachment, values.course.code, values.classDate);
-      await addClassMaterial({ data: {
+      const uploadedAudio = await uploadAttachment(audioFile, values.course.code, values.classDate);
+      const saved = await addClassMaterial({ data: {
         courseCode: values.course.code,
         courseName: values.course.name,
         professorName: values.professorName,
@@ -309,18 +315,20 @@ function CatedrasPage() {
         body: values.body,
         referencesText: values.referencesText,
         bibliographyText: values.bibliographyText,
-        audioUrl: values.audioUrl,
-        audioLabel: values.audioLabel,
+        audioUrl: uploadedAudio?.url || values.audioUrl,
+        audioLabel: values.audioLabel || uploadedAudio?.name || "",
         fileUrl: uploaded?.url ?? "",
         fileName: uploaded?.name ?? "",
         externalUrl: values.externalUrl,
       } });
+      await refresh();
       form.reset();
       setSelectedDate(values.classDate);
       setMonthCursor(`${values.classDate.slice(0, 7)}-01`);
       chooseCourse(values.course.code);
-      setSuccess("Sesión guardada en el calendario académico.");
-      await refresh();
+      setExpandedAcademicKey(`material-${saved.id}`);
+      const savedResources = [saved.audioUrl ? "audio" : "", saved.externalUrl ? "liga complementaria" : "", saved.fileUrl ? "archivo" : ""].filter(Boolean);
+      setSuccess(savedResources.length ? `Sesión guardada. Recursos confirmados: ${savedResources.join(", ")}.` : "Sesión guardada en el calendario académico.");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "No se pudo guardar la sesión.");
     } finally { setBusy(false); }
@@ -335,12 +343,19 @@ function CatedrasPage() {
       const values = readMaterial(data);
       const attachment = data.get("attachment");
       const hasAttachment = attachment instanceof File && attachment.size > 0;
+      const audioFile = data.get("audioFile");
+      const hasAudioFile = audioFile instanceof File && audioFile.size > 0;
+      if (hasAudioFile && !/\.(mp3|m4a|ogg|wav)$/i.test(audioFile.name)) throw new Error("Para audio usa MP3, M4A, OGG o WAV.");
       const hasExistingResource = Boolean(editingMaterial.fileUrl || editingMaterial.audioUrl || editingMaterial.externalUrl);
-      const hasContent = Boolean(values.title || values.body || values.referencesText || values.bibliographyText || values.audioUrl || values.externalUrl || hasAttachment || hasExistingResource);
+      const hasContent = Boolean(values.title || values.body || values.referencesText || values.bibliographyText || values.audioUrl || values.externalUrl || hasAttachment || hasAudioFile || hasExistingResource);
       if (!hasContent) throw new Error("Agrega al menos un tema, apuntes, audio, archivo, referencia, bibliografía o liga complementaria.");
       const title = values.title || values.audioLabel || editingMaterial.title || `${values.kind} · ${values.course.name}`;
       const uploaded = await uploadAttachment(attachment, values.course.code, values.classDate);
-      await updateClassMaterial({ data: {
+      const uploadedAudio = await uploadAttachment(audioFile, values.course.code, values.classDate);
+      const audioUrl = values.removeAudioUrl ? "" : (uploadedAudio?.url || values.audioUrl || editingMaterial.audioUrl || "");
+      const audioLabel = values.removeAudioUrl ? "" : (values.audioLabel || uploadedAudio?.name || editingMaterial.audioLabel || "");
+      const externalUrl = values.removeExternalUrl ? "" : (values.externalUrl || editingMaterial.externalUrl || "");
+      const saved = await updateClassMaterial({ data: {
         id: editingMaterial.id,
         courseCode: values.course.code,
         courseName: values.course.name,
@@ -351,17 +366,19 @@ function CatedrasPage() {
         body: values.body,
         referencesText: values.referencesText,
         bibliographyText: values.bibliographyText,
-        audioUrl: values.audioUrl,
-        audioLabel: values.audioLabel,
+        audioUrl,
+        audioLabel,
         fileUrl: uploaded?.url ?? editingMaterial.fileUrl ?? "",
         fileName: uploaded?.name ?? editingMaterial.fileName ?? "",
-        externalUrl: values.externalUrl,
+        externalUrl,
       } });
+      await refresh();
       setSelectedDate(values.classDate);
       setMonthCursor(`${values.classDate.slice(0, 7)}-01`);
       setEditingMaterial(null);
-      setSuccess("Sesión actualizada.");
-      await refresh();
+      setExpandedAcademicKey(`material-${saved.id}`);
+      const savedResources = [saved.audioUrl ? "audio" : "", saved.externalUrl ? "liga complementaria" : "", saved.fileUrl ? "archivo" : ""].filter(Boolean);
+      setSuccess(savedResources.length ? `Sesión actualizada. Recursos confirmados: ${savedResources.join(", ")}.` : "Sesión actualizada.");
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "No se pudo guardar.";
       setError(/autor de la publicación|administrador/i.test(message) ? "Sólo el autor o un administrador puede editar esta sesión." : message);
@@ -658,24 +675,44 @@ function AcademicDetail({
           {item.material.referencesText ? <DetailBlock title="Referencias"><p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{item.material.referencesText}</p></DetailBlock> : null}
           {item.material.bibliographyText ? <DetailBlock title="Bibliografía"><p className="whitespace-pre-wrap text-sm leading-relaxed text-ink-soft">{item.material.bibliographyText}</p></DetailBlock> : null}
 
-          {(item.material.audioUrl || item.material.fileUrl || item.material.externalUrl) ? (
-            <DetailBlock title="Recursos y enlaces">
-              <div className="flex flex-wrap gap-2">
+          <DetailBlock title="Recursos y enlaces">
+            {(item.material.audioUrl || item.material.fileUrl || item.material.externalUrl) ? (
+              <div className="grid gap-3">
                 {item.material.audioUrl ? (
-                  resourceAllowed ? <a href={item.material.audioUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white"><Headphones className="size-3.5" />{item.material.audioLabel || "Abrir audio"}</a>
-                    : <LockedResourceButton onClick={onBlockResource} label="Audio protegido" />
+                  <div className="rounded-lg border border-line bg-white p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">Audio</p>
+                    <p className="mt-1 break-all text-xs text-muted">{item.material.audioUrl}</p>
+                    <div className="mt-2">
+                      {resourceAllowed ? <a href={item.material.audioUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md bg-forest px-3 text-xs font-semibold text-white"><Headphones className="size-3.5" />{item.material.audioLabel || "Abrir audio"}</a>
+                        : <LockedResourceButton onClick={onBlockResource} label="Audio protegido" />}
+                    </div>
+                  </div>
                 ) : null}
                 {item.material.fileUrl ? (
-                  resourceAllowed ? <a href={item.material.fileUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest"><FileText className="size-3.5" />{item.material.fileName || (isImageFile(item.material) ? "Ver fotografía" : "Abrir archivo")}</a>
-                    : <LockedResourceButton onClick={onBlockResource} label="Archivo protegido" />
+                  <div className="rounded-lg border border-line bg-white p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">Archivo</p>
+                    <p className="mt-1 break-all text-xs text-muted">{item.material.fileName || item.material.fileUrl}</p>
+                    <div className="mt-2">
+                      {resourceAllowed ? <a href={item.material.fileUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest"><FileText className="size-3.5" />{item.material.fileName || (isImageFile(item.material) ? "Ver fotografía" : "Abrir archivo")}</a>
+                        : <LockedResourceButton onClick={onBlockResource} label="Archivo protegido" />}
+                    </div>
+                  </div>
                 ) : null}
                 {item.material.externalUrl ? (
-                  resourceAllowed ? <a href={item.material.externalUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest"><ExternalLink className="size-3.5" />Abrir liga complementaria</a>
-                    : <LockedResourceButton onClick={onBlockResource} label="Liga protegida" />
+                  <div className="rounded-lg border border-line bg-white p-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.1em] text-clay">Liga complementaria</p>
+                    <p className="mt-1 break-all text-xs text-muted">{item.material.externalUrl}</p>
+                    <div className="mt-2">
+                      {resourceAllowed ? <a href={item.material.externalUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-1.5 rounded-md border border-line bg-white px-3 text-xs font-semibold text-forest"><ExternalLink className="size-3.5" />Abrir liga complementaria</a>
+                        : <LockedResourceButton onClick={onBlockResource} label="Liga protegida" />}
+                    </div>
+                  </div>
                 ) : null}
               </div>
-            </DetailBlock>
-          ) : null}
+            ) : (
+              <p className="text-sm text-muted">Este registro no tiene ninguna liga o archivo guardado.</p>
+            )}
+          </DetailBlock>
 
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4 text-xs text-muted">
             <span>Publicado por {item.material.authorAlias}</span>
@@ -745,13 +782,16 @@ function MaterialFields({
     <Field label="Referencias" hint="Opcional"><Textarea name="referencesText" defaultValue={material?.referencesText ?? ""} placeholder="Artículos, leyes, páginas, sentencias, autores o ligas mencionadas en clase." /></Field>
     <Field label="Bibliografía" hint="Opcional"><Textarea name="bibliographyText" defaultValue={material?.bibliographyText ?? ""} placeholder="Autor, título, editorial, edición, páginas o capítulos recomendados." /></Field>
     <div className="rounded-lg border border-forest/10 bg-forest-soft p-3">
-      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-forest"><Headphones className="size-3.5" />Audio por enlace</p>
-      <p className="mb-3 text-xs leading-relaxed text-muted">Pega una liga de Google Drive/Docs. El audio no se sube a HostGator; Atrio sólo guarda el enlace.</p>
-      <Field label="Liga del audio" hint="Opcional"><Input name="audioUrl" type="text" inputMode="url" maxLength={2000} defaultValue={material?.audioUrl ?? ""} placeholder="https://drive.google.com/..." /></Field>
+      <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-forest"><Headphones className="size-3.5" />Audio de la clase</p>
+      <p className="mb-3 text-xs leading-relaxed text-muted">Sube un audio a la carpeta autorizada de Google Drive o conserva una liga externa existente. Si eliges un archivo nuevo, éste reemplaza la liga de audio.</p>
+      <Field label="Subir audio a Drive" hint="MP3, M4A, OGG, WAV · hasta 512 MB"><Input name="audioFile" type="file" accept=".mp3,.m4a,.ogg,.wav" /></Field>
+      <Field label="Liga del audio" hint="Opcional"><Input name="audioUrl" type="url" inputMode="url" maxLength={4000} defaultValue={material?.audioUrl ?? ""} placeholder="https://drive.google.com/..." /></Field>
       <Field label="Nombre / descripción del audio" hint="Opcional"><Input name="audioLabel" maxLength={180} defaultValue={material?.audioLabel ?? ""} placeholder="Podcast de la clase / resumen del tema" /></Field>
+      {editMode && material?.audioUrl ? <label className="flex items-center gap-2 text-xs text-muted"><input name="removeAudioUrl" type="checkbox" className="size-4" />Quitar la liga de audio guardada</label> : null}
     </div>
-    <Field label={editMode ? "Reemplazar archivo o foto" : "Archivo o fotografía"} hint={editMode ? "Opcional; si no eliges otro se conserva" : "PDF, DOCX, JPG, PNG o WEBP · máx. 40 MB"}><Input name="attachment" type="file" accept="application/pdf,.docx,image/jpeg,image/png,image/webp" /></Field>
-    <Field label="Liga complementaria" hint="Opcional"><Input name="externalUrl" defaultValue={material?.externalUrl ?? ""} placeholder="https://..." /></Field>
+    <Field label={editMode ? "Reemplazar documento, foto o video" : "Documento, fotografía o video"} hint={editMode ? "Opcional; si no eliges otro se conserva" : "Documentos, imágenes, MP4 o WEBM · máx. 512 MB"}><Input name="attachment" type="file" accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.webp,.mp4,.webm" /></Field>
+    <Field label="Liga complementaria" hint="Opcional"><Input name="externalUrl" type="url" inputMode="url" maxLength={4000} defaultValue={material?.externalUrl ?? ""} placeholder="https://..." /></Field>
+    {editMode && material?.externalUrl ? <label className="flex items-center gap-2 text-xs text-muted"><input name="removeExternalUrl" type="checkbox" className="size-4" />Quitar la liga complementaria guardada</label> : null}
   </>;
 }
 

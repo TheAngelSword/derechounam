@@ -7,7 +7,7 @@ import { canEditPublication, useAreaVisit, useDirectory } from "@/components/dir
 import { Button, Card, Field, FormBox, Input, Pill, Textarea } from "@/components/ui";
 import { PublishGate } from "@/components/publish-gate";
 import { addBitacoraPost, updateBitacoraPost } from "@/lib/content";
-import { uploadToAtrioMedia } from "@/lib/media-upload";
+import { uploadToDrive } from "@/lib/media-upload";
 import type { BitacoraPost } from "@/lib/types";
 
 export const Route = createFileRoute("/bitacora")({ component: BitacoraPage });
@@ -32,7 +32,7 @@ function BitacoraPage() {
     if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) throw new Error("La imagen debe ser JPG, PNG o WEBP.");
     if (file.size > 20 * 1024 * 1024) throw new Error("La imagen supera el límite de 20 MB.");
     const now = new Date();
-    const stored = await uploadToAtrioMedia({ file, category: "bitacora", subfolder: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`, onProgress: setUploadProgress });
+    const stored = await uploadToDrive({ file, category: "bitacora", subfolder: `${now.getFullYear()}/${String(now.getMonth() + 1).padStart(2, "0")}`, onProgress: setUploadProgress });
     return { url: stored.url, name: file.name };
   }
 
