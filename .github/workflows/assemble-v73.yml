@@ -20,7 +20,7 @@ jobs:
           node-version: '24'
           cache: npm
       - name: Aplicar cambios revisados con guardas de integridad
-        run: node scripts/assemble-v73.mjs
+        run: node scripts/finalize-v73.mjs
       - run: npm ci
       - name: Pruebas de contenido, privacidad y migración local
         run: node --experimental-strip-types --test tests/v7/*.test.ts tests/v71/*.test.ts tests/v72/*.test.ts tests/v73/*.test.ts
@@ -50,7 +50,7 @@ jobs:
           test "$GITHUB_REF_NAME" = "mejora-v73"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .gitignore src
+          git add .gitignore src scripts/check-v73-browser.mjs
           if ! git diff --cached --quiet; then
             git commit -m "Integra V7.3 tras pruebas de juegos, cuentas y navegador"
             AUTH=$(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)
