@@ -6,6 +6,8 @@ import { AuthProvider } from "@/lib/auth/provider";
 import appCss from "../styles.css?url";
 import updateCss from "../styles-v71.css?url";
 import layoutCss from "../styles-v72.css?url";
+import gamesCss from "../styles-v73.css?url";
+
 const APP_NAME = "Facultad de Derecho";
 export const Route = createRootRoute({
  head: () => ({
@@ -21,6 +23,7 @@ export const Route = createRootRoute({
    { rel: "stylesheet", href: appCss },
    { rel: "stylesheet", href: updateCss },
    { rel: "stylesheet", href: layoutCss },
+   { rel: "stylesheet", href: gamesCss },
    { rel: "manifest", href: "/__grok/manifest.webmanifest" },
    { rel: "apple-touch-icon", href: "/__grok/icon-180.png" },
    { rel: "preconnect", href: "https://fonts.googleapis.com" },

@@ -1,11 +1,11 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { BookOpen, CalendarDays, Camera, CarFront, ClipboardCheck, GraduationCap, Landmark, LayoutGrid, Megaphone, Menu, Shield, ShoppingBasket, SlidersHorizontal, Users, Vote, X, Search, Moon, Sun, PanelLeftClose, PanelLeftOpen, Newspaper, ArrowUpRight } from "lucide-react";
+import { BookOpen, CalendarDays, Camera, CarFront, ClipboardCheck, GraduationCap, Landmark, LayoutGrid, Megaphone, Menu, Shield, ShoppingBasket, SlidersHorizontal, Users, Vote, X, Search, Moon, Sun, PanelLeftClose, PanelLeftOpen, Newspaper, ArrowUpRight, Gamepad2 } from "lucide-react";
 import { SignedIn, SignedOut, UserButton } from "@/lib/auth/gates";
 import { PLAN_COURSES } from "@/lib/study/plan";
 import { APP_VERSION } from "@/lib/app-version";
 export const PORTAL_NAV=[
- {to:"/",label:"Inicio",icon:LayoutGrid,group:"Tu espacio"},{to:"/noticias",label:"Noticias",icon:Newspaper,group:"Tu espacio"},
+ {to:"/",label:"Inicio",icon:LayoutGrid,group:"Tu espacio"},{to:"/noticias",label:"Noticias",icon:Newspaper,group:"Tu espacio"},{to:"/juegos",label:"Juegos",icon:Gamepad2,group:"Tu espacio"},
  {to:"/plan-estudios",label:"Plan de estudios",icon:GraduationCap,group:"Academia"},{to:"/clases",label:"Horarios",icon:CalendarDays,group:"Academia"},{to:"/catedras",label:"Cátedras",icon:Landmark,group:"Academia"},{to:"/tareas",label:"Tareas",icon:ClipboardCheck,group:"Academia"},{to:"/biblioteca",label:"Biblioteca",icon:BookOpen,group:"Academia"},
  {to:"/agenda",label:"Agenda",icon:CalendarDays,group:"Comunidad"},{to:"/votaciones",label:"Votaciones",icon:Vote,group:"Comunidad"},{to:"/bitacora",label:"Bitácora",icon:Camera,group:"Comunidad"},{to:"/mesas",label:"Mesas de estudio",icon:Users,group:"Comunidad"},{to:"/mural",label:"Mural",icon:Megaphone,group:"Comunidad"},{to:"/servicios",label:"Servicios",icon:ShoppingBasket,group:"Comunidad"},{to:"/rutas",label:"Rutas",icon:CarFront,group:"Comunidad"},
  {to:"/registro",label:"Registro",icon:Shield,group:"Gestión"},{to:"/control",label:"Control",icon:SlidersHorizontal,group:"Gestión"},

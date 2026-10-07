@@ -440,8 +440,8 @@ function CatedrasPage() {
           )}
         </div>
       ) : null}
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(22rem,.85fr)]">
-        <Card className="overflow-hidden p-0">
+      <div className="fd-calendar-layout">
+        <Card className="fd-compact-calendar overflow-hidden p-0">
           <div className="unam-hero px-5 py-5 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
