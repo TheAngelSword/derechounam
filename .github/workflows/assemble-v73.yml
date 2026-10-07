@@ -6,7 +6,7 @@ permissions:
   contents: write
 concurrency:
   group: ensamblar-v73
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   assemble:
     runs-on: ubuntu-latest
@@ -32,7 +32,9 @@ jobs:
           BETTER_AUTH_URL: http://localhost:8080
           APP_PUBLIC_URL: http://localhost:8080
           VITE_PUBLIC_HOSTNAME: localhost:8080
-      - run: npx playwright install --with-deps chromium
+      - name: Instalar Chromium en el runner Ubuntu
+        run: npx playwright install chromium
+        timeout-minutes: 3
       - name: Probar juegos, cuentas y diseño en navegador local
         run: node --experimental-strip-types scripts/check-v73-browser.mjs
       - uses: actions/upload-artifact@v4

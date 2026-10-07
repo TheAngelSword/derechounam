@@ -31,7 +31,8 @@ jobs:
           APP_PUBLIC_URL: http://localhost:8080
           VITE_PUBLIC_HOSTNAME: localhost:8080
       - name: Navegador para pruebas de interfaz
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
+        timeout-minutes: 3
       - name: Revisar interfaz real sin datos de producción
         run: node --experimental-strip-types scripts/check-v73-browser.mjs
       - uses: actions/upload-artifact@v4
