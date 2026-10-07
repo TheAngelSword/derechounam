@@ -1,0 +1,32 @@
+name: Validar Facultad V7.1
+on:
+  push:
+    branches: [prueba-v7]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Pruebas V7 y V7.1
+        run: node --experimental-strip-types --test tests/v7/*.test.ts tests/v71/*.test.ts
+      - name: Sintaxis TypeScript
+        run: npm run check:syntax
+      - name: Compilar sin migrar bases remotas
+        run: npm run build:code
+        env:
+          DATABASE_URL: ''
+          BETTER_AUTH_URL: http://localhost:8080
+          APP_PUBLIC_URL: http://localhost:8080
+          VITE_PUBLIC_HOSTNAME: localhost:8080

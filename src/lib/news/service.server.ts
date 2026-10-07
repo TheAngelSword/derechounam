@@ -1,6 +1,7 @@
 import { getSql } from "@/lib/db";
 import { DEFAULT_NEWS_SETTINGS, mergeSettings, assertSourceUrl } from "./sources";
 import { parseFeed, parseOfficialHtml } from "./parser";
+import { enrichMedia } from "./enrich.server";
 import { NEWS_SNAPSHOT } from "./snapshot";
 import type {NewsFeed,NewsItem,NewsSettings,NewsSource,NewsSourceStatus} from "./types";
 type Cache={items:NewsItem[];fetched_at:Date|string|null;checked_at:Date|string|null;last_error:string|null};
@@ -12,7 +13,7 @@ export async function readNewsSettings():Promise<NewsSettings>{
 export async function fetchOfficialSource(source:NewsSource):Promise<NewsItem[]>{
  let url=assertSourceUrl(source.url,source.hosts);const signal=AbortSignal.timeout(9000);
  for(let redirect=0;redirect<4;redirect++){
-   const response=await fetch(url,{redirect:"manual",signal,headers:{Accept:source.kind==="rss"?"application/rss+xml, application/atom+xml, application/xml, text/xml":"text/html","User-Agent":"FacultaDerechoStudentPortal/7.0 (+educational-news-reader)"}});
+   const response=await fetch(url,{redirect:"manual",signal,headers:{Accept:source.kind==="rss"?"application/rss+xml, application/atom+xml, application/xml, text/xml":"text/html","User-Agent":"FacultadDerechoStudentPortal/7.1 (+educational-news-reader)"}});
    if([301,302,303,307,308].includes(response.status)){
      const location=response.headers.get("location");await response.body?.cancel();if(!location)throw new Error("Redirección sin destino.");url=assertSourceUrl(new URL(location,url).href,source.hosts);continue;
    }
@@ -24,7 +25,7 @@ export async function fetchOfficialSource(source:NewsSource):Promise<NewsItem[]>
    if(/charset\s*=\s*["']?(?:iso-8859-1|windows-1252)/i.test(response.headers.get("content-type")??""))text=new TextDecoder("windows-1252").decode(bytes);
    const items=source.kind==="rss"?parseFeed(text,source):parseOfficialHtml(text,source);
    if(!items.length)throw new Error("La fuente respondió, pero no se encontraron entradas que coincidan con los filtros.");
-   return items;
+   return await enrichMedia(items,source,text);
  }
  throw new Error("Demasiadas redirecciones en la fuente.");
 }
