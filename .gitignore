@@ -1,0 +1,16 @@
+node_modules/
+.output/
+.vercel/
+.env*
+!.env.example
+*.log
+.pglite/
+.data/
+.tanstack/
+
+client_secret*.json
+credentials*.json
+service-account*.json
+*.pem
+
+test-results/

@@ -1,5 +1,7 @@
 import { PLAN_COURSES } from "./plan.ts";
-export type CourseStatus = "pendiente" | "cursando" | "aprobada";
+export const COURSE_STATUSES = ["pendiente", "cursando", "aprobada", "reprobada", "no_presentada", "baja"] as const;
+export type CourseStatus = typeof COURSE_STATUSES[number];
+export const COURSE_STATUS_LABELS: Record<CourseStatus,string> = {pendiente:"Pendiente",cursando:"En curso",aprobada:"Aprobada",reprobada:"Reprobada",no_presentada:"No presentada",baja:"Baja"};
 export type ProgressEntry = { status: CourseStatus; semester?: 9 | 10 };
 export type StudyProgress = Record<string, ProgressEntry>;
 export function validateProgress(value: unknown): StudyProgress {
@@ -7,10 +9,10 @@ export function validateProgress(value: unknown): StudyProgress {
   const result: StudyProgress = {};
   let nine = 0, ten = 0;
   for (const [id, entry] of Object.entries(value)) {
-    const course = PLAN_COURSES.find((item) => item.id === id);
-    if (!course || !entry || typeof entry !== "object") throw new Error("Materia no válida.");
+    const course = PLAN_COURSES.find(item => item.id === id);
+    if (!course || !entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error("Materia no válida.");
     const { status, semester } = entry as ProgressEntry;
-    if (!["pendiente", "cursando", "aprobada"].includes(status)) throw new Error("Estado no válido.");
+    if (!COURSE_STATUSES.includes(status)) throw new Error("Estado no válido.");
     if (course.kind === "optativa") {
       if (semester !== 9 && semester !== 10) throw new Error("Asigna la optativa al semestre 9 o 10.");
       if (semester === 9) nine++; else ten++;
@@ -21,11 +23,14 @@ export function validateProgress(value: unknown): StudyProgress {
   return result;
 }
 export function summarizeProgress(progress: StudyProgress) {
-  const passed = PLAN_COURSES.filter((c) => progress[c.id]?.status === "aprobada");
-  const requiredCredits = passed.filter((c) => c.kind === "obligatoria").reduce((n,c) => n+c.credits,0);
-  const electiveCredits = Math.min(84, passed.filter((c) => c.kind === "optativa" && [9,10].includes(progress[c.id]?.semester ?? 0)).reduce((n,c) => n+c.credits,0));
-  return { requiredCredits, electiveCredits, credits: requiredCredits + electiveCredits, passed: passed.length, percent: Math.round((requiredCredits + electiveCredits) / 450 * 100) };
+  const selected = PLAN_COURSES.filter(c => c.kind === "obligatoria" || [9,10].includes(progress[c.id]?.semester ?? 0));
+  const counts = Object.fromEntries(COURSE_STATUSES.map(s => [s,0])) as Record<CourseStatus,number>;
+  for (const c of selected) { const s = progress[c.id]?.status ?? "pendiente"; if(COURSE_STATUSES.includes(s))counts[s]++; }
+  const passed = selected.filter(c => progress[c.id]?.status === "aprobada");
+  const requiredCredits = passed.filter(c => c.kind === "obligatoria").reduce((n,c) => n+c.credits,0);
+  const electiveCredits = Math.min(84,passed.filter(c => c.kind === "optativa").reduce((n,c) => n+c.credits,0));
+  return {requiredCredits,electiveCredits,credits:requiredCredits+electiveCredits,passed:passed.length,percent:Math.round((requiredCredits+electiveCredits)/450*100),counts};
 }
 export function missingPrerequisites(id: string, progress: StudyProgress) {
-  return PLAN_COURSES.find((c) => c.id === id)?.prerequisites.filter((code) => progress[code]?.status !== "aprobada") ?? [];
+  return PLAN_COURSES.find(c => c.id === id)?.prerequisites.filter(code => progress[code]?.status !== "aprobada") ?? [];
 }

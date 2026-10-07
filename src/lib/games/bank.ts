@@ -1,0 +1,156 @@
+/** Practice authored from the six supplied plans. TGE is explicitly provisional. */
+export type StudyCard={id:string;subject:string;term:string;definition:string;question:string;source:string;sourceUrl:string|null};
+export type BoardChallenge={prompt:string;answers:[string,string[]][];source:string};
+export type GameSubject={id:string;name:string;provisional:boolean;notice:string;source:string;sourceUrl:string|null;cards:StudyCard[];board:BoardChallenge;tips:string[]};
+type SubjectSeed=Omit<GameSubject,'cards'>&{cards:[string,string,string,string][]};
+const seeds:SubjectSeed[]=[
+{
+"id":"acto",
+"name":"Acto Jurídico y Derecho de las Personas",
+"provisional":false,
+"notice":"Ejercicios originales basados en los temas y objetivos de tu planeación. No sustituyen las lecturas ni son un banco oficial de examen.",
+"source":"Planeación Acto Jurídico y Derecho de las Personas 9114",
+"sourceUrl":null,
+"board":{"prompt":"Nombra las tres categorías de la tesis francesa de las nulidades que aparecen en la planeación.","answers":[["Inexistencia",["inexistencia"]],["Nulidad absoluta",["nulidad absoluta","absoluta"]],["Nulidad relativa",["nulidad relativa","relativa"]]],"source":"p. 6, apartado 3.4.3"},
+"tips":["Relaciona vicios del consentimiento con nulidades: el objetivo pide estudiarlos juntos (unidad 3).","No confundas el estudio de una institución con una afirmación sobre su vigencia actual. La planeación remite a códigos y Constitución.","El documento distingue acto jurídico y negocio jurídico; no trata esos nombres como sinónimos (unidad 4)."],
+"cards":[
+["Acto jurídico","Manifestación de voluntad de una o más personas para crear, transmitir, modificar o extinguir derechos y obligaciones, conforme al objetivo de la unidad 3.","¿Qué figura se caracteriza por una manifestación de voluntad dirigida a crear o modificar derechos y obligaciones?","p. 4, unidad 3"],
+["Elementos esenciales","La planeación enumera voluntad o consentimiento y objeto como elementos esenciales del acto jurídico.","¿A qué grupo pertenecen voluntad o consentimiento y objeto en esta planeación?","pp. 4 y 19, unidad 3"],
+["Elementos de validez","En la sesión complementaria se agrupan capacidad, licitud y ausencia de vicios del consentimiento. Es la selección del documento, no una lista universal para cualquier acto.","¿Cómo agrupa la sesión complementaria la capacidad, la licitud y la ausencia de vicios?","p. 19, sesión complementaria"],
+["Vicios del consentimiento","El temario incluye error, violencia y lesión, y pide relacionar su estudio con la teoría de las nulidades.","¿Qué tema reúne error, violencia y lesión en la planeación?","p. 5, apartado 3.3.8"],
+["Tesis tripartita de las nulidades","La tesis francesa estudiada distingue inexistencia, nulidad absoluta y nulidad relativa.","¿Qué clasificación reúne inexistencia, nulidad absoluta y nulidad relativa?","p. 6, apartado 3.4.3"],
+["Modalidades del acto jurídico","Término, condición y modo o carga son las modalidades enumeradas. El objetivo pide distinguirlas de los actos puros y simples.","¿Qué tema estudia conjuntamente término, condición y modo o carga?","pp. 6–7, apartado 3.5"],
+["Negocio jurídico","La unidad 4 contrasta esta teoría con la del acto jurídico y la vincula con el Código Civil alemán de 1900. Se conserva el enfoque comparativo de la planeación.","¿Qué teoría vincula la unidad 4 con el Código Civil alemán de 1900?","pp. 7–8, unidad 4"],
+["Nasciturus","La planeación usa esta expresión para el concebido no nacido y propone estudiar su evolución y reglamentación.","¿Qué expresión usa la planeación para el concebido no nacido?","p. 9, unidad 5"],
+["Registro Civil","Se estudian sus antecedentes, organización, actas y rectificación, en relación con actos y hechos jurídicos de las personas.","¿Qué institución se estudia mediante sus libros, actas y procedimientos de rectificación?","pp. 15–16, unidad 9"],
+["Personas jurídicas colectivas","La unidad 10 las identifica con las tradicionalmente llamadas personas morales y trabaja asociación civil y sociedad civil.","¿Qué denominación usa la unidad 10 para las tradicionalmente llamadas personas morales?","p. 17, unidad 10"]
+]},
+{
+"id":"romano",
+"name":"Derecho Romano I",
+"provisional":false,
+"notice":"Ejercicios originales basados en los temas y objetivos de tu planeación. No sustituyen las lecturas ni son un banco oficial de examen.",
+"source":"Derecho Romano I · planeación de Roxana Trigueros Olivares",
+"sourceUrl":null,
+"board":{"prompt":"Nombra las etapas históricas que el documento enumera en las sesiones 3 y 4.","answers":[["Monarquía",["monarquia"]],["República",["republica"]],["Imperio",["imperio"]],["Época Justinianea",["epoca justinianea","justinianea","justiniano"]]],"source":"pp. 2–3, unidad 2"},
+"tips":["Roma se estudia en su contexto histórico; la planeación pide comparar semejanzas y diferencias con México, no equipararlas.","El método del caso aparece expresamente en la unidad 3.","La planeación deja el porcentaje de entregables como «XX%». No se completa aquí con un porcentaje supuesto."],
+"cards":[
+["Ius","La unidad 1 estudia las distintas connotaciones que los romanos otorgaron a esta palabra y distingue Derecho objetivo y subjetivo.","¿Qué palabra latina se estudia por sus distintas connotaciones jurídicas en la unidad 1?","pp. 1–2, unidad 1"],
+["Praecepta iuris","La sesión 2 propone estudiar los preceptos jurídicos romanos y su influencia en el Derecho mexicano. El documento no desarrolla aquí su contenido.","¿Qué expresión encabeza el estudio de los preceptos romanos y su influencia en México?","p. 2, sesión 2"],
+["Recepción del Derecho Romano","Estudio de la continuidad y recepción del Derecho romano después de Justiniano y de su pervivencia en el sistema mexicano.","¿Qué proceso estudia la pervivencia del Derecho romano después de Justiniano?","p. 3, sesión 5"],
+["Casuismo y jurisprudencia romana","La unidad 3 trabaja respuestas de jurisconsultos y fragmentos de obras, con atención al Digesto, para analizar soluciones a casos.","¿Qué enfoque utiliza respuestas de jurisconsultos y fragmentos del Digesto para estudiar casos?","p. 4, unidad 3"],
+["Sujeto de Derecho","La unidad 4 compara persona, personalidad y sujetos colectivos de Roma con el sistema jurídico mexicano, señalando sus diferencias.","¿Qué unidad temática compara persona, personalidad y sujetos colectivos entre Roma y México?","pp. 4–5, unidad 4"],
+["Paterfamilias","El temario de familia estudia sus potestades y las relaciones patrimoniales con los alieni iuris dentro del contexto romano.","¿Con qué figura se relacionan las potestades familiares y los alieni iuris en las sesiones 9 y 10?","pp. 5–6, unidad 5"],
+["Iustae nuptiae","Es la expresión que el contenido de la sesión 11 emplea para el matrimonio romano.","¿Qué expresión identifica al matrimonio en el contenido de la sesión 11?","p. 6, unidad 6"],
+["Protección procesal de los derechos","La unidad 7 incluye acción, procedimiento civil, ordo iudiciorum privatorum y cognitio extra ordinem.","¿En qué tema se ubican ordo iudiciorum privatorum y cognitio extra ordinem?","p. 7, unidad 7"],
+["Arbitraje","El objetivo destaca a un tercero imparcial elegido de común acuerdo por las partes para dirimir sus diferencias.","¿Qué mecanismo destaca la elección, de común acuerdo, de un tercero imparcial?","p. 7, unidad 8"],
+["Derechos reales sobre cosa propia","El temario trabaja patrimonio, cosas, posesión y propiedad, e insiste en distinguir propiedad de posesión.","¿Qué tema reúne patrimonio, posesión y propiedad en la sesión 14?","p. 8, unidad 9"]
+]},
+{
+"id":"historia",
+"name":"Historia del Derecho Mexicano",
+"provisional":false,
+"notice":"Ejercicios originales basados en los temas y objetivos de tu planeación. No sustituyen las lecturas ni son un banco oficial de examen.",
+"source":"Historia del Derecho Mexicano · planeación",
+"sourceUrl":null,
+"board":{"prompt":"Nombra planes o documentos del proyecto insurgente y de la consumación citados en la unidad 6.","answers":[["Elementos Constitucionales de Rayón",["elementos constitucionales","elementos constitucionales de rayon","rayon"]],["Sentimientos de la Nación",["sentimientos de la nacion"]],["Constitución de Apatzingán",["constitucion de apatzingan","apatzingan"]],["Plan de Iguala",["plan de iguala","iguala"]],["Tratados de Córdoba",["tratados de cordoba","cordoba"]]],"source":"pp. 6–7, unidad 6"},
+"tips":["La planeación distingue periodización de la Historia de México y de la Historia del Derecho Mexicano (unidad 1).","El temario no salta de la conquista a la independencia: incluye gobierno, justicia y Derecho novohispanos.","El documento dedica una sesión complementaria a la génesis del artículo 27. No debe confundirse esa discusión histórica con el texto vigente."],
+"cards":[
+["Fuentes histórico-jurídicas","Son las fuentes que la primera unidad propone reconocer para estudiar y comprender el desarrollo jurídico nacional.","¿Qué fuentes se reconocen en la unidad 1 para estudiar la evolución del Derecho Mexicano?","pp. 1–2, unidad 1"],
+["Derecho de los pueblos originarios","Su estudio considera fuentes, contexto político-social anterior a la conquista e influencia en el orden novohispano.","¿Qué tema examina las fuentes y el orden jurídico de las culturas anteriores a la conquista?","p. 2, unidad 2"],
+["Derecho Castellano","La unidad 3 estudia la recepción del ius commune, la obra de Alfonso X y el proceso recopilador en Castilla.","¿Qué tradición jurídica se aborda mediante Alfonso X, el ius commune y las recopilaciones de Castilla?","p. 3, unidad 3"],
+["Bulas Alejandrinas","La unidad 4 analiza su uso como títulos de dominación y la polémica sobre la conquista. Estudiar esa justificación histórica no equivale a avalarla.","¿Qué documentos se analizan en la polémica histórica sobre los títulos de dominación de Castilla?","pp. 3–4, unidad 4"],
+["Derecho Indiano y Novohispano","El temario examina sus fuentes, la aplicación del Derecho Castellano y las costumbres jurídicas de los naturales.","¿Qué conjunto estudia la aplicación del Derecho Castellano y las costumbres jurídicas en Nueva España?","pp. 4–5, unidad 5"],
+["Visitas y residencias","Aparecen bajo el control de los oficiales reales en los principios de la administración indiana.","¿Qué dos mecanismos se estudian bajo el control de los oficiales reales?","p. 5, apartado 5.3.4"],
+["Derecho de Transición","El programa estudia la supervivencia del Derecho Indiano y la sustitución de ordenamientos coloniales entre 1821 y 1871.","¿Qué concepto nombra el estudio de la continuidad y sustitución jurídica entre 1821 y 1871?","pp. 6–7, unidad 6"],
+["Codificación nacional","La sesión 9 estudia el proceso codificador civil, penal y mercantil y la sustitución del orden jurídico colonial.","¿Qué proceso reúne la expedición de cuerpos jurídicos nacionales civiles, penales y mercantiles?","p. 8, sesión 9"],
+["Constitución de 1917","La sesión 11 examina el Congreso Constituyente, el proyecto de Carranza, sus tendencias y las constituciones estatales.","¿En torno a qué Constitución se estudian el Congreso Constituyente y el proyecto de Carranza?","p. 9, sesión 11"],
+["Multiculturalismo y ampliación de derechos","El cierre del temario incluye reconocimiento de pueblos originarios, derechos de minorías y Derecho y género.","¿Qué tema final reúne pueblos originarios, minorías y Derecho y género?","p. 11, apartado 10.3"]
+]},
+{
+"id":"introduccion",
+"name":"Introducción a la Teoría del Derecho",
+"provisional":false,
+"notice":"Ejercicios originales basados en los temas y objetivos de tu planeación. No sustituyen las lecturas ni son un banco oficial de examen.",
+"source":"Introducción a la Teoría de Derecho · planeación",
+"sourceUrl":null,
+"board":{"prompt":"Nombra las cuatro nociones que la sesión 7 pide distinguir.","answers":[["Regla",["regla","reglas"]],["Norma",["norma","normas"]],["Valor",["valor","valores"]],["Principio",["principio","principios"]]],"source":"p. 4, sesión 7"},
+"tips":["La planeación presenta el carácter científico del Derecho como una controversia que debe analizarse, no como una respuesta única indiscutible.","Interpretar e integrar el ordenamiento son tareas expresamente incluidas (sesiones 12–13).","Los derechos humanos cierran el curso; el documento remite a Constitución y sistemas de protección, sin desarrollar íntegramente esas lecturas."],
+"cards":[
+["Teoría del Derecho","El objetivo general estudia categorías del Derecho y de sus normas, sus funciones y criterios de validez.","¿Qué disciplina se aborda a partir de categorías jurídicas, funciones de normas y criterios de validez?","p. 1, objetivo general"],
+["Debate sobre la ciencia jurídica","La sesión 2 pide comprender tanto las doctrinas que consideran al Derecho ciencia como las que no lo conceptúan así.","¿Qué debate exige examinar posiciones que afirman y que niegan el carácter científico del Derecho?","p. 2, sesión 2"],
+["Conceptos jurídicos fundamentales","Las sesiones 4 y 5 se orientan al lenguaje y los conceptos que debe comprender todo jurista.","¿Qué tema se enfoca en el lenguaje básico que todo jurista debe comprender?","p. 3, sesiones 4–5"],
+["Clasificación del Derecho","La sesión 6 pide reconocer formas de clasificación y el elemento sustantivo empleado para clasificar.","¿Qué tema pide identificar el criterio utilizado para agrupar distintas ramas del Derecho?","p. 4, sesión 6"],
+["Derecho y normas","La sesión 7 distingue regla, norma, valor y principio, y estudia la estructura de la norma.","¿Qué tema de la sesión 7 distingue regla, norma, valor y principio?","p. 4, sesión 7"],
+["Ámbitos de validez","La sesión 8 busca comprender los ámbitos de validez de la norma para identificarlos en la aplicación del Derecho.","¿Qué tema de la sesión 8 ayuda a analizar los ámbitos en que se aplica una norma?","p. 5, sesión 8"],
+["Fuentes del Derecho","Las sesiones 9 y 10 tratan el origen y proceso de creación del Derecho, incluida la importancia de los tratados internacionales.","¿Qué tema estudia de dónde nace el Derecho y su proceso de creación?","pp. 5–6, sesiones 9–10"],
+["Funciones del Derecho","La sesión 11 estudia aplicación, función social, valores y principios del Derecho contemporáneo.","¿Qué tema examina la función social, los valores y los principios del Derecho?","p. 6, sesión 11"],
+["Ordenamiento jurídico","Se estudian su estructura, funcionamiento, interpretación e integración a la luz de teorías tradicionales y contemporáneas.","¿Qué concepto se analiza mediante su estructura, interpretación e integración?","pp. 7–8, sesiones 12–13"],
+["Derecho y justicia","La sesión 14 aborda la justicia como valor jurídico y en relación con los derechos humanos; incluye la lectura de Hans Kelsen.","¿Qué tema incluye la lectura «Qué es la justicia» de Hans Kelsen?","p. 8, sesión 14"]
+]},
+{
+"id":"universitario",
+"name":"Ser universitario y cultura de la legalidad",
+"provisional":false,
+"notice":"Ejercicios originales basados en los temas y objetivos de tu planeación. No sustituyen las lecturas ni son un banco oficial de examen.",
+"source":"Ser universitario y cultura de la legalidad · planeación",
+"sourceUrl":null,
+"board":{"prompt":"Nombra cualidades de las evidencias que pide la sesión sobre estructura y argumentación.","answers":[["Recientes",["recientes","reciente"]],["Localizables",["localizables","localizable"]],["Imparciales",["imparciales","imparcial"]],["Relevantes",["relevantes","relevante"]],["Verificables",["verificables","verificable"]]],"source":"pp. 8–9, sesión 8"},
+"tips":["La formación del jurista también incluye trabajo en equipo y respeto al tiempo de otras personas (unidad 4).","La planeación separa acciones que legitiman y que deslegitiman al Estado de Derecho (apartado 8.3).","El estudio independiente se concibe como construcción del criterio propio, acompañado de participación y evidencias de aprendizaje."],
+"cards":[
+["Espíritu universitario","La primera unidad trabaja antecedentes de la UNAM, Alma Mater, identidad, misión, visión y legado universitario.","¿Qué unidad reúne Alma Mater, identidad, misión, visión y legado universitario?","pp. 1–3, unidad 1"],
+["Identidad universitaria","El apartado 1.2 considera el sentido de los símbolos universitarios y la prospectiva del jurista de la UNAM.","¿Qué tema aborda el significado de los símbolos universitarios?","p. 2, apartado 1.2"],
+["Ethos universitario","Se asocia con búsqueda de la verdad, honestidad, análisis crítico, incorruptibilidad y rechazo de la violencia.","¿Qué tema agrupa búsqueda de la verdad, incorruptibilidad y cultura de paz?","pp. 4–5, unidad 3"],
+["Liderazgo del jurista","El temario incluye metas, comunicación, delegación, consensos, creatividad y administración del tiempo.","¿Qué tema reúne trabajo en equipo, consensos y administración del tiempo?","p. 6, unidad 4"],
+["Vida universitaria","La unidad 5 aborda adaptación, aprendizaje autorresponsable, fortaleza emocional y redes de apoyo.","¿En qué tema se estudian adaptación, autorresponsabilidad y redes de apoyo?","p. 7, unidad 5"],
+["Derecho universitario","El programa incluye normas de inscripciones, exámenes y del sistema de Universidad Abierta, entre otras.","¿Qué tema ubica los reglamentos de inscripciones y exámenes?","pp. 7–8, unidad 6"],
+["Evidencias para argumentar","El documento pide evidencias recientes, localizables, imparciales, relevantes y verificables en el discurso.","¿Qué recurso argumentativo debe ser localizable, imparcial y verificable?","pp. 8–9, sesión 8"],
+["Civilidad y cultura de legalidad","El programa relaciona formación del jurista, deberes cívicos, conocimiento de normas y fortalecimiento del Estado democrático de Derecho.","¿Qué tema vincula deberes cívicos y conocimiento de las normas con la vida profesional del jurista?","pp. 10–11, unidad 7"],
+["Legitimidad del Estado de Derecho","La planeación contrasta acciones que legitiman al Estado con corrupción, impunidad, abuso de poder y aplicación desigual de las reglas.","¿Qué tema contrasta respeto al debido proceso con corrupción y abuso de poder?","pp. 12–13, apartado 8.3"],
+["Bienestar con legalidad","La unidad 9 incluye capacidades y libertades reales en Amartya Sen, desarrollo humano, pobreza y desigualdad.","¿Qué tema relaciona capacidades, libertades reales y desarrollo humano?","p. 14, unidad 9"]
+]},
+{
+"id":"sociologia",
+"name":"Sociología Jurídica",
+"provisional":false,
+"notice":"Ejercicios originales basados en los temas y objetivos de tu planeación. No sustituyen las lecturas ni son un banco oficial de examen.",
+"source":"Sociología Jurídica · planeación de María Fernanda González Nahle",
+"sourceUrl":null,
+"board":{"prompt":"Nombra cuatro autores que la planeación incluye en Fundadores de la Sociología.","answers":[["Augusto Comte",["augusto comte","comte"]],["Herbert Spencer",["herbert spencer","spencer"]],["Max Weber",["max weber","weber"]],["Durkheim",["emile durkheim","emilie durkheim","durkheim"]]],"source":"pp. 1–2, sesión 2; el documento también incluye Descartes y Morgan"},
+"tips":["El programa incluye familia, género, transformación digital e IA; no se limita a los fundadores.","Al estudiar la reforma judicial, separa las justificaciones de sus efectos observables, tal como solicita la sesión 10.","El material es una planeación: citar un libro en ella no significa que se haya incluido aquí todo su contenido."],
+"cards":[
+["Sociología Jurídica","El objetivo general articula fenómenos sociales y jurídicos, instituciones y relación entre sociedad y Derecho para el análisis crítico.","¿Qué materia relaciona fenómenos sociales, instituciones y Derecho en su objetivo general?","p. 1, objetivo general"],
+["Max Weber","Es uno de los fundadores incluidos y la bibliografía de la sesión 2 cita «Economía y sociedad».","¿A cuál de los fundadores listados corresponde la obra «Economía y sociedad»?","pp. 1–2, sesión 2"],
+["Sociedad humana","La sesión 3 incluye sociedad y población, grupos, cultura y antropología, en relación con cambio social y normas jurídicas.","¿Qué tema reúne población, grupos, cultura y antropología en la sesión 3?","p. 2, sesión 3"],
+["Sociedad y familia","La sesión 4 plantea estructura, características y función de familia y parentesco como instituciones de la sociedad.","¿Qué tema se centra en familia y parentesco como instituciones?","p. 2, sesión 4"],
+["Sociología del género","La sesión 5 analiza expectativas y normas asignadas socialmente en función del sexo, y el paso a una concepción multidimensional.","¿Qué tema estudia expectativas y normas asignadas socialmente en función del sexo?","p. 3, sesión 5"],
+["Transformación digital","La sesión 6 incluye tecnología emergente, redes sociales y transformación digital jurídica.","¿Qué tema reúne tecnología emergente, redes sociales y cambio jurídico digital?","p. 3, sesión 6"],
+["Óscar Correas y Marx","La sesión 7 propone reflexionar sobre la Sociología del Derecho desde estas perspectivas y remite a la obra de Correas.","¿Qué perspectivas nombra expresamente el título de la sesión 7?","p. 3, sesión 7"],
+["Acceso a la justicia","La sesión 9 aborda acceso a la justicia como movimiento intelectual y de reforma, junto con difusión del conocimiento del Derecho.","¿Qué tema considera un movimiento intelectual y de reforma y la difusión del conocimiento jurídico?","p. 4, sesión 9"],
+["Estudio de caso de la reforma judicial","La sesión 10 propone distinguir el discurso que justificó la reforma 2024–2025 de sus efectos observables. Aquí se repasa el objetivo, no se afirma cuáles fueron esos efectos.","¿Qué ejercicio exige distinguir discurso justificativo y efectos observables?","p. 4, sesión 10"],
+["Derecho, inteligencia artificial y sociedad","La sesión 12 propone analizar regulación normativa e impacto de la IA en la sociedad y las relaciones jurídicas.","¿Qué tema de cierre se enfoca en la regulación e impacto social de la IA?","p. 5, sesión 12"]
+]},
+{
+"id":"estado",
+"name":"Teoría General del Estado",
+"provisional":true,
+"notice":"Contenido provisional: programa público de la UNAM, no planeación del profesor del grupo. No se asignan fechas de clase, tareas ni porcentajes de evaluación.",
+"source":"UNAM · programa SUAYED/Abierta 1127",
+"sourceUrl":"https://www.dgire.unam.mx/images/planes/der2/1127s.pdf",
+"board":{"prompt":"Nombra los elementos esenciales del Estado conforme a la clasificación de este programa de la UNAM.","answers":[["Pueblo",["pueblo"]],["Territorio",["territorio"]],["Poder del Estado",["poder del estado","poder estatal","poder"]]],"source":"p. 7, apartado 5.3. La población se estudia dentro de Pueblo; soberanía aparece entre los modales."},
+"tips":["En este programa, pueblo, territorio y poder son esenciales; soberanía e imperio de la ley son modales. No se mezclan clasificaciones de autores distintos.","Formas de Estado y formas de gobierno tienen unidades separadas.","Este bloque no sustituye la planeación de tu docente; se reemplazará o ampliará cuando esté disponible."],
+"cards":[
+["Métodos de la Teoría del Estado","La unidad 1 enumera métodos histórico, deductivo, inductivo y documental.","¿Qué apartado reúne los enfoques histórico, deductivo, inductivo y documental?","pp. 3–4, unidad 1"],
+["Formaciones políticas medievales","Cristianismo, patrística, escolástica y feudalismo se estudian como antecedentes históricos.","¿Qué tema incluye patrística, escolástica y feudalismo?","p. 4, unidad 2"],
+["Estado moderno","Se relaciona con Renacimiento, Reforma religiosa, descubrimientos geográficos y mercantilismo.","¿Qué formación se estudia junto al Renacimiento, la Reforma religiosa y el mercantilismo?","p. 5, unidad 3"],
+["Elementos esenciales","La clasificación del programa identifica pueblo, territorio y poder del Estado.","¿Cómo clasifica el programa a pueblo, territorio y poder del Estado?","p. 7, apartado 5.3"],
+["Elementos modales","El programa ubica aquí soberanía e imperio de la ley. Otras obras pueden organizar los elementos de modo diferente.","¿En qué categoría del programa aparecen soberanía e imperio de la ley?","p. 7, apartado 5.4"],
+["Estado federal","El programa lo aborda mediante distribución de competencias y participación de los estados federados en el poder federal.","¿Qué forma se examina por la distribución de competencias entre federación y estados federados?","p. 8, apartado 6.3"],
+["Formas de gobierno","Monarquía y república se estudian en una unidad distinta de las formas de Estado.","¿Qué clasificación incluye monarquía y república en la unidad 7?","p. 9, unidad 7"],
+["División de poderes","Se estudia como división de órganos y funciones, con control del poder político.","¿Qué teoría estudia la separación de órganos y funciones del poder?","p. 10, unidad 8"],
+["Fines y justificación del Estado","Esta unidad analiza finalidades, justificación, globalización, derechos humanos y perspectiva de género.","¿Qué unidad relaciona finalidad y justificación del Estado con derechos humanos?","pp. 10–11, unidad 9"],
+["Tendencias actuales del Estado","Incluye globalización, ciberseguridad, economía digital y tecnologías de información e inteligencia artificial.","¿Qué tema incluye ciberseguridad, economía digital e inteligencia artificial?","pp. 11–12, unidad 10"]
+]},
+];
+export const GAME_SUBJECTS:GameSubject[]=seeds.map(s=>({...s,cards:s.cards.map(([term,definition,question,ref],i)=>({id:s.id+'-'+String(i+1).padStart(2,'0'),subject:s.id,term,definition,question,source:s.source+' · '+ref,sourceUrl:s.sourceUrl}))}));
+export const GAME_CARDS=GAME_SUBJECTS.flatMap(s=>s.cards);
