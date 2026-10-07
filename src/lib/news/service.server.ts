@@ -1,6 +1,7 @@
 import { getSql } from "@/lib/db";
 import { DEFAULT_NEWS_SETTINGS, mergeSettings, assertSourceUrl } from "./sources";
-import { parseFeed, parseOfficialHtml } from "./parser";
+import { parseFeed } from "./parser";
+import { parseOfficialHtmlV72 as parseOfficialHtml } from "./parser-v72";
 import { enrichMedia } from "./enrich.server";
 import { NEWS_SNAPSHOT } from "./snapshot";
 import type {NewsFeed,NewsItem,NewsSettings,NewsSource,NewsSourceStatus} from "./types";
@@ -13,7 +14,7 @@ export async function readNewsSettings():Promise<NewsSettings>{
 export async function fetchOfficialSource(source:NewsSource):Promise<NewsItem[]>{
  let url=assertSourceUrl(source.url,source.hosts);const signal=AbortSignal.timeout(9000);
  for(let redirect=0;redirect<4;redirect++){
-   const response=await fetch(url,{redirect:"manual",signal,headers:{Accept:source.kind==="rss"?"application/rss+xml, application/atom+xml, application/xml, text/xml":"text/html","User-Agent":"FacultadDerechoStudentPortal/7.1 (+educational-news-reader)"}});
+   const response=await fetch(url,{redirect:"manual",signal,headers:{Accept:source.kind==="rss"?"application/rss+xml, application/atom+xml, application/xml, text/xml":"text/html","User-Agent":"FacultadDerechoStudentPortal/7.2 (+educational-news-reader)"}});
    if([301,302,303,307,308].includes(response.status)){
      const location=response.headers.get("location");await response.body?.cancel();if(!location)throw new Error("Redirección sin destino.");url=assertSourceUrl(new URL(location,url).href,source.hosts);continue;
    }
@@ -30,20 +31,21 @@ export async function fetchOfficialSource(source:NewsSource):Promise<NewsItem[]>
  throw new Error("Demasiadas redirecciones en la fuente.");
 }
 async function refreshSource(source:NewsSource,settings:NewsSettings,force:boolean):Promise<{items:NewsItem[];status:NewsSourceStatus}>{
- const sql=await getSql();let [cache]=await sql<Cache>`select items,fetched_at,checked_at,last_error from news_cache where source_id=${source.id}`;
+ const cacheId=`${source.id}:reader-v72`;
+ const sql=await getSql();let [cache]=await sql<Cache>`select items,fetched_at,checked_at,last_error from news_cache where source_id=${cacheId}`;
  const stale=!cache?.checked_at || Date.now()-new Date(cache.checked_at).getTime()>settings.intervalMinutes*60_000;
  if(source.enabled && (stale||force)){
-  const locks=await sql`insert into news_refresh_locks(source_id,expires_at) values(${source.id},now()+interval '45 seconds') on conflict(source_id) do update set expires_at=excluded.expires_at where news_refresh_locks.expires_at<now() returning source_id`;
+  const locks=await sql`insert into news_refresh_locks(source_id,expires_at) values(${cacheId},now()+interval '45 seconds') on conflict(source_id) do update set expires_at=excluded.expires_at where news_refresh_locks.expires_at<now() returning source_id`;
   if(locks.length){
    try{
     const items=await fetchOfficialSource(source);const json=JSON.stringify(items);
-    await sql`insert into news_cache(source_id,items,fetched_at,checked_at,last_error) values(${source.id},${json}::jsonb,now(),now(),null) on conflict(source_id) do update set items=excluded.items,fetched_at=now(),checked_at=now(),last_error=null`;
+    await sql`insert into news_cache(source_id,items,fetched_at,checked_at,last_error) values(${cacheId},${json}::jsonb,now(),now(),null) on conflict(source_id) do update set items=excluded.items,fetched_at=now(),checked_at=now(),last_error=null`;
     cache={items,fetched_at:new Date(),checked_at:new Date(),last_error:null};
    }catch(error){
     const message=error instanceof Error?error.message.slice(0,220):"No se pudo leer la fuente.";
-    await sql`insert into news_cache(source_id,items,checked_at,last_error) values(${source.id},'[]'::jsonb,now(),${message}) on conflict(source_id) do update set checked_at=now(),last_error=excluded.last_error`;
+    await sql`insert into news_cache(source_id,items,checked_at,last_error) values(${cacheId},'[]'::jsonb,now(),${message}) on conflict(source_id) do update set checked_at=now(),last_error=excluded.last_error`;
     cache={items:cache?.items??[],fetched_at:cache?.fetched_at??null,checked_at:new Date(),last_error:message};
-   }finally{await sql`delete from news_refresh_locks where source_id=${source.id}`;}
+   }finally{await sql`delete from news_refresh_locks where source_id=${cacheId}`;}
   }
  }
  const items=source.enabled?(cache?.items?.length?cache.items:NEWS_SNAPSHOT.filter(i=>i.sourceId===source.id)):[];

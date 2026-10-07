@@ -1,4 +1,4 @@
-name: Validar Facultad V7.1
+name: Validar Facultad V7.2
 on:
   push:
     branches: [prueba-v7]
@@ -19,8 +19,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
-      - name: Pruebas V7 y V7.1
-        run: node --experimental-strip-types --test tests/v7/*.test.ts tests/v71/*.test.ts
+      - name: Pruebas V7, V7.1 y V7.2
+        run: node --experimental-strip-types --test tests/v7/*.test.ts tests/v71/*.test.ts tests/v72/*.test.ts
       - name: Sintaxis TypeScript
         run: npm run check:syntax
       - name: Compilar sin migrar bases remotas
@@ -30,3 +30,13 @@ jobs:
           BETTER_AUTH_URL: http://localhost:8080
           APP_PUBLIC_URL: http://localhost:8080
           VITE_PUBLIC_HOSTNAME: localhost:8080
+      - name: Navegador para pruebas de interfaz
+        run: npx playwright install --with-deps chromium
+      - name: Revisar interfaz real sin datos de producción
+        run: node scripts/check-v72-browser.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v72-browser-${{ github.run_id }}
+          path: test-results/v72
+          retention-days: 7

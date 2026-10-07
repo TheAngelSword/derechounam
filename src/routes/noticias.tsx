@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Shell } from "@/components/shell";
 import { NewsSection } from "@/components/news";
-export const Route=createFileRoute("/noticias")({component:NewsPage});
-function NewsPage(){return <Shell eyebrow="ACTUALIDAD · FUENTES OFICIALES" title="Entender lo que cambia." lead="Noticias de la Facultad, avisos de Universidad Abierta y actualidad jurídica. Cada publicación conserva su fuente y su contexto."><NewsSection full/></Shell>;}
+export const Route=createFileRoute("/noticias")({component:()=> <Shell eyebrow="ACTUALIDAD · FUENTES OFICIALES" title="Todas las noticias" lead="Facultad, Universidad Abierta, legislación y justicia. Todas las publicaciones disponibles, con su fecha y su fuente."><NewsSection full/></Shell>});
