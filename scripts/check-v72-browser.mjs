@@ -7,6 +7,23 @@ try{let ready=false;for(let i=0;i<90;i++){try{const r=await fetch('http://localh
  browser=await chromium.launch({headless:true});const report=[];const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  for(const width of [1440,1920,390]){await page.setViewportSize({width,height:1000});for(const [path,title,label]of [['/','Portal Facultad de Derecho ALUMNOS','inicio'],['/noticias','Todas las noticias','noticias'],['/rutas','Comparte tu vehículo','rutas']]){
   await page.goto(`http://localhost:8080${path}`,{waitUntil:'domcontentloaded'});await page.locator('.fd-v72').waitFor();assert.equal((await page.locator('h1').innerText()).trim(),title);await page.waitForTimeout(1500);
+  if(path==='/') {
+   const countdowns=await page.locator('.fd-aura-header-counts').count();
+   assert.equal(countdowns,1,'Los contadores solo deben mostrarse en el encabezado');
+   assert.equal(await page.locator('.fd-aura-timer-summary').count(),0,'Sin temporizadores duplicados junto a frases');
+   const picker=page.locator('#fd-aura-clock-style');
+   await picker.waitFor();
+   for(const clock of ['analog:atelier','digital:flip','mechanical:tourbillon','3d:solar']){
+    await picker.selectOption(clock);
+    const bounds=await page.locator('.fd-aura-clock-picker .fd-clock-showcase').boundingBox();
+    const parent=await page.locator('.fd-aura-clock-picker').boundingBox();
+    assert.ok(bounds&&parent,'Reloj presente en la tarjeta');
+    assert.ok(bounds.width>145&&bounds.height>190,'Reloj con espacio suficiente');
+    assert.ok(bounds.x>=parent.x-3&&bounds.x+bounds.width<=parent.x+parent.width+3,'Reloj completo dentro del ancho de la tarjeta');
+   }
+   await picker.selectOption('analog:atelier');
+   await page.screenshot({path:`${dir}/aura-esferas-${width}.png`,fullPage:false});
+  }
   const boxes=await page.evaluate(()=>{const main=document.querySelector('.fd-main').getBoundingClientRect();const workspace=document.querySelector('.fd-workspace').getBoundingClientRect();return{scroll:document.documentElement.scrollWidth,viewport:innerWidth,mainLeft:main.x,mainWidth:main.width,workspaceLeft:workspace.x};});
   assert.ok(boxes.scroll<=width+1,`Desbordamiento horizontal en ${path} a ${width}: ${boxes.scroll}`);assert.ok(boxes.mainWidth>width*(width>959?.70:.95),`Contenido demasiado estrecho en ${path}`);report.push({width,path,...boxes});await page.screenshot({path:`${dir}/${label}-${width}.png`,fullPage:true});
  }}

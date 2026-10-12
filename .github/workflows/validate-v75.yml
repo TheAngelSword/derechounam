@@ -34,3 +34,10 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verificar navegacion y sesion persistente
         run: node scripts/check-v72-browser.mjs
+      - name: Conservar capturas visuales de Aura
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-aura-original
+          path: test-results/v72/aura-esferas-*.png
+          if-no-files-found: ignore
