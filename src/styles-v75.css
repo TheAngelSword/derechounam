@@ -146,3 +146,15 @@
 .fd-aura-clock-picker:fullscreen .fd-aura-orbit-large{transform:scale(1.45)}
 @media(max-width:1280px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:740px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:1fr}.fd-aura-v75 .fd-aura-clock-picker .fd-clock-showcase{min-height:275px}}
+
+/* Native Aura Crono v3 viewer: exact original clock/animation engine in isolated iframe */
+.fd-aura-native-picker .fd-native-clock-frame{width:100%;min-width:0;min-height:300px;height:300px;display:block;overflow:hidden;border-radius:11px;background:radial-gradient(circle at 30% 15%,#e8f2fa,#d6e7f4)}
+.fd-aura-native-picker .fd-native-clock-frame iframe{display:block;border:0;width:100%;height:100%;background:transparent}
+.fd-aura-native-picker .fd-clock-zone{margin-top:2px}
+.fd-aura-native-picker:fullscreen{display:flex;flex-direction:column;align-items:center;gap:12px;justify-content:center;padding:18px 5vw;background:#0e2034}
+.fd-aura-native-picker:fullscreen .fd-native-clock-frame{width:min(95vw,960px);height:min(75dvh,800px);flex:none;background:radial-gradient(circle,#142b48,#08192a)}
+.fd-aura-native-picker:fullscreen .fd-aura-picker-heading,.fd-aura-native-picker:fullscreen>label{color:#f5e5bb}
+.fd-aura-native-picker:fullscreen select{width:min(94vw,560px)}
+.fd-aura-v75 .fd-aura-four-grid>article.fd-aura-native-picker{min-height:460px}
+@media(max-width:1280px){.fd-aura-native-picker .fd-native-clock-frame{height:330px}}
+@media(max-width:740px){.fd-aura-native-picker .fd-native-clock-frame{height:325px}.fd-aura-native-picker:fullscreen .fd-native-clock-frame{height:68dvh}}
