@@ -13,6 +13,8 @@ const CLOCKS=[
 export const AURA_CLOCK_COUNT=CLOCKS.length;
 export function AuraClockSelector({time}:{time:ClockTime|null}){
  const [choice,setChoice]=useState<string>("analog:atelier");
+ const [hydrated,setHydrated]=useState(false);
+ useEffect(()=>setHydrated(true),[]);
  const frame=useRef<HTMLIFrameElement|null>(null);
  const showcase=useRef<HTMLElement|null>(null);
  useEffect(()=>{try{const stored=window.localStorage.getItem("fd-aura-clock-choice");if(stored&&CLOCKS.some(c=>c[0]===stored))setChoice(stored);}catch{}},[]);
@@ -53,7 +55,7 @@ export function AuraClockSelector({time}:{time:ClockTime|null}){
  return <article ref={showcase} className="fd-aura-time-card fd-aura-clock-picker fd-aura-native-picker" aria-label="Relojes originales de Aura Crono v3">
    <div className="fd-aura-picker-heading"><span>RELOJ AURA CRONO ORIGINAL</span><small>{AURA_CLOCK_COUNT} estilos</small></div>
    <label htmlFor="fd-aura-clock-style">Estilo de reloj</label>
-   <select id="fd-aura-clock-style" value={choice} onChange={event=>{const selected=event.target.value;setChoice(selected);try{localStorage.setItem("fd-aura-clock-choice",selected);}catch{}}}>
+   <select id="fd-aura-clock-style" disabled={!hydrated} value={choice} onChange={event=>{const selected=event.target.value;setChoice(selected);try{localStorage.setItem("fd-aura-clock-choice",selected);}catch{}}}>
      {groups.map(group=><optgroup key={group} label={group}>{CLOCKS.filter(c=>c[1]===group).map(c=><option key={c[0]} value={c[0]}>{c[2]}</option>)}</optgroup>)}
    </select>
    <div className="fd-native-clock-frame">
