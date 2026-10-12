@@ -26,7 +26,28 @@ export function AuraClockSelector({time}:{time:ClockTime|null}){
   window.addEventListener("message",onMessage);
   return()=>window.removeEventListener("message",onMessage);
  },[choice]);
- useEffect(()=>{frame.current?.contentWindow?.postMessage({type:"portal-aura-set-clock",choice},window.location.origin);},[choice]);
+ useEffect(()=>{
+  // La página de Aura carga varios motores: al cambiar de estilo durante esa
+  // carga, el primer mensaje podría perderse. Confirmamos el cambio realmente
+  // aplicado en los controles originales antes de detener los reintentos.
+  let attempts=0;
+  const [type]=choice.split(":");
+  const targetIndex=CLOCKS.filter(item=>item[0].startsWith(type+":")).findIndex(item=>item[0]===choice);
+  const update=()=>{
+   try{
+    const doc=frame.current?.contentDocument;
+    const activeType=doc?.querySelector<HTMLButtonElement>('#clockTypeSelector button.active')?.dataset.clock;
+    const styles=Array.from(doc?.querySelectorAll('#styleSelector button')??[]);
+    const activeIndex=styles.findIndex(button=>button.classList.contains("active"));
+    if(activeType===type&&activeIndex===targetIndex&&styles.length>0){window.clearInterval(timer);return;}
+   }catch{/* El documento aún no ha cargado; seguimos intentando. */}
+   frame.current?.contentWindow?.postMessage({type:"portal-aura-set-clock",choice},window.location.origin);
+   if(++attempts>=45)window.clearInterval(timer);
+  };
+  const timer=window.setInterval(update,350);
+  update();
+  return()=>window.clearInterval(timer);
+ },[choice]);
  const groups=[...new Set(CLOCKS.map(c=>c[1]))];
  return <article ref={showcase} className="fd-aura-time-card fd-aura-clock-picker fd-aura-native-picker" aria-label="Relojes originales de Aura Crono v3">
    <div className="fd-aura-picker-heading"><span>RELOJ AURA CRONO ORIGINAL</span><small>{AURA_CLOCK_COUNT} estilos</small></div>
