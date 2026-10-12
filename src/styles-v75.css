@@ -1,0 +1,111 @@
+/* Portal V7.5 · Retícula Aura Crono compacta, un único reloj con catálogo original */
+.fd-aura-v75 .fd-aura-top{gap:22px;min-height:128px}
+.fd-aura-header-counts{margin-left:auto;display:grid;gap:9px;max-width:360px;flex:1}
+.fd-aura-header-counts>span{color:#e6f0ff;font-size:10px;letter-spacing:.035em;font-weight:650;display:flex;align-items:center;gap:7px;justify-content:space-between;border-bottom:1px solid #ffffff24;padding:7px}
+.fd-aura-header-counts strong{font-family:ui-monospace,monospace;font-size:14px;color:#ffd879;white-space:nowrap}
+.fd-aura-v75 .fd-aura-four-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:12px;align-items:stretch}
+.fd-aura-v75 .fd-aura-four-grid>article{min-width:0;min-height:352px;display:flex;flex-direction:column}
+.fd-aura-v75 .fd-aura-clock-picker{padding:14px 16px;justify-content:initial;align-items:stretch;gap:7px}
+.fd-aura-picker-heading{display:flex;align-items:center;justify-content:space-between}
+.fd-aura-picker-heading span,.fd-aura-panel-kicker{color:#ad852e;font-size:10px;font-weight:800;letter-spacing:.09em}
+.fd-aura-picker-heading small{background:#f0f6ff;border-radius:20px;padding:4px 9px;color:#355d8c;font-size:10px}
+.fd-aura-clock-picker>label{font-size:12px;font-weight:730;color:#435f7c}
+.fd-aura-clock-picker select{height:39px;min-height:39px;width:100%;border:1px solid #b8cde7;border-radius:8px;background:#f5f9ff;padding:6px 10px;color:#133b75;font-size:13px;cursor:pointer}
+.fd-clock-zone{font-size:10px!important;color:#657b93!important;font-weight:600;text-align:center;letter-spacing:0!important;margin-top:auto}
+.fd-clock-showcase{min-height:194px;flex:1;width:100%;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:9px;overflow:hidden;border-radius:11px}
+.fd-aura-full-face{width:136px;height:136px;position:relative;border:7px solid #c8a24d;border-radius:50%;background:radial-gradient(circle at 28% 24%,#fff 0%,#f0f5ff 62%,#c7d7eb 100%);box-shadow:inset 0 0 0 3px #fff,0 8px 20px #1c42612b}
+.fd-aura-full-face .fd-aura-tick{position:absolute;left:calc(50% - 1px);top:calc(50% - 4px);width:2px;height:8px;background:#9b7632}
+.fd-aura-hand{position:absolute;bottom:50%;left:calc(50% - 2px);transform-origin:bottom center;background:#153b77;border-radius:4px;width:4px}
+.fd-aura-hand.h{height:37px}.fd-aura-hand.m{height:53px;width:3px}.fd-aura-hand.s{height:59px;width:1px;left:calc(50% - .5px);background:#db8e31}
+.fd-aura-center{position:absolute;left:calc(50% - 5px);top:calc(50% - 5px);width:10px;height:10px;background:#c58c29;border-radius:50%;box-shadow:0 0 0 3px #fff}
+.fd-clock-showcase.pilot .fd-aura-full-face{border:8px solid #424f60;background:radial-gradient(circle,#eae4d2,#afbdd1);box-shadow:inset 0 0 0 3px #818b97,0 4px 19px #18294250}
+.fd-clock-showcase.zen .fd-aura-full-face{border:3px solid #b4afa1;background:#fbf8f0;box-shadow:0 2px 15px #19284112}
+.fd-clock-showcase.stellar{background:radial-gradient(circle,#273864,#081a38);color:#fff}
+.fd-clock-showcase.stellar .fd-aura-full-face{border:4px solid #f4d68a;background:radial-gradient(circle,#142c58,#030f27)}
+.fd-clock-showcase.stellar .fd-aura-tick,.fd-clock-showcase.stellar .fd-aura-hand{background:#f4d68a}
+.fd-clock-digital .fd-digit-readout{font:780 clamp(20px,2vw,31px) ui-monospace,monospace;letter-spacing:.045em;white-space:nowrap;background:#eaf2fc;color:#0f3a7c;padding:16px 11px;border-radius:10px}
+.fd-clock-digital small,.fd-clock-showcase>small{font-size:10px;font-weight:720;letter-spacing:.09em;color:#697e92;text-align:center}
+.fd-digit-led{background:#0b1429}.fd-digit-led .fd-digit-readout{color:#e6476b;background:transparent;text-shadow:0 0 12px #ec415e9b;font-size:clamp(19px,2.1vw,35px)}.fd-digit-led small{color:#b4bbcc}
+.fd-digit-flip{background:#293144}.fd-digit-flip .fd-digit-readout{background:linear-gradient(#202531 49%,#0b101d 50%);color:#f3e4c6;box-shadow:0 5px 10px #0005}.fd-digit-flip small{color:#d7c9b0}
+.fd-digit-editorial{background:#fbf7ed}.fd-digit-editorial .fd-digit-readout{font-family:Georgia,serif;color:#152d53;background:transparent}
+.fd-clock-orbital{background:radial-gradient(circle at center,#eff6ff,#d6e4f5)}
+.fd-aura-orbit-large{position:relative;width:148px;height:148px;display:grid;place-items:center}
+.fd-aura-orbit-large .ring{position:absolute;border:2px solid #9bbce4;border-radius:50%;width:132px;height:132px}
+.fd-aura-orbit-large .ring.inner{width:83px;height:83px;border-color:#cba65a;border-style:dashed}
+.fd-aura-orbit-large>i,.fd-aura-orbit-large>b{position:absolute;top:calc(50% - 6px);left:calc(50% - 6px);height:12px;width:12px;background:#164e98;border-radius:50%}
+.fd-aura-orbit-large>b{background:#c28d27}
+.fd-aura-orbit-large strong{font:800 22px ui-monospace,monospace;color:#183b71}
+.fd-clock-mechanical{background:radial-gradient(circle,#182444,#080f23)}
+.fd-clock-mechanical .fd-aura-full-face{z-index:2;background:#14213bb9;border:5px solid #d7b358}
+.fd-clock-mechanical .fd-aura-hand{background:#e5c87e}
+.fd-clock-gear{position:absolute;color:#bd8c34;font-size:65px;opacity:.42;animation:fd-clock-spin 15s linear infinite}
+.fd-clock-gear.first{left:2%;top:9%}.fd-clock-gear.second{right:1%;bottom:3%;font-size:57px;animation-direction:reverse}
+.fd-clock-satellite{position:absolute;z-index:3;right:6%;top:1%;font-size:26px}
+.fd-clock-mechanical small{color:#ecd59d}
+@keyframes fd-clock-spin{to{transform:rotate(360deg)}}
+.fd-clock-animal{background:linear-gradient(145deg,#f7f4df,#e4f5ec)}.fd-clock-animal.gato{background:#edf1ff}.fd-clock-animal.hamster{background:#fcf0d8}
+.fd-clock-animal-scene{font-size:clamp(34px,4vw,52px);letter-spacing:9px;animation:fd-owl-wave 4s ease-in-out infinite}
+.fd-clock-animal>strong{font:800 27px ui-monospace,monospace;color:#1a477d}
+.fd-clock-code{background:#05160c;position:relative}.fd-clock-code .fd-rain{position:absolute;color:#20de7d;opacity:.2;word-spacing:12px;line-height:2.5;word-break:break-all;font:15px ui-monospace,monospace;transform:rotate(-9deg)}
+.fd-clock-code strong{z-index:1;color:#69ff9b;font:750 26px ui-monospace,monospace;text-shadow:0 0 13px #21a95e}
+.fd-clock-blocks{background:linear-gradient(130deg,#182d5d,#543899)}.fd-clock-blocks>span,.fd-clock-dance>span,.fd-clock-solar>div,.fd-clock-landscape>span{font-size:37px}
+.fd-clock-blocks strong,.fd-clock-dance strong,.fd-clock-solar strong,.fd-clock-retro strong,.fd-clock-tetris strong,.fd-clock-landscape strong{font:800 27px ui-monospace,monospace;color:#fff}
+.fd-clock-blocks small,.fd-clock-dance small,.fd-clock-solar small,.fd-clock-retro small{color:#eef2ff}
+.fd-clock-retro{background:repeating-linear-gradient(110deg,#222c68,#222c68 15px,#2d4582 18px,#07112d 21px);perspective:200px}
+.fd-clock-retro-hall{position:absolute;inset:15%;border:5px solid #e2ad65;transform:rotateX(15deg)}
+.fd-clock-retro strong{position:relative;padding:10px;background:#04132ec9}
+.fd-clock-dance{background:conic-gradient(from 90deg,#703fd1,#ce4e8c,#e6b448,#3f6ad0,#703fd1)}
+.fd-clock-solar{background:radial-gradient(circle,#21346b,#070b21)}.fd-clock-solar .fd-solar-planets{white-space:nowrap;font-size:25px}
+.fd-clock-tetris{background:#1d2455;color:#fff}.fd-clock-tetris>span{color:#ffcf64;letter-spacing:7px;font-size:27px}
+.fd-clock-tetris.turbo{background:#332167}.fd-clock-tetris.gameboy{background:#8b9b61}.fd-clock-tetris.gameboy strong{color:#152b1c}
+.fd-clock-words{background:#f6f0e3;text-align:center;padding:10px}.fd-clock-words strong{font:700 clamp(18px,2.2vw,30px) Georgia,serif;color:#264c70}.fd-clock-words>span{font-size:11px;color:#748298}
+.fd-clock-sand{background:#fff6e6}.fd-clock-hourglass{font-size:74px;animation:fd-hourglass 12s ease-in-out infinite}.fd-clock-sand strong{font:800 22px ui-monospace,monospace}
+@keyframes fd-hourglass{50%{transform:rotate(180deg)}}
+.fd-clock-landscape{background:linear-gradient(#657bac,#f9c68f 60%,#536e50)}.fd-clock-landscape strong{text-shadow:0 2px 10px #13213a}
+.fd-aura-four-grid .fd-aura-panel{padding:15px 16px}
+.fd-aura-four-grid .fd-aura-heading{margin-bottom:8px;align-items:flex-start}
+.fd-aura-four-grid .fd-aura-heading h3{font-size:15px}
+.fd-aura-four-grid .fd-aura-heading button{white-space:nowrap;padding:5px;font-size:10px}
+.fd-aura-today-date{font:650 clamp(21px,2vw,28px) Georgia,serif;color:#16437a;text-transform:capitalize}
+.fd-aura-yearline{font-size:12px;color:#627a98;font-weight:650;margin:4px 0}
+.fd-aura-current-weather{display:flex;gap:8px;align-items:center;margin:10px 0;color:#164177}
+.fd-aura-weather-symbol{font-size:31px}
+.fd-aura-current-weather strong{font:750 36px ui-sans-serif,Arial,sans-serif}
+.fd-aura-current-weather>span:last-child{font-size:11px}
+.fd-aura-four-grid h4{margin:11px 0 8px;font-size:12px;font-weight:800;color:#49637f}
+.fd-aura-hourly{display:flex;gap:5px;overflow-x:auto;scrollbar-width:thin;padding-bottom:8px}
+.fd-aura-hourly>div{min-width:48px;display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:7px;background:#eff5fc;padding:8px 3px}
+.fd-aura-hourly time{font-size:10px;color:#67819c}
+.fd-aura-hourly strong{font-size:14px;color:#214a78}
+.fd-aura-hourly small{font-size:10px;color:#5276a0}
+.fd-aura-four-grid .fd-aura-credit{margin-top:auto;padding-top:9px}
+.fd-aura-holiday{max-height:120px;overflow:auto;border-radius:9px;background:#f8f3e7;padding:10px;margin-top:9px}
+.fd-aura-holiday>div{margin-bottom:9px}
+.fd-aura-holiday-symbol{color:#c18b27;margin-right:6px}
+.fd-aura-holiday strong{color:#204573;font-size:13px;line-height:1.3}
+.fd-aura-holiday p{font-size:11px;color:#627791;line-height:1.35;margin:5px 0}
+.fd-aura-holiday small{font-size:9px;color:#967037}
+.fd-aura-mini-events{display:grid;gap:6px;max-height:93px;overflow:auto;list-style:none;margin:0;padding:0}
+.fd-aura-mini-events li{display:flex;gap:8px}
+.fd-aura-mini-events b{font-size:10px;min-width:35px;color:#99752e}
+.fd-aura-mini-events a{font-size:11px;line-height:1.35;color:#3a5b7f;text-decoration:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.fd-aura-quote-stage{flex:1;min-height:125px;display:flex;flex-direction:column;justify-content:center;background:linear-gradient(150deg,#122e61,#214b88);border-radius:11px;padding:16px;color:white;animation:fd-quote-enter .45s ease-out both;overflow:auto;margin-top:9px}
+.fd-aura-quote-stage>span{font:700 40px Georgia,serif;color:#efc96a;line-height:.6}
+.fd-aura-quote-stage blockquote{font:600 clamp(15px,1.4vw,20px)/1.45 Georgia,serif;margin:8px 0 0;color:#fff}
+@keyframes fd-quote-enter{from{opacity:.5;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.fd-aura-quote-controls{display:flex;flex-direction:column;gap:7px;margin-top:10px;color:#5b7591;font-size:10px}
+.fd-aura-quote-dots{display:flex;gap:3px;flex-wrap:wrap}
+.fd-aura-quote-dots button{width:6px;height:6px;min-width:6px;border:0;border-radius:50%;background:#d1deee;padding:0;cursor:pointer}
+.fd-aura-quote-dots button[aria-pressed=true]{background:#c08c24;transform:scale(1.25)}
+.fd-aura-timer-summary{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+.fd-aura-timer-summary>div{background:#f4f8fd;border-radius:8px;padding:8px 6px;display:grid;gap:5px;min-width:0}
+.fd-aura-timer-summary small{font-size:9px;color:#58728b}
+.fd-aura-timer-summary strong{font-size:11px;color:#1c508d;font-family:ui-monospace,monospace;overflow-wrap:anywhere}
+.fd-aura-radio-wide{display:block;margin-top:12px}
+.fd-aura-radio-row{display:grid;grid-template-columns:minmax(200px,1.1fr) minmax(210px,1.5fr) minmax(220px,1fr);gap:12px;align-items:center}
+.fd-aura-radio-row>label{margin:0}
+.fd-aura-radio-row select{min-width:0}
+.fd-aura-radio-row .fd-aura-player{margin:0}
+@media(max-width:1280px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fd-aura-v75 .fd-aura-four-grid>article{min-height:345px}.fd-aura-v75 .fd-aura-four-grid .fd-aura-quote-stage{min-height:130px}.fd-aura-radio-row{grid-template-columns:1fr 1fr}.fd-aura-radio-row .fd-aura-player{grid-column:1/-1}.fd-aura-header-counts{max-width:300px}}
+@media(max-width:740px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:1fr}.fd-aura-v75 .fd-aura-four-grid>article{min-height:315px}.fd-aura-v75 .fd-aura-top{flex-wrap:wrap}.fd-aura-header-counts{order:3;flex:1 0 100%;max-width:100%}.fd-aura-header-counts>span{font-size:10px}.fd-aura-radio-row{grid-template-columns:1fr}.fd-aura-radio-row .fd-aura-player{grid-column:auto}.fd-aura-mascot{min-width:102px}.fd-aura-four-grid .fd-aura-hourly>div{min-width:59px}}
+@media(prefers-reduced-motion:reduce){.fd-clock-gear,.fd-clock-animal-scene,.fd-clock-hourglass,.fd-aura-quote-stage{animation:none!important}}

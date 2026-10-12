@@ -1,0 +1,36 @@
+name: Validar Facultad V7.5
+on:
+  push:
+    branches: [mejora-v75, prueba-v7]
+  pull_request:
+    branches: [prueba-v7]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Probar relojes, radios y funciones Aura
+        run: node --experimental-strip-types --test tests/v75/aura.test.ts
+      - name: Pruebas de regresion
+        run: node --experimental-strip-types --test tests/v7/*.test.ts tests/v71/*.test.ts tests/v72/*.test.ts
+      - name: Comprobar TypeScript
+        run: npm run check:syntax
+      - name: Compilar aislado sin migrar Neon
+        run: npm run build:code
+        env:
+          DATABASE_URL: ''
+          BETTER_AUTH_URL: http://localhost:8080
+          VITE_PUBLIC_HOSTNAME: localhost:8080
+          APP_PUBLIC_URL: http://localhost:8080
+      - name: Instalar navegador Playwright
+        run: npx playwright install --with-deps chromium
+      - name: Verificar navegacion y sesion persistente
+        run: node scripts/check-v72-browser.mjs
