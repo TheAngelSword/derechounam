@@ -19,6 +19,14 @@ try{let ready=false;for(let i=0;i<90;i++){try{const r=await fetch('http://localh
    await native.locator('.clock-stage').waitFor();
    for(const clock of ['analog:atelier','digital:flip','mechanical:tourbillon','3d:solar','animals:gato']){
     await picker.selectOption(clock);
+    if(clock==='digital:flip') {
+      const state=await page.evaluate(()=>{
+        const f=document.querySelector('.fd-aura-clock-picker iframe');
+        const d=f?.contentDocument;
+        return {selected:document.querySelector('#fd-aura-clock-style')?.value,storage:localStorage.getItem('fd-aura-clock-choice'),origin:location.origin,iframeOrigin:f?.contentWindow?.location.origin,ready:d?.readyState,active:d?.querySelector('#clockTypeSelector button.active')?.getAttribute('data-clock'),styleButtons:d?.querySelectorAll('#styleSelector button').length,iframeEmbed:d?.body?.className};
+      }).catch(e=>({failure:e.message}));
+      console.log('AURA_DEBUG_STATE',JSON.stringify(state));
+    }
     const [type,style]=clock.split(':');
     const expected=type==='analog'?'#analogClock':type==='digital'?'#digitalClock':type==='orbital'?'#orbitalClock':'#funClock';
     const el=native.locator(expected);
