@@ -32,6 +32,11 @@ try{let ready=false;for(let i=0;i<90;i++){try{const r=await fetch('http://localh
    }
    await picker.selectOption('analog:atelier');
    await page.screenshot({path:`${dir}/aura-esferas-${width}.png`,fullPage:false});
+   await page.locator('.fd-aura-clock-picker').screenshot({path:`${dir}/aura-tarjeta-atelier-${width}.png`});
+   await picker.selectOption('mechanical:tourbillon');
+   await page.waitForTimeout(500);
+   await page.locator('.fd-aura-clock-picker').screenshot({path:`${dir}/aura-tarjeta-tourbillon-${width}.png`});
+   await picker.selectOption('analog:atelier');
   }
   const boxes=await page.evaluate(()=>{const main=document.querySelector('.fd-main').getBoundingClientRect();const workspace=document.querySelector('.fd-workspace').getBoundingClientRect();return{scroll:document.documentElement.scrollWidth,viewport:innerWidth,mainLeft:main.x,mainWidth:main.width,workspaceLeft:workspace.x};});
   assert.ok(boxes.scroll<=width+1,`Desbordamiento horizontal en ${path} a ${width}: ${boxes.scroll}`);assert.ok(boxes.mainWidth>width*(width>959?.70:.95),`Contenido demasiado estrecho en ${path}`);report.push({width,path,...boxes});await page.screenshot({path:`${dir}/${label}-${width}.png`,fullPage:true});
