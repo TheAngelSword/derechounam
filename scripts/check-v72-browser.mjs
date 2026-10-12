@@ -7,6 +7,44 @@ try{let ready=false;for(let i=0;i<90;i++){try{const r=await fetch('http://localh
  browser=await chromium.launch({headless:true});const report=[];const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
  for(const width of [1440,1920,390]){await page.setViewportSize({width,height:1000});for(const [path,title,label]of [['/','Portal Facultad de Derecho ALUMNOS','inicio'],['/noticias','Todas las noticias','noticias'],['/rutas','Comparte tu vehículo','rutas']]){
   await page.goto(`http://localhost:8080${path}`,{waitUntil:'domcontentloaded'});await page.locator('.fd-v72').waitFor();assert.equal((await page.locator('h1').innerText()).trim(),title);await page.waitForTimeout(1500);
+  if(path==='/') {
+   const countdowns=await page.locator('.fd-aura-header-counts').count();
+   assert.equal(countdowns,1,'Los contadores solo deben mostrarse en el encabezado');
+   assert.equal(await page.locator('.fd-aura-timer-summary').count(),0,'Sin temporizadores duplicados junto a frases');
+   const picker=page.locator('#fd-aura-clock-style');
+   await picker.waitFor();
+   const iframe=page.locator('.fd-aura-clock-picker iframe');
+   await iframe.waitFor();
+   const native=page.frameLocator('.fd-aura-clock-picker iframe');
+   await native.locator('.clock-stage').waitFor();
+   for(const clock of ['analog:atelier','digital:flip','mechanical:tourbillon','3d:solar','animals:gato']){
+    await picker.selectOption(clock);
+    if(clock==='digital:flip') {
+      const state=await page.evaluate(()=>{
+        const f=document.querySelector('.fd-aura-clock-picker iframe');
+        const d=f?.contentDocument;
+        return {selected:document.querySelector('#fd-aura-clock-style')?.value,storage:localStorage.getItem('fd-aura-clock-choice'),origin:location.origin,iframeOrigin:f?.contentWindow?.location.origin,ready:d?.readyState,active:d?.querySelector('#clockTypeSelector button.active')?.getAttribute('data-clock'),styleButtons:d?.querySelectorAll('#styleSelector button').length,iframeEmbed:d?.body?.className};
+      }).catch(e=>({failure:e.message}));
+      console.log('AURA_DEBUG_STATE',JSON.stringify(state));
+    }
+    const [type,style]=clock.split(':');
+    const expected=type==='analog'?'#analogClock':type==='digital'?'#digitalClock':type==='orbital'?'#orbitalClock':'#funClock';
+    const el=native.locator(expected);
+    await el.waitFor({state:'visible',timeout:15000});
+    const bounds=await el.boundingBox();
+    const frameBox=await iframe.boundingBox();
+    assert.ok(bounds&&frameBox,'Motor original con dimensiones visibles');
+    assert.ok(bounds.width>=115&&bounds.height>=100,'El reloj nativo se representa completo');
+    assert.ok(bounds.x>=frameBox.x-5&&bounds.x+bounds.width<=frameBox.x+frameBox.width+5,'Reloj no se corta horizontalmente: '+clock);
+   }
+   await picker.selectOption('analog:atelier');
+   await page.screenshot({path:`${dir}/aura-esferas-${width}.png`,fullPage:false});
+   await page.locator('.fd-aura-clock-picker').screenshot({path:`${dir}/aura-tarjeta-atelier-${width}.png`});
+   await picker.selectOption('mechanical:tourbillon');
+   await page.waitForTimeout(500);
+   await page.locator('.fd-aura-clock-picker').screenshot({path:`${dir}/aura-tarjeta-tourbillon-${width}.png`});
+   await picker.selectOption('analog:atelier');
+  }
   const boxes=await page.evaluate(()=>{const main=document.querySelector('.fd-main').getBoundingClientRect();const workspace=document.querySelector('.fd-workspace').getBoundingClientRect();return{scroll:document.documentElement.scrollWidth,viewport:innerWidth,mainLeft:main.x,mainWidth:main.width,workspaceLeft:workspace.x};});
   assert.ok(boxes.scroll<=width+1,`Desbordamiento horizontal en ${path} a ${width}: ${boxes.scroll}`);assert.ok(boxes.mainWidth>width*(width>959?.70:.95),`Contenido demasiado estrecho en ${path}`);report.push({width,path,...boxes});await page.screenshot({path:`${dir}/${label}-${width}.png`,fullPage:true});
  }}

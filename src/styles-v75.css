@@ -109,3 +109,52 @@
 @media(max-width:1280px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fd-aura-v75 .fd-aura-four-grid>article{min-height:345px}.fd-aura-v75 .fd-aura-four-grid .fd-aura-quote-stage{min-height:130px}.fd-aura-radio-row{grid-template-columns:1fr 1fr}.fd-aura-radio-row .fd-aura-player{grid-column:1/-1}.fd-aura-header-counts{max-width:300px}}
 @media(max-width:740px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:1fr}.fd-aura-v75 .fd-aura-four-grid>article{min-height:315px}.fd-aura-v75 .fd-aura-top{flex-wrap:wrap}.fd-aura-header-counts{order:3;flex:1 0 100%;max-width:100%}.fd-aura-header-counts>span{font-size:10px}.fd-aura-radio-row{grid-template-columns:1fr}.fd-aura-radio-row .fd-aura-player{grid-column:auto}.fd-aura-mascot{min-width:102px}.fd-aura-four-grid .fd-aura-hourly>div{min-width:59px}}
 @media(prefers-reduced-motion:reduce){.fd-clock-gear,.fd-clock-animal-scene,.fd-clock-hourglass,.fd-aura-quote-stage{animation:none!important}}
+
+/* Aura v3 visual sizing: show entire face and preserve its dial details */
+.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:minmax(320px,1.3fr) repeat(3,minmax(0,1fr))}
+.fd-aura-v75 .fd-aura-four-grid>article{min-height:390px}
+.fd-aura-v75 .fd-aura-clock-picker{overflow:visible}
+.fd-aura-v75 .fd-aura-clock-picker .fd-clock-showcase{min-height:248px;max-width:100%;padding:10px 2px;overflow:visible}
+.fd-aura-v75 .fd-aura-clock-picker .fd-aura-full-face{width:min(205px,91%);height:auto;aspect-ratio:1;flex:none;border:1px solid rgba(224,246,234,.25);background:radial-gradient(circle at 45% 32%,rgba(113,144,155,.14),transparent 65%),rgba(16,35,49,.92);box-shadow:0 0 0 8px rgba(182,221,217,.04),0 0 0 12px rgba(182,221,217,.03),inset 0 0 20px rgba(0,0,0,.16),0 15px 34px rgba(0,8,17,.2)}
+.fd-aura-v75 .fd-aura-full-face .fd-aura-tick{background:#e9faf3}
+.fd-aura-v75 .fd-aura-full-face .fd-aura-hand{background:#e8f5f4}
+.fd-aura-v75 .fd-aura-full-face .fd-aura-hand.s{background:#f19b70}
+.fd-aura-v75 .fd-aura-full-face .fd-aura-hand.h{height:26%}
+.fd-aura-v75 .fd-aura-full-face .fd-aura-hand.m{height:35%}
+.fd-aura-v75 .fd-aura-full-face .fd-aura-hand.s{height:40%}
+.fd-original-dial-number{position:absolute;transform:translate(-50%,-50%);color:#e9faf3;font:600 13px ui-monospace,monospace}
+.fd-original-dial-brand,.fd-original-dial-sub{position:absolute;left:50%;transform:translateX(-50%);white-space:nowrap;color:#e9faf3;font-size:8px;font-weight:750;letter-spacing:.16em;opacity:.8}
+.fd-original-dial-brand{top:32%}.fd-original-dial-sub{top:68%;font-size:6px;opacity:.5}
+.fd-aura-v75 .fd-clock-showcase.pilot .fd-aura-full-face{background:#1b2831;border-color:#b9c4ca}
+.fd-aura-v75 .fd-clock-showcase.zen .fd-aura-full-face{background:#e2f1ec;border-color:#c7ded6}
+.fd-aura-v75 .fd-clock-showcase.zen .fd-original-dial-number,.fd-aura-v75 .fd-clock-showcase.zen .fd-original-dial-brand,.fd-aura-v75 .fd-clock-showcase.zen .fd-original-dial-sub{color:#143c47}
+.fd-aura-v75 .fd-clock-showcase.zen .fd-aura-hand{background:#16353d}
+.fd-aura-v75 .fd-clock-showcase.stellar .fd-aura-full-face{background:#030f24;border:2px solid #7eaece}
+.fd-aura-v75 .fd-clock-showcase.stellar .fd-original-dial-number{color:#90dbd6;text-shadow:0 0 8px #63f4f1}
+.fd-aura-v75 .fd-clock-showcase .fd-digit-readout{padding:12px 9px;display:flex;align-items:baseline;gap:2px;font-size:clamp(22px,2.8vw,38px);font-weight:800}
+.fd-aura-v75 .fd-clock-showcase .fd-digit-readout strong{font:inherit}
+.fd-aura-v75 .fd-clock-showcase .fd-digit-readout>span:not(.fd-digit-seconds){color:#c7a15f}
+.fd-aura-v75 .fd-clock-showcase .fd-digit-seconds{font-size:.52em;font-weight:650;color:#86bcb1}
+.fd-original-digital-top,.fd-original-digital-bottom{display:flex;align-items:center;justify-content:space-around;gap:12px;font-size:9px;color:#58738d;font-weight:700;letter-spacing:.12em}
+.fd-original-digital-top span{color:#b99350}
+.fd-aura-v75 .fd-clock-showcase.fd-digit-led .fd-original-digital-top,.fd-aura-v75 .fd-clock-showcase.fd-digit-led .fd-original-digital-bottom{color:#b7c4d0}
+.fd-clock-expand{align-self:center;border:1px solid #c2d6ed;border-radius:7px;background:#edf5fd;color:#204777;font-size:11px;font-weight:750;padding:7px 11px;cursor:pointer}
+.fd-aura-clock-picker:fullscreen{background:#101e30;color:#f4f4f0;align-items:center;justify-content:center;padding:5vmin;overflow-y:auto}
+.fd-aura-clock-picker:fullscreen .fd-clock-showcase{width:min(85vw,860px);max-height:70vh;min-height:58vh;overflow:visible}
+.fd-aura-clock-picker:fullscreen .fd-aura-full-face{width:min(54vh,60vw);max-width:none}
+.fd-aura-clock-picker:fullscreen .fd-digit-readout{font-size:clamp(45px,7vw,90px)}
+.fd-aura-clock-picker:fullscreen .fd-aura-orbit-large{transform:scale(1.45)}
+@media(max-width:1280px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:740px){.fd-aura-v75 .fd-aura-four-grid{grid-template-columns:1fr}.fd-aura-v75 .fd-aura-clock-picker .fd-clock-showcase{min-height:275px}}
+
+/* Native Aura Crono v3 viewer: exact original clock/animation engine in isolated iframe */
+.fd-aura-native-picker .fd-native-clock-frame{width:100%;min-width:0;min-height:300px;height:300px;display:block;overflow:hidden;border-radius:11px;background:radial-gradient(circle at 30% 15%,#e8f2fa,#d6e7f4)}
+.fd-aura-native-picker .fd-native-clock-frame iframe{display:block;border:0;width:100%;height:100%;background:transparent}
+.fd-aura-native-picker .fd-clock-zone{margin-top:2px}
+.fd-aura-native-picker:fullscreen{display:flex;flex-direction:column;align-items:center;gap:12px;justify-content:center;padding:18px 5vw;background:#0e2034}
+.fd-aura-native-picker:fullscreen .fd-native-clock-frame{width:min(95vw,960px);height:min(75dvh,800px);flex:none;background:radial-gradient(circle,#142b48,#08192a)}
+.fd-aura-native-picker:fullscreen .fd-aura-picker-heading,.fd-aura-native-picker:fullscreen>label{color:#f5e5bb}
+.fd-aura-native-picker:fullscreen select{width:min(94vw,560px)}
+.fd-aura-v75 .fd-aura-four-grid>article.fd-aura-native-picker{min-height:460px}
+@media(max-width:1280px){.fd-aura-native-picker .fd-native-clock-frame{height:330px}}
+@media(max-width:740px){.fd-aura-native-picker .fd-native-clock-frame{height:325px}.fd-aura-native-picker:fullscreen .fd-native-clock-frame{height:68dvh}}
