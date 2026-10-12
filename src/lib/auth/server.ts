@@ -109,9 +109,13 @@ const database = databaseUrl
 
 export const SESSION_TOKEN_COOKIE = "__Host-faculta-auth.session_token";
 
+const stableAuthSecret = env("BETTER_AUTH_SECRET");
+if (env("VERCEL_ENV") === "production" && (!stableAuthSecret || stableAuthSecret.length < 32)) {
+  throw new Error("[auth] Falta BETTER_AUTH_SECRET estable (minimo 32 caracteres) en Production.");
+}
 export const auth = betterAuth({
   baseURL,
-  secret: env("BETTER_AUTH_SECRET") ?? previewAuthSecret(),
+  secret: stableAuthSecret ?? previewAuthSecret(),
   database,
   trustedOrigins,
 
