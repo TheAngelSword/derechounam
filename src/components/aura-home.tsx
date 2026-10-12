@@ -114,7 +114,6 @@ export function AuraHome(){
     <span className="fd-aura-panel-kicker">FRASE JURÍDICA DEL DÍA</span>
     <div className="fd-aura-quote-stage" aria-live="off" key={selectedPhrase?.id??"empty"}><span aria-hidden="true">“</span><blockquote>{selectedPhrase?.text??(phraseError?"No se pudo consultar el feed.":"Cargando frases jurídicas…")}</blockquote></div>
     <div className="fd-aura-quote-controls"><span>{selectedPhrase?phraseIndex+1:0} / {phrases.length||20} · Cambia cada 10 s</span><div className="fd-aura-quote-dots">{phrases.slice(0,20).map((p,i)=><button type="button" key={p.id} aria-label={"Frase "+(i+1)} aria-pressed={i===phraseIndex} onClick={()=>setPhraseIndex(i)}/>)}</div></div>
-    <div className="fd-aura-timer-summary"><div><small>🎓 Fin de clases · 28 nov</small><strong>{endClasses}</strong></div><div><small>🎇 Fin de año · 31 dic</small><strong>{endYear}</strong></div></div>
     <small className="fd-aura-credit">20 reflexiones del feed del portal; se seleccionan nuevas frases cada día, en horario de México.</small>
    </article>
   </div>
