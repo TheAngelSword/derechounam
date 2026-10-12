@@ -1,7 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { AuraClockSelector } from "./aura-clock-selector";
+import { AURA_STATIONS,AURA_STATION_GENRES } from "@/lib/aura/stations";
+import { AURA_OBSERVANCES } from "@/lib/aura/observances";
 import { Clock3, MapPin, Music2, Play, Pause, RefreshCw, History, ThermometerSun, CalendarClock, ExternalLink, LocateFixed, RadioTower, Scale, BookOpenText } from "lucide-react";
 
-type Weather={temperature:number;code:number;label:string;days:{date:string;min:number;max:number;code:number}[]};
+type Weather={temperature:number;code:number;label:string;days:{date:string;min:number;max:number;code:number}[];hourly:{time:string;temp:number;rain:number;code:number}[]};
+type Holiday={name:string;description:string;source:"Wikipedia"|"Calendario editorial"};
 type HistoryEvent={year:number;text:string;url:string};
 type Phrase={id:string;text:string};
 const timezone="America/Mexico_City";
@@ -10,13 +14,7 @@ const cityDate=(date:Date)=>new Intl.DateTimeFormat("en-CA",{year:"numeric",mont
 const dateNumbers=(date:Date)=>Object.fromEntries(new Intl.DateTimeFormat("en-GB",{timeZone:timezone,hour:"2-digit",minute:"2-digit",second:"2-digit",hourCycle:"h23"}).formatToParts(date).map(p=>[p.type,Number(p.value)]));
 const pad=(value:number)=>String(value).padStart(2,"0");
 const WEATHER_LABELS:Record<number,string>={0:"Despejado",1:"Mayormente despejado",2:"Parcialmente nublado",3:"Nublado",45:"Niebla",48:"Niebla",51:"Llovizna",53:"Llovizna",55:"Llovizna",61:"Lluvia",63:"Lluvia",65:"Lluvia intensa",71:"Nieve",73:"Nieve",75:"Nieve",80:"Chubascos",81:"Chubascos",82:"Lluvia intensa",95:"Tormenta",96:"Tormenta",99:"Tormenta"};
-const stations=[
- {name:"Radio Swiss Classic",genre:"Música clásica",urls:["https://stream.srg-ssr.ch/m/rsc_de/mp3_128"]},
- {name:"FIP Jazz",genre:"Jazz",urls:["https://icecast.radiofrance.fr/fipjazz-midfi.mp3","https://icecast.radiofrance.fr/fipjazz-hifi.aac"]},
- {name:"Radio Swiss Jazz",genre:"Jazz",urls:["https://stream.srg-ssr.ch/m/rsj/mp3_128"]},
- {name:"SomaFM Sonic Universe",genre:"Jazz contemporáneo",urls:["https://ice5.somafm.com/sonicuniverse-128-mp3","https://ice2.somafm.com/sonicuniverse-128-mp3"]},
- {name:"SomaFM Bossa Beyond",genre:"Bossa / lounge",urls:["https://ice5.somafm.com/bossa-128-mp3","https://ice2.somafm.com/bossa-128-mp3"]}
-];
+const stations=AURA_STATIONS;
 function countdown(now:Date|null,year:number,month:number,day:number){
  if(!now)return "—";
  const remaining=Date.UTC(year,month-1,day+1,6)-now.getTime();
@@ -45,14 +43,25 @@ export function AuraHome(){
  const[now,setNow]=useState<Date|null>(null),[weather,setWeather]=useState<Weather|null>(null),[weatherError,setWeatherError]=useState(""),[coords,setCoords]=useState({lat:19.4326,lon:-99.1332,name:"Ciudad de México · referencia inicial"}),[locating,setLocating]=useState(false);
  const[history,setHistory]=useState<HistoryEvent[]>([]),[historyError,setHistoryError]=useState(""),[phrases,setPhrases]=useState<Phrase[]>([]),[phraseError,setPhraseError]=useState(false);
  const[station,setStation]=useState(0),[playing,setPlaying]=useState(false),[radioError,setRadioError]=useState(""),[sourceIndex,setSourceIndex]=useState(0);
+ const[holidays,setHolidays]=useState<Holiday[]>([]),[holidayStatus,setHolidayStatus]=useState(""),[phraseIndex,setPhraseIndex]=useState(0);
  const audio=useRef<HTMLAudioElement>(null);
  useEffect(()=>{const tick=()=>setNow(new Date());tick();const t=setInterval(tick,1000);return()=>clearInterval(t)},[]);
  const today=now?cityDate(now):null;
+ useEffect(()=>{setPhraseIndex(0);if(phrases.length<2)return;const id=window.setInterval(()=>setPhraseIndex(i=>(i+1)%phrases.length),10000);return()=>window.clearInterval(id);},[today,phrases.length]);
  const time=now?dateNumbers(now):null;
  const month=now?Number(today?.split("-")[1]):10,year=now?Number(today?.slice(0,4)):2026;
  useEffect(()=>{if(!today)return;let active=true;
   const parts=today.split("-");const url="https://es.wikipedia.org/api/rest_v1/feed/onthisday/events/"+parts[1]+"/"+parts[2];
-  setHistory([]);setHistoryError("");
+  setHistory([]);setHistoryError("");setPhraseIndex(0);
+  setHolidays([]);setHolidayStatus("");
+  const note=AURA_OBSERVANCES[parts[1]+"-"+parts[2]];
+  fetch("https://es.wikipedia.org/api/rest_v1/feed/onthisday/holidays/"+parts[1]+"/"+parts[2]).then(async res=>{if(!res.ok)throw Error("Sin feed");return res.json();}).then(data=>{
+   if(!active)return;
+   const list=(Array.isArray(data.holidays)?data.holidays:[]).filter((x:unknown)=>typeof x==="object"&&x!==null).map((h:{text?:string})=>String(h.text??"").trim()).filter(Boolean).slice(0,2);
+   if(list.length)setHolidays(list.map((name:string)=>({name,description:"Celebración mencionada en el feed de efemérides de Wikipedia.",source:"Wikipedia" as const})));
+   else if(note){setHolidays([{name:note.name,description:note.description,source:"Calendario editorial"}]);setHolidayStatus("El feed no presentó celebraciones verificadas; se muestra el calendario de Aura Crono.");}
+   else setHolidayStatus("Sin celebración identificada en las fuentes consultadas.");
+  }).catch(()=>{if(!active)return;if(note){setHolidays([{name:note.name,description:note.description,source:"Calendario editorial"}]);setHolidayStatus("Wikipedia no respondió; fecha del calendario Aura Crono.");}else setHolidayStatus("El feed de celebraciones no está disponible hoy.");});
   fetch(url).then(async r=>{if(!r.ok)throw Error("No disponible");return r.json()}).then(data=>{
    if(!active)return;const seen=new Set<string>();
    const events=(Array.isArray(data.events)?data.events:[]).filter((e:unknown)=>typeof e==="object"&&e!==null).map((e:{year:number;text:string;pages?:{content_urls?:{desktop?:{page?:string}}}[]})=>{
@@ -65,8 +74,8 @@ export function AuraHome(){
   return()=>{active=false};
  },[today]);
  useEffect(()=>{let active=true;setWeatherError("");setWeather(null);
-  const base="https://api.open-meteo.com/v1/forecast?latitude="+coords.lat+"&longitude="+coords.lon+"&current=temperature_2m,weather_code&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=5";
-  fetch(base).then(r=>{if(!r.ok)throw Error("Sin datos meteorológicos");return r.json()}).then(d=>{if(!active)return;const daily=d.daily??{};setWeather({temperature:Number(d.current?.temperature_2m),code:Number(d.current?.weather_code),label:WEATHER_LABELS[Number(d.current?.weather_code)]??"Variable",days:(daily.time??[]).slice(0,5).map((date:string,i:number)=>({date,min:Number(daily.temperature_2m_min[i]),max:Number(daily.temperature_2m_max[i]),code:Number(daily.weather_code[i])}))});}).catch(()=>{if(active)setWeatherError("Clima no disponible en este momento.")});
+  const base="https://api.open-meteo.com/v1/forecast?latitude="+coords.lat+"&longitude="+coords.lon+"&current=temperature_2m,weather_code&hourly=temperature_2m,precipitation_probability,weather_code&forecast_hours=10&daily=temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&forecast_days=5";
+  fetch(base).then(r=>{if(!r.ok)throw Error("Sin datos meteorológicos");return r.json()}).then(d=>{if(!active)return;const daily=d.daily??{};setWeather({temperature:Number(d.current?.temperature_2m),code:Number(d.current?.weather_code),label:WEATHER_LABELS[Number(d.current?.weather_code)]??"Variable",days:(daily.time??[]).slice(0,5).map((date:string,i:number)=>({date,min:Number(daily.temperature_2m_min[i]),max:Number(daily.temperature_2m_max[i]),code:Number(daily.weather_code[i])})),hourly:(d.hourly?.time??[]).slice(0,8).map((t:string,i:number)=>({time:t.slice(11,16),temp:Number(d.hourly.temperature_2m[i]),rain:Number(d.hourly.precipitation_probability[i]),code:Number(d.hourly.weather_code[i])}))});}).catch(()=>{if(active)setWeatherError("Clima no disponible en este momento.")});
   return()=>{active=false};
  },[coords.lat,coords.lon]);
  function locate(){if(!navigator.geolocation){setWeatherError("Tu navegador no permite geolocalización.");return}setLocating(true);navigator.geolocation.getCurrentPosition(p=>{setCoords({lat:Number(p.coords.latitude.toFixed(3)),lon:Number(p.coords.longitude.toFixed(3)),name:"Tu ubicación aproximada"});setLocating(false);},()=>{setLocating(false);setWeatherError("Ubicación no autorizada. Se muestra el clima de referencia de Ciudad de México.")},{timeout:10000,maximumAge:600000});}
@@ -75,24 +84,44 @@ export function AuraHome(){
  function radioFailure(){const next=sourceIndex+1;if(next<stations[station].urls.length){startStation(station,next)}else{setPlaying(false);setRadioError("Emisora temporalmente no disponible. Selecciona otra.")}}
  const currentYear=year||2026, newYearTarget=Date.UTC(currentYear+1,0,1,6), endYear=countdown(now,currentYear,12,31), endClasses=countdown(now,2026,11,28);
  const dayOfYear=now?Math.floor((Date.UTC(Number(today?.slice(0,4)),Number(today?.slice(5,7))-1,Number(today?.slice(8,10)))-Date.UTC(Number(today?.slice(0,4)),0,1))/86400000)+1:null;
- return <section className="fd-aura-home" aria-label="Aura Crono integrado al inicio">
+ const selectedPhrase=phrases[phraseIndex]??null;
+ const mxName=now?compactDate(now):"Consultando fecha…";
+ return <section className="fd-aura-home fd-aura-v75" aria-label="Aura Crono: reloj, clima, efemérides, frases y radio">
   <div className="fd-aura-top">
-   <div className="fd-aura-intro"><span className="fd-aura-kicker"><Clock3 size={15}/> AURA CRONO · EN TU PORTAL</span><h2>Hoy en nuestra comunidad</h2><p>{now?compactDate(now):"Consultando la fecha local…"} · {timezone.replace("_"," ")}</p><span className="fd-aura-day">Día {dayOfYear??"—"} del año</span></div>
+   <div className="fd-aura-intro"><span className="fd-aura-kicker"><Clock3 size={15}/> AURA CRONO · FACULTAD DE DERECHO</span><h2>Hoy en nuestra comunidad</h2><p>{mxName} · Ciudad de México</p><span className="fd-aura-day">Día {dayOfYear??"—"} del año</span></div>
+   <div className="fd-aura-header-counts"><span><CalendarClock size={14}/> FIN DE CURSOS · 28 NOV 2026 <strong>{endClasses}</strong></span><span>FIN DE AÑO · 31 DIC {currentYear} <strong>{endYear}</strong></span></div>
    <SeasonalMascot month={month}/>
   </div>
-  <div className="fd-aura-clock-grid">
-   <article className="fd-aura-time-card"><span>ATELIER · ANALÓGICO</span><MiniAnalog time={time}/><strong>Hora de México</strong></article>
-   <article className="fd-aura-time-card"><span>CRISTAL · DIGITAL</span><div className="fd-aura-digital">{time?pad(time.hour)+":"+pad(time.minute)+":"+pad(time.second):"--:--:--"}</div><strong>Formato 24 horas</strong></article>
-   <article className="fd-aura-time-card"><span>ÓRBITA TEMPORAL</span><MiniOrbit time={time}/><strong>Horas y minutos</strong></article>
-   <article className="fd-aura-deadlines"><span><CalendarClock size={15}/> CONTADORES</span><div><small>Fin de cursos · 28 nov 2026</small><strong>{endClasses}</strong></div><div><small>Fin de año · 31 dic {currentYear}</small><strong>{endYear}</strong></div></article>
+  <div className="fd-aura-clock-grid fd-aura-four-grid">
+   <AuraClockSelector time={time?{hour:time.hour??0,minute:time.minute??0,second:time.second??0}:null}/>
+   <article className="fd-aura-panel fd-aura-today-weather">
+    <div className="fd-aura-heading"><div><ThermometerSun size={19}/><h3>Fecha y clima</h3></div><button type="button" onClick={locate} disabled={locating} title="Usar ubicación con permiso"><LocateFixed size={15}/>{locating?"Buscando…":"Ubicarme"}</button></div>
+    <strong className="fd-aura-today-date">{now?new Intl.DateTimeFormat("es-MX",{day:"numeric",month:"long",timeZone:timezone}).format(now):"—"}</strong><span className="fd-aura-yearline">{year} · Día {dayOfYear??"—"} del año</span>
+    <p className="fd-aura-small"><MapPin size={13}/>{coords.name}</p>
+    {weather?<><div className="fd-aura-current-weather"><span className="fd-aura-weather-symbol" aria-hidden="true">{[0,1].includes(weather.code)?"☀️":[2,3].includes(weather.code)?"⛅":[51,53,55,61,63,65,80,81,82].includes(weather.code)?"☔":weather.code>=95?"⛈️":"🌤️"}</span><strong>{Number.isFinite(weather.temperature)?Math.round(weather.temperature)+"°":"—"}</strong><span>{weather.label}</span></div><h4>Próximas horas</h4><div className="fd-aura-hourly">{weather.hourly.map((v,i)=><div key={i}><time>{v.time}</time><strong>{Math.round(v.temp)}°</strong><small>☂ {Math.round(v.rain)}%</small></div>)}</div></>:<p className="fd-aura-small" role="status">{weatherError||"Consultando Open-Meteo…"}</p>}
+    <small className="fd-aura-credit">Fuente: <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · {coords.name}</small>
+   </article>
+   <article className="fd-aura-panel fd-aura-celebrations">
+    <div className="fd-aura-heading"><div><History size={19}/><h3>Un día como hoy</h3></div><a href="https://es.wikipedia.org/wiki/Wikipedia:Efem%C3%A9rides" target="_blank" rel="noopener noreferrer"><ExternalLink size={16}/></a></div>
+    <span className="fd-aura-panel-kicker">CELEBRACIONES DEL DÍA</span>
+    {holidays.length?<div className="fd-aura-holiday">{holidays.map((h,i)=><div key={i}><span className="fd-aura-holiday-symbol" aria-hidden="true">✦</span><strong>{h.name}</strong><p>{h.description}</p><small>{h.source}</small></div>)}</div>:<p className="fd-aura-small">{holidayStatus||"Consultando calendario y feed…"}</p>}
+    <h4>También ocurrió hoy</h4>
+    {history.length?<ol className="fd-aura-mini-events">{history.slice(0,3).map((h,i)=><li key={i}><b>{h.year}</b><a href={h.url.startsWith("https://es.wikipedia.org/")?h.url:"https://es.wikipedia.org/"} target="_blank" rel="noopener noreferrer">{h.text}</a></li>)}</ol>:<p className="fd-aura-small">{historyError||"Consultando efemérides de Wikipedia…"}</p>}
+    <small className="fd-aura-credit">Wikipedia (feed) · Si falla, efeméride editorial identificada</small>
+   </article>
+   <article className="fd-aura-panel fd-aura-rotating-quote">
+    <div className="fd-aura-heading"><div><Scale size={19}/><h3>Derecho en 10 segundos</h3></div><a href="/api/frases" target="_blank" rel="noopener noreferrer" title="Feed diario de frases">Feed ↗</a></div>
+    <span className="fd-aura-panel-kicker">FRASE JURÍDICA DEL DÍA</span>
+    <div className="fd-aura-quote-stage" aria-live="off" key={selectedPhrase?.id??"empty"}><span aria-hidden="true">“</span><blockquote>{selectedPhrase?.text??(phraseError?"No se pudo consultar el feed.":"Cargando frases jurídicas…")}</blockquote></div>
+    <div className="fd-aura-quote-controls"><span>{selectedPhrase?phraseIndex+1:0} / {phrases.length||20} · Cambia cada 10 s</span><div className="fd-aura-quote-dots">{phrases.slice(0,20).map((p,i)=><button type="button" key={p.id} aria-label={"Frase "+(i+1)} aria-pressed={i===phraseIndex} onClick={()=>setPhraseIndex(i)}/>)}</div></div>
+    <div className="fd-aura-timer-summary"><div><small>🎓 Fin de clases · 28 nov</small><strong>{endClasses}</strong></div><div><small>🎇 Fin de año · 31 dic</small><strong>{endYear}</strong></div></div>
+    <small className="fd-aura-credit">20 reflexiones del feed del portal; se seleccionan nuevas frases cada día, en horario de México.</small>
+   </article>
   </div>
-  <div className="fd-aura-services">
-   <article className="fd-aura-panel fd-aura-weather"><div className="fd-aura-heading"><div><ThermometerSun size={20}/><h3>Clima y pronóstico</h3></div><button type="button" onClick={locate} disabled={locating} title="Solicitar permiso para tu ubicación"><LocateFixed size={16}/>{locating?"Buscando…":"Mi ubicación"}</button></div><p className="fd-aura-small"><MapPin size={13}/>{coords.name}</p>{weather?<><strong className="fd-aura-temperature">{Number.isFinite(weather.temperature)?Math.round(weather.temperature)+" °C":"—"} <small>{weather.label}</small></strong><div className="fd-aura-forecast">{weather.days.map(d=><div key={d.date}><span>{new Intl.DateTimeFormat("es-MX",{weekday:"short",timeZone:"UTC"}).format(new Date(d.date+"T12:00:00Z"))}</span><strong>{Math.round(d.max)}°</strong><small>{Math.round(d.min)}°</small></div>)}</div></>:<p role="status">{weatherError||"Consultando Open-Meteo…"}</p>}<small className="fd-aura-credit">Fuente: <a href="https://open-meteo.com" target="_blank" rel="noopener noreferrer">Open-Meteo</a> · Coordenadas no guardadas</small></article>
-   <article className="fd-aura-panel fd-aura-radio"><div className="fd-aura-heading"><div><Music2 size={20}/><h3>Radio para estudiar</h3></div><span className="fd-aura-onair"><RadioTower size={14}/> En línea</span></div><label htmlFor="fd-radio-station">Clásica, jazz y música tranquila</label><select id="fd-radio-station" value={station} onChange={e=>{const next=Number(e.target.value);setStation(next);if(playing)startStation(next);else setRadioError("")}}>{stations.map((s,i)=><option key={s.name} value={i}>{s.name} · {s.genre}</option>)}</select><div className="fd-aura-player"><button type="button" aria-label={playing?"Pausar estación":"Reproducir estación"} onClick={toggleRadio}>{playing?<Pause size={20}/>:<Play size={20}/>}</button><div><strong>{stations[station].name}</strong><small>{stations[station].genre} · {playing?"Reproduciendo":"Pulsa para escuchar"}</small></div></div>{radioError?<small role="status">{radioError}</small>:null}<audio ref={audio} preload="none" onError={radioFailure}/><small className="fd-aura-credit">La reproducción depende de las emisoras externas. No inicia automáticamente.</small></article>
-  </div>
-  <div className="fd-aura-services fd-aura-lower">
-   <article className="fd-aura-panel fd-aura-history"><div className="fd-aura-heading"><div><History size={19}/><h3>Un día como hoy</h3></div><a href="https://es.wikipedia.org/wiki/Wikipedia:Efem%C3%A9rides" target="_blank" rel="noopener noreferrer" aria-label="Consultar Wikipedia"><ExternalLink size={16}/></a></div>{history.length?<ol>{history.map((e,i)=><li key={e.year+"-"+i}><b>{e.year}</b><a href={e.url.startsWith("https://es.wikipedia.org/")?e.url:"https://es.wikipedia.org/"} target="_blank" rel="noopener noreferrer">{e.text}</a></li>)}</ol>:<p className="fd-aura-small" role="status">{historyError||"Consultando los acontecimientos de esta fecha…"}</p>}<small className="fd-aura-credit">Acontecimientos del feed de Wikipedia · Consulta el artículo para verificar los detalles</small></article>
-   <article className="fd-aura-panel fd-aura-phrases"><div className="fd-aura-heading"><div><Scale size={20}/><h3>20 frases para pensar el Derecho</h3></div><a href="/api/frases" target="_blank" rel="noopener noreferrer" title="Feed jurídico del portal">Feed diario ↗</a></div><p className="fd-aura-small">Cápsulas jurídicas originales que se renuevan cada día, hora de México.</p><div className="fd-aura-marquee" aria-label="Veinte frases jurídicas del día"><div className="fd-aura-marquee-track">{phrases.length?phrases.map((f,i)=><span key={f.id}><BookOpenText size={15}/>{i+1}. {f.text}</span>):<span>{phraseError?"No se pudo cargar el feed de frases.":"Cargando frases del día…"}</span>}</div></div><a className="fd-aura-credit" href="/api/frases" target="_blank" rel="noopener noreferrer">Ver las 20 frases de hoy en el feed del portal ↗</a></article>
-  </div>
+  <article className="fd-aura-panel fd-aura-radio fd-aura-radio-wide">
+   <div className="fd-aura-heading"><div><Music2 size={20}/><h3>Radio para estudiar</h3></div><span className="fd-aura-onair"><RadioTower size={14}/> {stations.length} estaciones · sin reproducción automática</span></div>
+   <div className="fd-aura-radio-row"><label htmlFor="fd-radio-station">Elige una emisora de música clásica, jazz o tu género favorito</label><select id="fd-radio-station" value={station} onChange={e=>{const next=Number(e.target.value);setStation(next);if(playing)startStation(next);else setRadioError("");}}>{AURA_STATION_GENRES.map(genre=><optgroup label={genre} key={genre}>{stations.map((s,i)=>s.genre===genre?<option key={s.id} value={i}>{s.name}</option>:null)}</optgroup>)}</select><div className="fd-aura-player"><button type="button" aria-label={playing?"Pausar radio":"Reproducir radio"} onClick={toggleRadio}>{playing?<Pause size={20}/>:<Play size={20}/>}</button><div><strong>{stations[station].name}</strong><small>{stations[station].genre} · {playing?"Reproduciendo":"Lista para escuchar"}</small></div></div></div>
+   {radioError?<p className="fd-aura-small" role="status">{radioError}</p>:null}<audio ref={audio} preload="none" onError={radioFailure}/><small className="fd-aura-credit">Emisoras y enlaces adaptados del ZIP original de Aura Crono v3. Su disponibilidad depende de cada estación.</small>
+  </article>
  </section>;
 }
