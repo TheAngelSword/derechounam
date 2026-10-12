@@ -41,5 +41,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: capturas-aura-original
-          path: test-results/v72/aura-esferas-*.png
+          path: test-results/v72/aura-*.png
           if-no-files-found: ignore
