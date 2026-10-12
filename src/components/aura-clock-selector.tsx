@@ -27,25 +27,26 @@ export function AuraClockSelector({time}:{time:ClockTime|null}){
   return()=>window.removeEventListener("message",onMessage);
  },[choice]);
  useEffect(()=>{
-  // La página de Aura carga varios motores: al cambiar de estilo durante esa
-  // carga, el primer mensaje podría perderse. Confirmamos el cambio realmente
-  // aplicado en los controles originales antes de detener los reintentos.
   let attempts=0;
-  const [type]=choice.split(":");
-  const targetIndex=CLOCKS.filter(item=>item[0].startsWith(type+":")).findIndex(item=>item[0]===choice);
-  const update=()=>{
-   try{
+  const [type,style]=choice.split(":");
+  const desiredIndex=CLOCKS.filter(item=>item[0].startsWith(type+":")).findIndex(item=>item[0]===choice);
+  const apply=()=>{
+   try {
     const doc=frame.current?.contentDocument;
-    const activeType=doc?.querySelector<HTMLButtonElement>('#clockTypeSelector button.active')?.dataset.clock;
-    const styles=Array.from(doc?.querySelectorAll('#styleSelector button')??[]);
-    const activeIndex=styles.findIndex(button=>button.classList.contains("active"));
-    if(activeType===type&&activeIndex===targetIndex&&styles.length>0){window.clearInterval(timer);return;}
-   }catch{/* El documento aún no ha cargado; seguimos intentando. */}
+    const typeButton=doc?.querySelector<HTMLButtonElement>('#clockTypeSelector button[data-clock="'+type+'"]');
+    if (!typeButton || !doc?.querySelector('#styleSelector button')) return;
+    if (!typeButton.classList.contains("active")) typeButton.click();
+    const styles=Array.from(doc.querySelectorAll<HTMLButtonElement>('#styleSelector button'));
+    const desired=styles[desiredIndex];
+    if(desired && !desired.classList.contains("active")) desired.click();
+    const current=doc.querySelector<HTMLButtonElement>('#clockTypeSelector button.active')?.dataset.clock;
+    if(current===type && desired?.classList.contains("active")) {window.clearInterval(timer);return;}
+   } catch {/* The iframe may still be initializing; retry without breaking the portal. */}
    frame.current?.contentWindow?.postMessage({type:"portal-aura-set-clock",choice},window.location.origin);
-   if(++attempts>=45)window.clearInterval(timer);
+   if(++attempts>=50)window.clearInterval(timer);
   };
-  const timer=window.setInterval(update,350);
-  update();
+  const timer=window.setInterval(apply,300);
+  apply();
   return()=>window.clearInterval(timer);
  },[choice]);
  const groups=[...new Set(CLOCKS.map(c=>c[1]))];
