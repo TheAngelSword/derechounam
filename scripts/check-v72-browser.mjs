@@ -19,11 +19,10 @@ try{let ready=false;for(let i=0;i<90;i++){try{const r=await fetch('http://localh
    await native.locator('.clock-stage').waitFor();
    for(const clock of ['analog:atelier','digital:flip','mechanical:tourbillon','3d:solar','animals:gato']){
     await picker.selectOption(clock);
-    await page.waitForTimeout(600);
     const [type,style]=clock.split(':');
     const expected=type==='analog'?'#analogClock':type==='digital'?'#digitalClock':type==='orbital'?'#orbitalClock':'#funClock';
     const el=native.locator(expected);
-    assert.ok(await el.isVisible(),'Aura nativo no muestra '+clock);
+    await el.waitFor({state:'visible',timeout:15000});
     const bounds=await el.boundingBox();
     const frameBox=await iframe.boundingBox();
     assert.ok(bounds&&frameBox,'Motor original con dimensiones visibles');
