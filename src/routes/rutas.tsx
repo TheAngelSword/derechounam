@@ -97,7 +97,7 @@ function RutasPage() {
   return (
     <Shell
       eyebrow="Ruta 9114"
-      title="Llegar a D-106 antes de las 07:00."
+      title="Comparte tu vehículo"
       lead="Comparte el vehículo, publica lugares disponibles y permite que los compañeros reserven su asiento desde el portal."
     >
       {error ? (

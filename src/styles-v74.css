@@ -1,0 +1,87 @@
+
+/* Portal V7.4 · Aura Crono y juegos */
+.fd-home-page .fd-campus-shortcuts-compact{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;margin:10px 0 15px}
+.fd-home-page .fd-campus-shortcuts-compact>a{min-height:65px;padding:9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;text-align:center}
+.fd-home-page .fd-campus-shortcuts-compact strong{font-size:12px;line-height:1.2}
+.fd-home-page .fd-home-lower{grid-template-columns:1fr;margin-top:16px}
+.fd-aura-home{margin:8px 0 24px;color:#18345b}
+.fd-aura-home *{box-sizing:border-box}
+.fd-aura-top{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:17px 22px;border-radius:15px;background:linear-gradient(110deg,#051d4b,#113a78 65%,#19395e);color:#fff}
+.fd-aura-intro h2{font:600 clamp(23px,2.4vw,31px) Fraunces,Georgia,serif;color:#fff;margin:8px 0}
+.fd-aura-intro p{font-size:13px;color:#dce9fa;text-transform:capitalize;margin:0 0 8px}
+.fd-aura-kicker,.fd-aura-day{font-size:11px;font-weight:750;color:#fbd37d;display:flex;align-items:center;gap:7px;letter-spacing:.04em}
+.fd-aura-day{color:#d4e8ff;letter-spacing:0}
+.fd-aura-mascot{position:relative;min-width:165px;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fd-aura-owl{font-size:64px;line-height:1;filter:drop-shadow(0 6px 5px #001b41);transform-origin:50% 90%;animation:owl-study 3s ease-in-out infinite}
+.fd-aura-cap{position:absolute;font-size:27px;top:-12px;left:42%;transform:rotate(-12deg)}
+.fd-aura-book{position:absolute;font-size:23px;bottom:18px;right:27px;transform:rotate(15deg)}
+.fd-aura-spark{position:absolute;font-size:22px;animation:aura-leaf 5s ease-in-out infinite}
+.fd-aura-spark.left{left:0;top:10px}.fd-aura-spark.right{right:0;top:5px;animation-delay:1.5s}
+.fd-aura-mascot small{color:#ffe2a6;font-size:10px;text-align:center;font-weight:700;margin-top:10px}
+@keyframes owl-study{0%,100%{transform:rotate(-5deg)}50%{transform:rotate(6deg) translateY(-7px)}}
+@keyframes aura-leaf{0%,100%{transform:translateY(0) rotate(-10deg)}50%{transform:translateY(14px) rotate(24deg)}}
+.fd-aura-clock-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(190px,1.25fr);gap:10px;margin-top:10px}
+.fd-aura-time-card,.fd-aura-deadlines,.fd-aura-panel{background:#fff;border:1px solid #d8e3f1;border-radius:13px;box-shadow:0 6px 17px #0f376c10}
+.fd-aura-time-card{padding:12px 6px;min-height:155px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:7px}
+.fd-aura-time-card>span,.fd-aura-deadlines>span{color:#926f22;font-size:10px;font-weight:800;letter-spacing:.05em}
+.fd-aura-time-card>strong{font-size:11px;color:#536b85}
+.fd-aura-digital{font:750 clamp(16px,2vw,27px)/1.5 ui-monospace,monospace;color:#0d3776;padding:10px 5px;background:#eaf2ff;border-radius:8px}
+.fd-aura-clockface{width:102px;height:102px;border:5px solid #d3ab50;border-radius:50%;position:relative;background:radial-gradient(circle at 30% 25%,#fff,#e6effb)}
+.fd-aura-clockface>i{position:absolute;top:50%;left:calc(50% - 1px);height:6px;width:2px;background:#ae8c43}
+.fd-aura-clockface .fd-hand{position:absolute;left:calc(50% - 2px);bottom:50%;width:4px;background:#103775;border-radius:4px;transform-origin:bottom center}
+.fd-aura-clockface .hour{height:25px}.fd-aura-clockface .minute{height:37px;width:3px}.fd-aura-clockface .second{height:41px;width:1px;background:#cf932e}
+.fd-aura-clockface .fd-pivot{position:absolute;width:8px;height:8px;top:calc(50% - 4px);left:calc(50% - 4px);background:#d2a047;border-radius:50%}
+.fd-orbit-clock{width:102px;height:102px;position:relative;display:grid;place-items:center}
+.fd-orbit-outer,.fd-orbit-inner{position:absolute;border:2px solid #b9d0e9;border-radius:50%;width:92px;height:92px}
+.fd-orbit-inner{width:56px;height:56px;border-color:#caa758;border-style:dashed}
+.fd-orbit-clock i,.fd-orbit-clock b{position:absolute;width:10px;height:10px;top:calc(50% - 5px);left:calc(50% - 5px);background:#2864a5;border-radius:50%}
+.fd-orbit-clock b{width:8px;height:8px;background:#c69937}
+.fd-orbit-clock strong{font:750 15px ui-monospace,monospace}
+.fd-aura-deadlines{padding:14px;display:flex;flex-direction:column;justify-content:space-between;gap:7px}
+.fd-aura-deadlines>span{display:flex;gap:5px;align-items:center}
+.fd-aura-deadlines>div{border-top:1px solid #e5edf6;padding-top:8px;display:flex;flex-direction:column;gap:4px}
+.fd-aura-deadlines small{font-size:11px;color:#556c83}
+.fd-aura-deadlines strong{font:750 clamp(12px,1.4vw,17px) ui-monospace,monospace;color:#123c80}
+.fd-aura-services{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+.fd-aura-panel{padding:17px 19px;min-width:0}
+.fd-aura-heading,.fd-aura-heading>div{display:flex;align-items:center;gap:8px}
+.fd-aura-heading{justify-content:space-between;margin-bottom:10px}
+.fd-aura-heading h3{margin:0;font-size:16px;font-weight:770}
+.fd-aura-heading svg{color:#b28b38;flex-shrink:0}
+.fd-aura-heading button,.fd-aura-heading>a{border:1px solid #d5e1f2;background:#eef5ff;color:#1d4d8e;border-radius:7px;min-height:33px;padding:5px 9px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;text-decoration:none;cursor:pointer}
+.fd-aura-small{display:flex;align-items:center;gap:6px;font-size:12px;color:#5b7086;margin:8px 0}
+.fd-aura-credit{display:block;font-size:10px;color:#728095;margin-top:11px}
+.fd-aura-credit a{color:#28558a}
+.fd-aura-temperature{font-size:35px;color:#113e7b;display:flex;gap:10px;align-items:baseline}
+.fd-aura-temperature small{font-size:12px;font-weight:500;color:#53647a}
+.fd-aura-forecast{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;margin:10px 0}
+.fd-aura-forecast>div{background:#f0f5fc;border-radius:8px;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 3px;text-transform:capitalize;color:#5c728c;font-size:11px}
+.fd-aura-forecast strong{font-size:15px;color:#13386d}
+.fd-aura-radio label{display:block;margin:10px 0 5px;font-size:12px;color:#526982}
+.fd-aura-radio select{width:100%;height:40px;border:1px solid #d2dfea;border-radius:8px;background:white;color:#19385c;padding:6px}
+.fd-aura-player{margin-top:11px;display:flex;align-items:center;gap:12px}
+.fd-aura-player>button{width:45px;height:45px;border-radius:50%;border:0;background:#073875;color:#fff;display:grid;place-items:center;cursor:pointer}
+.fd-aura-player>div{display:flex;flex-direction:column;gap:3px}
+.fd-aura-player strong{font-size:13px}.fd-aura-player small{font-size:11px;color:#69809a}
+.fd-aura-onair{display:flex;align-items:center;gap:5px;font-size:11px;color:#3d6898}
+.fd-aura-history ol{list-style:none;margin:8px 0;padding:0;max-height:254px;overflow:auto;display:grid;gap:8px}
+.fd-aura-history li{display:flex;align-items:flex-start;gap:9px;border-bottom:1px solid #eef1f6;padding-bottom:8px}
+.fd-aura-history li b{font-size:11px;color:#a17b2a;min-width:44px}
+.fd-aura-history li a{font-size:12px;line-height:1.4;color:#31547d;text-decoration:none}
+.fd-aura-history li a:hover{text-decoration:underline}
+.fd-aura-marquee{background:#0a305f;color:#fff;border-radius:9px;overflow:hidden;margin-top:12px;min-height:75px}
+.fd-aura-marquee-track{padding:14px;display:flex;align-items:center;gap:17px;width:max-content;animation:legal-ticker 170s linear infinite}
+.fd-aura-marquee-track span{display:flex;align-items:flex-start;gap:7px;white-space:normal;min-width:190px;max-width:280px;font-size:13px;line-height:1.4}
+.fd-aura-marquee-track svg{color:#f5c76b;flex-shrink:0}
+.fd-aura-marquee:hover .fd-aura-marquee-track,.fd-aura-marquee:focus-within .fd-aura-marquee-track{animation-play-state:paused}
+@keyframes legal-ticker{to{transform:translateX(calc(-100% + 330px))}}
+.fd-subject-pills{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px!important}
+.fd-subject-pills button{min-height:118px;white-space:normal!important;display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:7px;text-align:center!important;line-height:1.28;font-size:12px;padding:12px 8px!important;border-radius:12px!important}
+.fd-subject-icon{width:43px;height:43px;border-radius:12px;background:#e7f0fc;color:#123f7e;display:grid;place-items:center}
+.fd-subject-pills button.is-selected .fd-subject-icon{background:#0b3e80;color:#fff}
+.fd-subject-name{font-weight:750}
+.fd-subject-pills button small{font-size:9px;color:#aa8229;text-transform:uppercase}
+@media(max-width:1120px){.fd-subject-pills{grid-template-columns:repeat(4,minmax(0,1fr))}.fd-aura-clock-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.fd-aura-deadlines{grid-column:1/-1;flex-direction:row;align-items:center}.fd-aura-deadlines>div{flex:1}}
+@media(max-width:760px){.fd-home-page .fd-campus-shortcuts-compact{grid-template-columns:repeat(3,minmax(0,1fr))}.fd-aura-top{padding:14px}.fd-aura-mascot{min-width:110px}.fd-aura-owl{font-size:48px}.fd-aura-cap{left:38%}.fd-aura-book{right:7px}.fd-aura-clock-grid{gap:6px}.fd-aura-time-card{min-height:138px}.fd-aura-digital{font-size:14px;padding:7px 3px}.fd-aura-clockface,.fd-orbit-clock{transform:scale(.74);margin:-10px}.fd-aura-deadlines{flex-direction:column;align-items:stretch}.fd-aura-services{grid-template-columns:1fr}.fd-subject-pills{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:380px){.fd-aura-mascot{min-width:80px}.fd-aura-spark{display:none}.fd-aura-time-card>span{font-size:8px}.fd-aura-digital{font-size:12px}}
+@media(prefers-reduced-motion:reduce){.fd-aura-owl,.fd-aura-spark,.fd-aura-marquee-track{animation:none!important}.fd-aura-marquee-track{flex-wrap:wrap;width:auto}.fd-aura-marquee{max-height:220px;overflow:auto}}

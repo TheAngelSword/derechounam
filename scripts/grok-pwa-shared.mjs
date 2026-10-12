@@ -158,7 +158,7 @@ export function renderInstallPageHtml(template, { host, url } = {}) {
 }
 
 export function renderWebManifest(hostHeader) {
-  const name = appNameFromHost(hostHeader);
+  const name = "Faculta de Derecho";
   return JSON.stringify(
     {
       name,
@@ -167,8 +167,8 @@ export function renderWebManifest(hostHeader) {
       start_url: "/",
       scope: "/",
       display: "standalone",
-      background_color: "#000000",
-      theme_color: "#000000",
+      background_color: "#f3f5f7",
+      theme_color: "#11243a",
       icons: [
         {
           src: "/__grok/icon-180.png",

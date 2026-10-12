@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
-import { validateProgress, type StudyProgress } from "./progress";
+import { validateProgress, COURSE_STATUSES, type StudyProgress } from "./progress";
 export type ProgressRecord = { progress: StudyProgress; revision: number };
 export const loadStudyProgress = createServerFn({ method: "GET" }).middleware([authMiddleware]).handler(async ({ context }): Promise<ProgressRecord> => {
   const sql = await getSql();
@@ -10,7 +10,7 @@ export const loadStudyProgress = createServerFn({ method: "GET" }).middleware([a
   return row ?? { progress: {}, revision: 0 };
 });
 export const saveStudyProgress = createServerFn({ method: "POST" }).middleware([authMiddleware])
-  .validator(z.object({ progress: z.record(z.string(),z.object({ status: z.enum(["pendiente","cursando","aprobada"]), semester: z.union([z.literal(9),z.literal(10)]).optional() })), revision: z.number().int().min(0) }))
+  .validator(z.object({ progress: z.record(z.string(),z.object({ status: z.enum(COURSE_STATUSES), semester: z.union([z.literal(9),z.literal(10)]).optional() })), revision: z.number().int().min(0) }))
   .handler(async ({ context, data }): Promise<ProgressRecord> => {
     const progress = validateProgress(data.progress);
     const sql = await getSql();

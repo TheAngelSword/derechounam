@@ -1,0 +1,214 @@
+
+> faculta-derecho@7.0.0 test:v7
+> node --experimental-strip-types --test tests/v7/*.test.ts
+
+TAP version 13
+# (node:5298) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: carpetas Drive: ID y URLs genuinas
+ok 1 - carpetas Drive: ID y URLs genuinas
+  ---
+  duration_ms: 1.20531
+  type: 'test'
+  ...
+# Subtest: rechaza otros hosts, credenciales, puertos e IDs inválidos
+ok 2 - rechaza otros hosts, credenciales, puertos e IDs inválidos
+  ---
+  duration_ms: 0.432198
+  type: 'test'
+  ...
+# Subtest: categoría y formato de archivo validados por el servidor
+ok 3 - categoría y formato de archivo validados por el servidor
+  ---
+  duration_ms: 1.582176
+  type: 'test'
+  ...
+# Subtest: tamaño positivo, entero y límite por sección
+ok 4 - tamaño positivo, entero y límite por sección
+  ---
+  duration_ms: 0.270486
+  type: 'test'
+  ...
+# Subtest: subcarpetas sin recorrido y con profundidad limitada
+ok 5 - subcarpetas sin recorrido y con profundidad limitada
+  ---
+  duration_ms: 1.335695
+  type: 'test'
+  ...
+# Subtest: sólo sesiones HTTPS reales en el endpoint de subida
+ok 6 - sólo sesiones HTTPS reales en el endpoint de subida
+  ---
+  duration_ms: 0.43978
+  type: 'test'
+  ...
+# Subtest: confirmación de bloques a partir de Range
+ok 7 - confirmación de bloques a partir de Range
+  ---
+  duration_ms: 0.350837
+  type: 'test'
+  ...
+# (node:5299) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: RSS2: título, fecha, fuente y resumen sin HTML
+ok 8 - RSS2: título, fecha, fuente y resumen sin HTML
+  ---
+  duration_ms: 4.821238
+  type: 'test'
+  ...
+# Subtest: Atom: enlace alternate y fecha publicada
+ok 9 - Atom: enlace alternate y fecha publicada
+  ---
+  duration_ms: 2.178951
+  type: 'test'
+  ...
+# Subtest: no inventar una fecha de publicación a partir de la lectura
+ok 10 - no inventar una fecha de publicación a partir de la lectura
+  ---
+  duration_ms: 0.803286
+  type: 'test'
+  ...
+# Subtest: no aceptar DTD/entidades externas ni HTML disfrazado de feed
+ok 11 - no aceptar DTD/entidades externas ni HTML disfrazado de feed
+  ---
+  duration_ms: 0.370115
+  type: 'test'
+  ...
+# Subtest: descarta enlaces a otros hosts y esquemas peligrosos
+ok 12 - descarta enlaces a otros hosts y esquemas peligrosos
+  ---
+  duration_ms: 0.507351
+  type: 'test'
+  ...
+# Subtest: acotación de extractos y deduplicación
+ok 13 - acotación de extractos y deduplicación
+  ---
+  duration_ms: 8.987652
+  type: 'test'
+  ...
+# Subtest: adaptador HTML conserva títulos oficiales sin inventar el año
+ok 14 - adaptador HTML conserva títulos oficiales sin inventar el año
+  ---
+  duration_ms: 1.145039
+  type: 'test'
+  ...
+# Subtest: adaptador informa páginas que requieren JS en vez de afirmar que no hay avisos
+ok 15 - adaptador informa páginas que requieren JS en vez de afirmar que no hay avisos
+  ---
+  duration_ms: 0.638689
+  type: 'test'
+  ...
+# Subtest: configuración RSS no permite SSRF ni confundir configurador con feed
+ok 16 - configuración RSS no permite SSRF ni confundir configurador con feed
+  ---
+  duration_ms: 0.648083
+  type: 'test'
+  ...
+# Subtest: no se aceptan URLs ejecutables ni fotos de hosts ajenos
+ok 17 - no se aceptan URLs ejecutables ni fotos de hosts ajenos
+  ---
+  duration_ms: 0.457417
+  type: 'test'
+  ...
+# Subtest: texto de feeds es texto, no código ejecutable
+ok 18 - texto de feeds es texto, no código ejecutable
+  ---
+  duration_ms: 0.331929
+  type: 'test'
+  ...
+# Subtest: URL de imagen vacía no se convierte en la página de la fuente
+ok 19 - URL de imagen vacía no se convierte en la página de la fuente
+  ---
+  duration_ms: 0.11277
+  type: 'test'
+  ...
+# Subtest: adaptador HTML sin palabras clave sí acepta titulares
+ok 20 - adaptador HTML sin palabras clave sí acepta titulares
+  ---
+  duration_ms: 0.39349
+  type: 'test'
+  ...
+# Subtest: no atribuir a un evento una imagen de la tarjeta siguiente
+ok 21 - no atribuir a un evento una imagen de la tarjeta siguiente
+  ---
+  duration_ms: 0.283937
+  type: 'test'
+  ...
+# (node:5300) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: plan 2125: 51 obligatorias, 87 opciones, 366+84 créditos
+ok 22 - plan 2125: 51 obligatorias, 87 opciones, 366+84 créditos
+  ---
+  duration_ms: 1.05927
+  type: 'test'
+  ...
+# Subtest: distribución oficial de obligatorias en ocho semestres
+ok 23 - distribución oficial de obligatorias en ocho semestres
+  ---
+  duration_ms: 0.992429
+  type: 'test'
+  ...
+# Subtest: IDs únicos y seriación referida sólo a materias existentes
+ok 24 - IDs únicos y seriación referida sólo a materias existentes
+  ---
+  duration_ms: 0.44652
+  type: 'test'
+  ...
+# Subtest: las claves optativas no verificadas no se inventan
+ok 25 - las claves optativas no verificadas no se inventan
+  ---
+  duration_ms: 0.174012
+  type: 'test'
+  ...
+# Subtest: avance vacío es cero; todas las requeridas suman 366, no 450
+ok 26 - avance vacío es cero; todas las requeridas suman 366, no 450
+  ---
+  duration_ms: 0.603175
+  type: 'test'
+  ...
+# Subtest: seis optativas por semestre y tope de 450
+ok 27 - seis optativas por semestre y tope de 450
+  ---
+  duration_ms: 5.138384
+  type: 'test'
+  ...
+# Subtest: se rechaza ID desconocido, estado falso o semestre de optativa omitido
+ok 28 - se rechaza ID desconocido, estado falso o semestre de optativa omitido
+  ---
+  duration_ms: 0.255764
+  type: 'test'
+  ...
+# Subtest: la seriación depende del avance, no de matrícula simulada
+ok 29 - la seriación depende del avance, no de matrícula simulada
+  ---
+  duration_ms: 0.181573
+  type: 'test'
+  ...
+# Subtest: las claves obligatorias no visibles permanecen pendientes de confirmación
+ok 30 - las claves obligatorias no visibles permanecen pendientes de confirmación
+  ---
+  duration_ms: 0.416365
+  type: 'test'
+  ...
+# (node:5331) ExperimentalWarning: Type Stripping is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: subida de dos bloques confirma Drive antes de comunicar 100%
+ok 31 - subida de dos bloques confirma Drive antes de comunicar 100%
+  ---
+  duration_ms: 26.900008
+  type: 'test'
+  ...
+# Subtest: no iniciar PUT si el servidor devuelve una URL ajena a Google
+ok 32 - no iniciar PUT si el servidor devuelve una URL ajena a Google
+  ---
+  duration_ms: 0.721413
+  type: 'test'
+  ...
+1..32
+# tests 32
+# suites 0
+# pass 32
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 332.163822

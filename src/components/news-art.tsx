@@ -1,0 +1,9 @@
+import { fallbackCategory } from "@/lib/news/media";
+const ART:Record<string,{label:string;path:string}>={
+ facultad:{label:"VIDA EN LA FACULTAD",path:"m140 128 180-76 180 76Zm24 25h312M150 275h340M184 165v90m46-90v90m46-90v90m90-90v90m46-90v90m46-90v90M303 255v-60q17-32 34 0v60"},
+ abierta:{label:"UNIVERSIDAD ABIERTA",path:"M175 104h290v155H175ZM153 273h334l-24 18H177ZM246 151l74-28 74 28-74 28Zm23 18v30q51 30 102 0v-30m23-18v54M218 233h75m52 0h77"},
+ legislacion:{label:"LEGISLACIÓN",path:"M174 96q80-25 146 20 66-45 146-20v159q-80-25-146 20-66-45-146-20ZM320 116v159M207 140q40-3 78 13m-78 23q40-3 78 13m-78 23q40-3 78 13m70-72q38-16 78-13m-78 49q38-16 78-13m-78 49q38-16 78-13"},
+ justicia:{label:"JUSTICIA",path:"M320 64v216m-76 0h152M217 117l103-28 103 28M217 120l-46 89m46-89 46 89m160-89-46 89m46-89 46 89M166 215h102c-8 56-94 56-102 0Zm205 0h102c-8 56-94 56-102 0Z"},
+ comunidad:{label:"COMUNIDAD",path:"M282 118a38 38 0 1 0 76 0 38 38 0 1 0-76 0M192 146a27 27 0 1 0 54 0 27 27 0 1 0-54 0m204 0a27 27 0 1 0 54 0 27 27 0 1 0-54 0M257 269v-31c0-82 126-82 126 0v31Zm-93-3v-28c0-42 39-62 74-36m239 64v-28c0-42-39-62-74-36"}
+};
+export function NewsArt({category}:{category:string}){const art=ART[fallbackCategory(category)];return <svg className="fd-news-illustration" viewBox="0 0 640 380" role="img" aria-label={`Ilustración de referencia: ${category}. No es una fotografía del suceso.`}><rect width="640" height="380" fill="#071d45"/><circle cx="570" cy="40" r="200" fill="none" stroke="#D59F0F" strokeOpacity=".2"/><circle cx="570" cy="40" r="165" fill="none" stroke="#D59F0F" strokeOpacity=".12"/><path d={art.path} fill="none" stroke="#D59F0F" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round"/><path d="M280 311h80" stroke="#D59F0F"/><text x="320" y="346" textAnchor="middle" fill="#F2D98E" fontSize="15" letterSpacing="3" fontFamily="sans-serif">{art.label}</text></svg>;}

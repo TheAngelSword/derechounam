@@ -1,0 +1,5 @@
+
+> faculta-derecho@7.0.0 check:syntax
+> node scripts/check-v7-syntax.mjs
+
+97 archivos TS/TSX comprobados sintácticamente. Errores: 0. No es una comprobación de tipos ni una compilación de Vite.

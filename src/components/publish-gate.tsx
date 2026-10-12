@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { areaModerators, canPublish, useDirectory } from "@/components/directory";
 import type { AreaId } from "@/lib/members";
@@ -10,6 +11,9 @@ export function PublishGate({
   children: React.ReactNode;
 }) {
   const { user, isSessionPending, directory, isLoading } = useDirectory();
+  // SSR and the first client render use the same loading shell; Better Auth may resolve differently across the boundary.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   const mods = areaModerators(directory, area);
 
   return (
@@ -21,7 +25,7 @@ export function PublishGate({
       ) : (
         <p className="text-xs text-muted">Esta área aún no tiene moderador asignado.</p>
       )}
-      {isSessionPending || isLoading ? (
+      {!mounted || isSessionPending || isLoading ? (
         <div className="h-24 animate-pulse rounded-lg bg-bg-warm" />
       ) : !user ? (
         <p className="rounded-lg border border-line bg-bg-warm p-4 text-sm">

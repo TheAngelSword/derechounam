@@ -1,0 +1,73 @@
+:root {
+  --ink: #1c1916;
+  --muted: #6b645c;
+  --line: #ddd4c8;
+  --forest: #2c4a3e;
+  --paper: #f6f1e8;
+}
+@page {
+  size: A4;
+  margin: 18mm 16mm 18mm 16mm;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  color: var(--ink);
+  background: white;
+  font: 12.5px/1.55 "Georgia", "Times New Roman", serif;
+}
+header {
+  border-bottom: 2px solid var(--forest);
+  padding-bottom: 12px;
+  margin-bottom: 22px;
+}
+.kicker {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font: 600 11px/1.2 "Helvetica Neue", Arial, sans-serif;
+  color: var(--forest);
+}
+h1 {
+  font-size: 28px;
+  line-height: 1.15;
+  margin: 8px 0 6px;
+}
+h2 {
+  font-size: 16px;
+  margin: 22px 0 8px;
+  color: var(--forest);
+}
+h3 { font-size: 13px; margin: 16px 0 6px; }
+p, li { margin: 0 0 8px; }
+ul, ol { padding-left: 1.2em; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+  margin: 8px 0 16px;
+}
+th, td {
+  border: 1px solid var(--line);
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: var(--paper); font-family: "Helvetica Neue", Arial, sans-serif; }
+.meta { color: var(--muted); font-size: 12px; }
+code, pre {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+pre {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 10px 12px;
+  white-space: pre-wrap;
+}
+footer {
+  margin-top: 28px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+}

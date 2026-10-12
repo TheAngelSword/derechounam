@@ -1,0 +1,87 @@
+[
+  {
+    "file": "0001_auth.sql",
+    "sha256": "f953cacc448c0c81ae4fe63e66b0e59569e840782ad279fdee201dff529363e9",
+    "identicalToV624": true
+  },
+  {
+    "file": "0002_members.sql",
+    "sha256": "97d6ea61aadee6da41280c87e1f9952b369e34dab00e14e4e76ed4900abd5660",
+    "identicalToV624": true
+  },
+  {
+    "file": "0003_content.sql",
+    "sha256": "c8f5160e7b67b19974f33ccf089840a5c943d0e4fa8d3dbe1577d29fd3fd8316",
+    "identicalToV624": true
+  },
+  {
+    "file": "0004_classes_library.sql",
+    "sha256": "336620216a11f47248f7dde66569013c9872c95b2074e1e6c884969c1bb304e0",
+    "identicalToV624": true
+  },
+  {
+    "file": "0005_bitacora.sql",
+    "sha256": "4f5575b60d1ce36a0645951b1fec5c25bfcd725dfa16b3db806c7a3dca9df7ce",
+    "identicalToV624": true
+  },
+  {
+    "file": "0006_services_catedras.sql",
+    "sha256": "65b37189f9e320487c6c3dc3fbc93f883a828ca7c62324b4592a672df3d743ca",
+    "identicalToV624": true
+  },
+  {
+    "file": "0007_ride_reservations.sql",
+    "sha256": "e290a360eab7fc98b9389245634fc06ee878fc3c2c92d1a627c59532b2235dc0",
+    "identicalToV624": true
+  },
+  {
+    "file": "0008_catedras_calendar.sql",
+    "sha256": "3d43a001f79cef108c70c3aeae2293dfe67b55cc9814fcdaead1da16f718a02a",
+    "identicalToV624": true
+  },
+  {
+    "file": "0009_library_file_formats.sql",
+    "sha256": "307f7df7cd30ec0136b289b8667345795c59b095a991d1bc5e0550fe1ecbd0f8",
+    "identicalToV624": true
+  },
+  {
+    "file": "0010_media_settings.sql",
+    "sha256": "7b7fcb113af6b2779e792a799a74eb39d9d7e7ba3bd81218cf9020db106d91d0",
+    "identicalToV624": true
+  },
+  {
+    "file": "0011_tasks.sql",
+    "sha256": "2c1c427152e07be601b5bcc5757939669714c96eacd06067afbf3e983f5e7545",
+    "identicalToV624": true
+  },
+  {
+    "file": "0012_schedule_professor_contacts.sql",
+    "sha256": "6b1fd61c93efdc083bb21fd03ed82bed727df880b7db0319b94ee4e2733187e5",
+    "identicalToV624": true
+  },
+  {
+    "file": "0013_catedras_audio.sql",
+    "sha256": "2c980174f258f82aa60f59aa3afdb864fc5f8c0137a3886dad38184b20d4af1a",
+    "identicalToV624": true
+  },
+  {
+    "file": "0014_content_sync_repair.sql",
+    "sha256": "fc05c1480abb432cb674d359351dd8fdb47c9d29c5127d1c7467290516f44178",
+    "identicalToV624": true
+  },
+  {
+    "file": "0015_activity_polls.sql",
+    "sha256": "208519892e5bf70e6ec767c0f32e367c5b7c7fa90f55ddf058306264a5e6c7ce",
+    "identicalToV624": true
+  },
+  {
+    "file": "0016_flexible_poll_availability.sql",
+    "sha256": "dff01efd40da51dce638e5417825c1d213e0495151669f9a02e3d735e52ca10d",
+    "identicalToV624": true
+  },
+  {
+    "file": "0017_poll_activity_details.sql",
+    "sha256": "0c7d8ac032aef1236786af32339730b9cae560a81aab65223c13fd0b20d5d755",
+    "identicalToV624": true
+  }
+]

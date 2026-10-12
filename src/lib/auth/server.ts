@@ -41,7 +41,11 @@ const googleConfigured = Boolean(googleClientId && googleClientSecret);
 export const authConfigured =
   !authDisabled && (emailAndPasswordEnabled || googleConfigured);
 
-const explicitBaseURL = env("BETTER_AUTH_URL");
+const vercelEnvironment = env("VERCEL_ENV");
+const configuredBaseURL = env("BETTER_AUTH_URL");
+// A Preview branch must not inherit the public production origin for its cookies.
+const explicitBaseURL = vercelEnvironment === "preview" ? undefined : configuredBaseURL;
+const vercelBranchUrl = env("VERCEL_BRANCH_URL");
 const publicHostname = env("VITE_PUBLIC_HOSTNAME");
 const vercelUrl = env("VERCEL_URL");
 const vercelProductionUrl = env("VERCEL_PROJECT_PRODUCTION_URL");
@@ -77,6 +81,7 @@ const productionOrigins = [
   ...wwwVariants(explicitBaseURL),
   ...wwwVariants(publicHostname),
   originFrom(vercelUrl),
+  originFrom(vercelBranchUrl),
   originFrom(vercelProductionUrl),
 ].filter((value): value is string => Boolean(value));
 
@@ -94,12 +99,13 @@ const baseURL = explicitBaseURL ?? {
   allowedHosts: [
     ...(publicHostname ? [publicHostname, `www.${publicHostname.replace(/^www\./, "")}`] : []),
     ...(vercelUrl ? [vercelUrl] : []),
+    ...(vercelBranchUrl ? [vercelBranchUrl] : []),
     ...(vercelProductionUrl ? [vercelProductionUrl] : []),
     ...(!isProduction ? previewAllowedHosts : []),
     ...(!isProduction ? ["localhost", "127.0.0.1", "[::1]"] : []),
   ],
   protocol: "auto" as const,
-  fallback: originFrom(publicHostname) ?? "http://localhost:8080",
+  fallback: originFrom(vercelBranchUrl) ?? originFrom(vercelUrl) ?? originFrom(publicHostname) ?? "http://localhost:8080",
 };
 
 const databaseUrl = env("DATABASE_URL");
@@ -109,9 +115,13 @@ const database = databaseUrl
 
 export const SESSION_TOKEN_COOKIE = "__Host-faculta-auth.session_token";
 
+const stableAuthSecret = env("BETTER_AUTH_SECRET");
+if (env("VERCEL_ENV") === "production" && (!stableAuthSecret || stableAuthSecret.length < 32)) {
+  throw new Error("[auth] Falta BETTER_AUTH_SECRET estable (minimo 32 caracteres) en Production.");
+}
 export const auth = betterAuth({
   baseURL,
-  secret: env("BETTER_AUTH_SECRET") ?? previewAuthSecret(),
+  secret: stableAuthSecret ?? previewAuthSecret(),
   database,
   trustedOrigins,
 
