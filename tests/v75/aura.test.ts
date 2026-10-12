@@ -28,3 +28,15 @@ test("El calendario editorial incluye octubre y noviembre",()=>{
  assert.equal(AURA_OBSERVANCES["10-12"].name,"Día de la Nación Pluricultural");
  assert.ok(AURA_OBSERVANCES["11-02"]);
 });
+
+test("Temporizadores se presentan una sola vez en el encabezado",()=>{
+ const home=readFileSync("src/components/aura-home.tsx","utf8");
+ assert.equal((home.match(/className="fd-aura-header-counts"/g)??[]).length,1);
+ assert.equal((home.match(/className="fd-aura-timer-summary"/g)??[]).length,0);
+});
+test("Relojes conservan los detalles del dial y ofrecen modo ampliado",()=>{
+ const selector=readFileSync("src/components/aura-clock-selector.tsx","utf8");
+ assert.match(selector,/AURA · CRONO/);
+ assert.match(selector,/TEMPUS FUGIT/);
+ assert.match(selector,/requestFullscreen/);
+});
