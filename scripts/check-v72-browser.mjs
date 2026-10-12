@@ -5,10 +5,21 @@ const env={...process.env,DATABASE_URL:'',BETTER_AUTH_URL:'http://localhost:8080
 const server=spawn('npm',['run','dev'],{env,stdio:['ignore','pipe','pipe'],detached:true});let output='';for(const stream of [server.stdout,server.stderr])stream.on('data',b=>{output+=b.toString();});let browser;
 try{let ready=false;for(let i=0;i<90;i++){try{const r=await fetch('http://localhost:8080/',{signal:AbortSignal.timeout(1500)});if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,1000));}assert.ok(ready,'El servidor local no arrancó');
  browser=await chromium.launch({headless:true});const report=[];const page=await browser.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
- for(const width of [1440,1920,390]){await page.setViewportSize({width,height:1000});for(const [path,title,label]of [['/','Un portal para ti.','inicio'],['/noticias','Todas las noticias','noticias'],['/rutas','Comparte tu vehículo','rutas']]){
+ for(const width of [1440,1920,390]){await page.setViewportSize({width,height:1000});for(const [path,title,label]of [['/','Portal Facultad de Derecho ALUMNOS','inicio'],['/noticias','Todas las noticias','noticias'],['/rutas','Comparte tu vehículo','rutas']]){
   await page.goto(`http://localhost:8080${path}`,{waitUntil:'domcontentloaded'});await page.locator('.fd-v72').waitFor();assert.equal((await page.locator('h1').innerText()).trim(),title);await page.waitForTimeout(1500);
   const boxes=await page.evaluate(()=>{const main=document.querySelector('.fd-main').getBoundingClientRect();const workspace=document.querySelector('.fd-workspace').getBoundingClientRect();return{scroll:document.documentElement.scrollWidth,viewport:innerWidth,mainLeft:main.x,mainWidth:main.width,workspaceLeft:workspace.x};});
   assert.ok(boxes.scroll<=width+1,`Desbordamiento horizontal en ${path} a ${width}: ${boxes.scroll}`);assert.ok(boxes.mainWidth>width*(width>959?.70:.95),`Contenido demasiado estrecho en ${path}`);report.push({width,path,...boxes});await page.screenshot({path:`${dir}/${label}-${width}.png`,fullPage:true});
  }}
+ // V7.4: comprobar que una sesión local real sobreviva cambios de ruta.
+ await page.setViewportSize({width:1440,height:900});
+ await page.goto('http://localhost:8080/login?mode=alta',{waitUntil:'domcontentloaded'});
+ await page.locator('input[name="email"]').fill('v74-check-'+Date.now()+'@example.test');
+ await page.locator('input[name="password"]').fill('PruebaLocalSeguro2026!');
+ await page.locator('button[type="submit"]').click();
+ await page.waitForURL('**/registro',{timeout:25000});
+ for(const path of ['/','/juegos','/noticias','/catedras','/agenda','/']){
+  await page.goto('http://localhost:8080'+path,{waitUntil:'domcontentloaded'});
+  await page.locator('.fd-sidebar-account button').filter({hasText:'Salir'}).waitFor({timeout:16000});
+ }
  assert.deepEqual(errors,[],'Errores JavaScript de interfaz');await fs.writeFile(`${dir}/layout.json`,JSON.stringify(report,null,2));console.log(JSON.stringify({screens:report.length,errors,report}));
 }finally{await browser?.close();try{process.kill(-server.pid,'SIGTERM');}catch{}await fs.writeFile(`${dir}/server.log`,output);}

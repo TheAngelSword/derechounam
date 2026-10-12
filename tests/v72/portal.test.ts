@@ -12,7 +12,7 @@ test('Noticias abre todas las fechas sin ocultar archivo ni avisos sin fecha',()
 test('Filtro reciente excluye lo antiguo y no fabrica fechas de avisos',()=>{assert.deepEqual(selectNews(rows,{now,period:'recientes'}).map(i=>i.id),['reciente']);assert.equal(rows[2].publishedAt,null);});
 test('Filtro sin fecha distingue desconocido de reciente',()=>assert.deepEqual(selectNews(rows,{period:'sin-fecha'}).map(i=>i.id),['sin-fecha']));
 test('Filtros fuente y guardados no alteran registros',()=>assert.deepEqual(selectNews(rows,{source:'gaceta',saved:['antiguo']}).map(i=>i.id),['antiguo']));
-test('Inicio combina fuentes sin inventar titulares ni duplicarlos',()=>{const chosen=homeNews([item('a','2026-10-06'),item('b','2026-10-05'),item('c','2026-10-04','dua'),item('d','2026-10-03','dof')]);assert.equal(chosen.length,3);assert.equal(new Set(chosen.map(i=>i.sourceId)).size,3);});
+test('Inicio combina fuentes sin inventar titulares ni duplicarlos',()=>{const chosen=homeNews([item('a','2026-10-06T15:00:00Z'),item('b','2026-10-05T14:00:00Z'),item('c','2026-10-06T13:00:00Z','dua'),item('d','2026-10-07T09:00:00Z','dof')],3,now);assert.equal(chosen.length,3);assert.equal(new Set(chosen.map(i=>i.sourceId)).size,3);});
 test('Inicio vacío permanece vacío',()=>assert.equal(homeNews([]).length,0));
 const source=DEFAULT_NEWS_SOURCES.find(s=>s.id==='gaceta')!;
 test('Lector complementa encabezados con enlaces de otras tarjetas',()=>{const out=parseOfficialHtmlV72('<h3><a href="/primera/">Primera conferencia sobre los derechos humanos</a></h3><a href="/segunda/">Segunda conferencia sobre el derecho ambiental</a>',source);assert.equal(out.length,2);});
@@ -26,3 +26,5 @@ test('Próxima clase reconoce acentos y hora futura del mismo día',()=>assert.e
 test('Clase ya iniciada se desplaza a la semana siguiente',()=>assert.equal(nextCourse([course('Miércoles','05:00–07:00')],now)?.date,'2026-10-14'));
 test('Horarios indeterminados no generan una próxima clase ficticia',()=>assert.equal(nextCourse([course('Por definir','Pendiente')],now),null));
 test('Agenda excluye fechas pasadas e inválidas',()=>{const events=['2026-10-01','2026-10-08','2026-02-30'].map((date,i)=>({id:i,eventDate:date,timeSlot:'09:00'} as EventItem));assert.deepEqual(upcomingEvents(events,'2026-10-07').map(e=>e.eventDate),['2026-10-08']);});
+
+test('Portada no convierte archivo ni notas sin fecha en noticias actuales',()=>{const result=homeNews([item('vieja','2026-09-29T12:00:00Z'),item('sin-fecha',null)],3,now);assert.equal(result.length,0);});
