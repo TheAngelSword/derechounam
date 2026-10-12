@@ -17,6 +17,8 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci
+      - name: Extraer motor original Aura Crono
+        run: node scripts/materialize-aura.mjs
       - name: Probar relojes, radios y funciones Aura
         run: node --experimental-strip-types --test tests/v75/aura.test.ts
       - name: Pruebas de regresion

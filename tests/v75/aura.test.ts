@@ -34,9 +34,12 @@ test("Temporizadores se presentan una sola vez en el encabezado",()=>{
  assert.equal((home.match(/className="fd-aura-header-counts"/g)??[]).length,1);
  assert.equal((home.match(/className="fd-aura-timer-summary"/g)??[]).length,0);
 });
-test("Relojes conservan los detalles del dial y ofrecen modo ampliado",()=>{
+test("Relojes utilizan motor original y mantienen modo ampliado",()=>{
  const selector=readFileSync("src/components/aura-clock-selector.tsx","utf8");
- assert.match(selector,/AURA · CRONO/);
- assert.match(selector,/TEMPUS FUGIT/);
+ const source=readFileSync("public/aura-native/app.js","utf8");
+ const engine=readFileSync("public/aura-native/clocks-3d.js","utf8");
+ assert.match(selector,/aura-native\/index.html/);
  assert.match(selector,/requestFullscreen/);
+ assert.match(source,/CLOCK_STYLES/);
+ assert.ok(engine.length>10000);
 });

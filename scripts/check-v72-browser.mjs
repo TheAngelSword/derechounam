@@ -13,13 +13,22 @@ try{let ready=false;for(let i=0;i<90;i++){try{const r=await fetch('http://localh
    assert.equal(await page.locator('.fd-aura-timer-summary').count(),0,'Sin temporizadores duplicados junto a frases');
    const picker=page.locator('#fd-aura-clock-style');
    await picker.waitFor();
-   for(const clock of ['analog:atelier','digital:flip','mechanical:tourbillon','3d:solar']){
+   const iframe=page.locator('.fd-aura-clock-picker iframe');
+   await iframe.waitFor();
+   const native=page.frameLocator('.fd-aura-clock-picker iframe');
+   await native.locator('.clock-stage').waitFor();
+   for(const clock of ['analog:atelier','digital:flip','mechanical:tourbillon','3d:solar','animals:gato']){
     await picker.selectOption(clock);
-    const bounds=await page.locator('.fd-aura-clock-picker .fd-clock-showcase').boundingBox();
-    const parent=await page.locator('.fd-aura-clock-picker').boundingBox();
-    assert.ok(bounds&&parent,'Reloj presente en la tarjeta');
-    assert.ok(bounds.width>145&&bounds.height>190,'Reloj con espacio suficiente');
-    assert.ok(bounds.x>=parent.x-3&&bounds.x+bounds.width<=parent.x+parent.width+3,'Reloj completo dentro del ancho de la tarjeta');
+    await page.waitForTimeout(600);
+    const [type,style]=clock.split(':');
+    const expected=type==='analog'?'#analogClock':type==='digital'?'#digitalClock':type==='orbital'?'#orbitalClock':'#funClock';
+    const el=native.locator(expected);
+    assert.ok(await el.isVisible(),'Aura nativo no muestra '+clock);
+    const bounds=await el.boundingBox();
+    const frameBox=await iframe.boundingBox();
+    assert.ok(bounds&&frameBox,'Motor original con dimensiones visibles');
+    assert.ok(bounds.width>=115&&bounds.height>=100,'El reloj nativo se representa completo');
+    assert.ok(bounds.x>=frameBox.x-5&&bounds.x+bounds.width<=frameBox.x+frameBox.width+5,'Reloj no se corta horizontalmente: '+clock);
    }
    await picker.selectOption('analog:atelier');
    await page.screenshot({path:`${dir}/aura-esferas-${width}.png`,fullPage:false});
