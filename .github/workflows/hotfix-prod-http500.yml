@@ -1,0 +1,26 @@
+name: Comprobar hotfix producción 500
+on:
+  push:
+    branches: [hotfix-prod-http500, main]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Build aislado sin migrar Neon
+        run: npm run build:code
+        env:
+          DATABASE_URL: ''
+          BETTER_AUTH_SECRET: ''
+      - name: Confirmar Inicio accesible y autenticación bloqueada cuando falta el secreto
+        run: node scripts/check-prod-auth-start.mjs
