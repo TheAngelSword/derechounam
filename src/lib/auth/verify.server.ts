@@ -1,6 +1,6 @@
 import { getRequest } from "@tanstack/react-start/server";
 import { gateIdentityEnabled } from "./gate-identity.server";
-import { auth, authConfigured } from "./server";
+import { auth, authConfigured, authSecretReady } from "./server";
 
 /**
  * Server-side session resolution (server-only).
@@ -57,6 +57,7 @@ export type VerifiedUser = { id: string; email: string | null };
 export async function getSessionUser(
   bearerToken?: string,
 ): Promise<VerifiedUser | null> {
+  if (!authSecretReady) return null; // Fail closed when Production secret is missing.
   if (!authConfigured && !gateIdentityEnabled()) return null;
   const request = getRequest();
   if (!request) return null;

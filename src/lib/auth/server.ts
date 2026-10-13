@@ -116,8 +116,17 @@ const database = databaseUrl
 export const SESSION_TOKEN_COOKIE = "__Host-faculta-auth.session_token";
 
 const stableAuthSecret = env("BETTER_AUTH_SECRET");
-if (env("VERCEL_ENV") === "production" && (!stableAuthSecret || stableAuthSecret.length < 32)) {
-  throw new Error("[auth] Falta BETTER_AUTH_SECRET estable (minimo 32 caracteres) en Production.");
+/**
+ * Never crash public SSR pages because an auth secret has not been configured.
+ * Auth endpoints fail closed with 503 until Production gets a stable secret.
+ * A temporary secret below is used only for constructing the unused Better Auth
+ * instance; with authSecretReady=false no public auth endpoint can use it.
+ */
+export const authSecretReady =
+  env("VERCEL_ENV") !== "production" ||
+  Boolean(stableAuthSecret && stableAuthSecret.length >= 32);
+if (!authSecretReady) {
+  console.error("[auth] Configuración incompleta: BETTER_AUTH_SECRET de Production debe tener al menos 32 caracteres. Autenticación suspendida; páginas públicas disponibles.");
 }
 export const auth = betterAuth({
   baseURL,
