@@ -25,7 +25,7 @@ function countdown(now:Date|null,year:number,month:number,day:number){
 function SeasonalMascot({month}:{month:number}){
  const phase=month===12?{label:"Cierre de año",theme:"winter"}:month===11?{label:"Recta final del semestre",theme:"autumn"}:month===10?{label:"Otoño jurídico",theme:"autumn"}:month<=3?{label:"Nuevo ciclo",theme:"spring"}:month<=6?{label:"Temporada de estudio",theme:"spring"}:{label:"Cultura universitaria",theme:"summer"};
  return <div className={"fd-aura-mascot fd-aura-puma-scene "+phase.theme} aria-label={"Puma café universitario. "+phase.label}>
-  <img src="/brand/puma-cafe.svg" width={150} height={158} className="fd-aura-puma" alt="Mascota puma café, sin accesorios" loading="eager" />
+  <img src="/brand/puma-derecho-saludando-20261013.webp" width={150} height={158} className="fd-aura-puma" alt="Puma estudiante con lentes y camiseta de Facultad de Derecho, saludando" loading="eager" />
   <small>{phase.label}</small>
  </div>;
 }
