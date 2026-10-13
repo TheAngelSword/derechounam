@@ -12,7 +12,7 @@ const CLOCKS=[
 ] as const;
 export const AURA_CLOCK_COUNT=CLOCKS.length;
 export function AuraClockSelector({time}:{time:ClockTime|null}){
- const [choice,setChoice]=useState<string>("analog:atelier");
+ const [choice,setChoice]=useState<string>("orbital:orbit");
  const [hydrated,setHydrated]=useState(false);
  useEffect(()=>setHydrated(true),[]);
  const frame=useRef<HTMLIFrameElement|null>(null);

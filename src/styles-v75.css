@@ -158,3 +158,14 @@
 .fd-aura-v75 .fd-aura-four-grid>article.fd-aura-native-picker{min-height:460px}
 @media(max-width:1280px){.fd-aura-native-picker .fd-native-clock-frame{height:330px}}
 @media(max-width:740px){.fd-aura-native-picker .fd-native-clock-frame{height:325px}.fd-aura-native-picker:fullscreen .fd-native-clock-frame{height:68dvh}}
+
+/* V7.5.2: mascota SVG única, sin emojis superpuestos ni accesorios */
+.fd-aura-mascot.fd-aura-puma-scene{position:relative;isolation:isolate;min-width:170px;padding:5px 12px 7px;overflow:visible;flex-shrink:0;background:radial-gradient(ellipse at 52% 60%,rgba(225,185,119,.18),transparent 70%);border-radius:50%}
+.fd-aura-puma-scene .fd-aura-puma{display:block;position:relative;z-index:1;width:150px;height:158px;object-fit:contain;max-width:100%;filter:drop-shadow(0 6px 5px rgba(0,14,43,.28));transform-origin:50% 82%;animation:fd-puma-breathe 4.5s ease-in-out infinite}
+.fd-aura-puma-scene small{display:block;position:relative;z-index:1;max-width:170px;font-size:11px;letter-spacing:.015em;color:#ffe3ac;text-align:center;margin-top:0}
+.fd-aura-puma-scene.winter{background:radial-gradient(ellipse at 50% 60%,rgba(157,201,236,.24),transparent 70%)}
+.fd-aura-puma-scene.spring{background:radial-gradient(ellipse at 50% 60%,rgba(136,194,135,.19),transparent 70%)}
+.fd-aura-puma-scene.summer{background:radial-gradient(ellipse at 50% 60%,rgba(255,221,115,.24),transparent 70%)}
+@keyframes fd-puma-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.018)}}
+@media(max-width:740px){.fd-aura-mascot.fd-aura-puma-scene{min-width:115px;max-width:138px;padding:0 3px}.fd-aura-puma-scene .fd-aura-puma{width:118px;height:123px}.fd-aura-puma-scene small{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.fd-aura-puma-scene .fd-aura-puma{animation:none!important}}

@@ -23,9 +23,10 @@ function countdown(now:Date|null,year:number,month:number,day:number){
  return days+" d · "+pad(hours)+" h · "+pad(minutes)+" min";
 }
 function SeasonalMascot({month}:{month:number}){
- const phase=month===12?{label:"Cierre de año",emoji:"❄️",theme:"winter"}:month===11?{label:"Recta final del semestre",emoji:"🍂",theme:"autumn"}:month===10?{label:"Otoño jurídico",emoji:"🍁",theme:"autumn"}:month<=3?{label:"Nuevo ciclo",emoji:"🌱",theme:"spring"}:month<=6?{label:"Temporada de estudio",emoji:"🌼",theme:"spring"}:{label:"Cultura universitaria",emoji:"☀️",theme:"summer"};
- return <div className={"fd-aura-mascot "+phase.theme} aria-label={"Búho universitario animado. "+phase.label}>
- <span className="fd-aura-spark left">{phase.emoji}</span><span className="fd-aura-owl" role="img" aria-label="Búho con birrete">🦉</span><span className="fd-aura-cap" aria-hidden="true">🎓</span><span className="fd-aura-book" aria-hidden="true">📖</span><span className="fd-aura-spark right">{phase.emoji}</span><small>{phase.label}</small>
+ const phase=month===12?{label:"Cierre de año",theme:"winter"}:month===11?{label:"Recta final del semestre",theme:"autumn"}:month===10?{label:"Otoño jurídico",theme:"autumn"}:month<=3?{label:"Nuevo ciclo",theme:"spring"}:month<=6?{label:"Temporada de estudio",theme:"spring"}:{label:"Cultura universitaria",theme:"summer"};
+ return <div className={"fd-aura-mascot fd-aura-puma-scene "+phase.theme} aria-label={"Puma café universitario. "+phase.label}>
+  <img src="/brand/puma-cafe.svg" width={150} height={158} className="fd-aura-puma" alt="Mascota puma café, sin accesorios" loading="eager" />
+  <small>{phase.label}</small>
  </div>;
 }
 function MiniAnalog({time}:{time:Record<string,number>|null}){
@@ -42,7 +43,7 @@ function MiniOrbit({time}:{time:Record<string,number>|null}){
 export function AuraHome(){
  const[now,setNow]=useState<Date|null>(null),[weather,setWeather]=useState<Weather|null>(null),[weatherError,setWeatherError]=useState(""),[coords,setCoords]=useState({lat:19.4326,lon:-99.1332,name:"Ciudad de México · referencia inicial"}),[locating,setLocating]=useState(false);
  const[history,setHistory]=useState<HistoryEvent[]>([]),[historyError,setHistoryError]=useState(""),[phrases,setPhrases]=useState<Phrase[]>([]),[phraseError,setPhraseError]=useState(false);
- const[station,setStation]=useState(0),[playing,setPlaying]=useState(false),[radioError,setRadioError]=useState(""),[sourceIndex,setSourceIndex]=useState(0);
+ const[station,setStation]=useState(()=>Math.max(0,stations.findIndex(item=>item.id==="spacestation"))),[playing,setPlaying]=useState(false),[radioError,setRadioError]=useState(""),[sourceIndex,setSourceIndex]=useState(0);
  const[holidays,setHolidays]=useState<Holiday[]>([]),[holidayStatus,setHolidayStatus]=useState(""),[phraseIndex,setPhraseIndex]=useState(0);
  const audio=useRef<HTMLAudioElement>(null);
  useEffect(()=>{const tick=()=>setNow(new Date());tick();const t=setInterval(tick,1000);return()=>clearInterval(t)},[]);
