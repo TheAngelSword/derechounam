@@ -1,0 +1,73 @@
+name: Preparar imagen de mascota adjunta
+on:
+  push:
+    branches: [asset-mascota-20261013]
+permissions:
+  contents: write
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Crear objetos Git para el cambio de mascota sin mover main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { createHash } from 'node:crypto';
+          const repo='TheAngelSword/derechounam';
+          const parent='ee5597e853766b1565e365f33f0cc0924279b1f5';
+          const imagePath='public/brand/puma-derecho-saludando-20261013.webp';
+          const sourcePath='src/components/aura-home.tsx';
+          const pieces=[
+            '7ee28f02a32555e031ee381ea3bd3422fd1da873',
+            'a3b41520f87d2ee155a69c2a3a067b6bde71cae9',
+            '1ac3446ea86943a5a294e6d0278ab84390382daf',
+            'ac950d9e79167683a698b5bd786ffbf1311e2ba9',
+            'e536c0f6aed7370e118812858a31c17bea89ca71',
+            'd1bf016c877c492947cada7d357b5b99f60391ab',
+            'addbf0aa64755ecdf2679651a5c2c597dab0a779',
+            '17fdbdb573f355777b471e95e3bad5fe2478e1a1'
+          ];
+          async function api(path,body){
+            const res=await fetch('https://api.github.com/repos/'+repo+path,{
+              method:body?'POST':'GET',
+              headers:{Authorization:'Bearer '+process.env.GH_TOKEN,Accept:'application/vnd.github+json','Content-Type':'application/json'},
+              body:body?JSON.stringify(body):undefined,
+              signal:AbortSignal.timeout(20000)
+            });
+            if(!res.ok)throw new Error('GitHub '+res.status+' '+path);
+            return res.json();
+          }
+          const branch=await api('/git/ref/heads/main');
+          if(branch.object.sha!==parent)throw new Error('main changed; do not overwrite');
+          const parts=await Promise.all(pieces.map(async sha=>{
+            const b=await api('/git/blobs/'+sha);
+            return Buffer.from(b.content,'base64').toString('utf8');
+          }));
+          const bytes=Buffer.from(parts.join(''),'base64');
+          const gitHash=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+          if(bytes.length!==10764||gitHash!=='2a8ad978afbd2ce43a7f0203e4e93ead0ccfe15e')throw new Error('Image transfer failed checksum');
+          const image=await api('/git/blobs',{encoding:'base64',content:bytes.toString('base64')});
+          const original=await api('/contents/'+sourcePath+'?ref='+parent);
+          const before=Buffer.from(original.content,'base64').toString('utf8');
+          const oldSource='src="/brand/puma-cafe.svg"';
+          const oldAlt='alt="Mascota puma café, sin accesorios"';
+          if(before.split(oldSource).length!==2||!before.includes(oldAlt))throw new Error('Mascot component differs from expected');
+          const after=before.replace(oldSource,'src="/brand/puma-derecho-saludando-20261013.webp"').replace(oldAlt,'alt="Puma estudiante con lentes y camiseta de Facultad de Derecho, saludando"');
+          const source=await api('/git/blobs',{encoding:'utf-8',content:after});
+          const base=await api('/git/commits/'+parent);
+          const tree=await api('/git/trees',{base_tree:base.tree.sha,tree:[
+            {path:imagePath,mode:'100644',type:'blob',sha:image.sha},
+            {path:sourcePath,mode:'100644',type:'blob',sha:source.sha}
+          ]});
+          const commit=await api('/git/commits',{
+            message:'fix(prod): sustituir mascota por el puma adjunto con lentes y camiseta',
+            tree:tree.sha,parents:[parent]
+          });
+          console.log('PREPARED_MASCOT_COMMIT_SHA='+commit.sha);
+          console.log('PARENT_SHA='+parent);
+          console.log('IMAGE_SHA='+image.sha);
+          console.log('SOURCE_SHA='+source.sha);
+          console.log('Only two changes: new supplied mascot image and its source/alt in AuraHome. main has not been moved.');
+          NODE
