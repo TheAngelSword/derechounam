@@ -3,6 +3,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { useState } from "react";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { AuthProvider } from "@/lib/auth/provider";
+import { AccessVisitTracker } from "@/components/access-visit-tracker";
 import appCss from "../styles.css?url";
 import updateCss from "../styles-v71.css?url";
 import layoutCss from "../styles-v72.css?url";
@@ -39,5 +40,5 @@ export const Route = createRootRoute({
 });
 function RootDocument() {
  const [client] = useState(() => new QueryClient({defaultOptions:{queries:{staleTime:15_000,refetchOnWindowFocus:false}}}));
- return <html lang="es" className="antialiased" suppressHydrationWarning><head><HeadContent/></head><body><PreviewHostBridge/><AuthProvider><QueryClientProvider client={client}><Outlet/></QueryClientProvider></AuthProvider><Scripts/></body></html>;
+ return <html lang="es" className="antialiased" suppressHydrationWarning><head><HeadContent/></head><body><PreviewHostBridge/><AuthProvider><QueryClientProvider client={client}><AccessVisitTracker/><Outlet/></QueryClientProvider></AuthProvider><Scripts/></body></html>;
 }
