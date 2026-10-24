@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test:v7": "node --experimental-strip-types --test tests/v7/*.test.ts",
+    "test:v77": "node --experimental-strip-types --test tests/v77/*.test.ts",
     "drive:authorize": "node scripts/authorize-drive.mjs",
     "check:syntax": "node scripts/check-v7-syntax.mjs",
     "build:code": "node scripts/materialize-aura.mjs && node scripts/with-app-env.mjs vite build"
@@ -98,5 +99,5 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^8.2.0"
   },
-  "version": "7.0.0"
+  "version": "7.7.0"
 }

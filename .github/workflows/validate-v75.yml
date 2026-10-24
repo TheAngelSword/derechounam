@@ -22,7 +22,7 @@ jobs:
       - name: Probar relojes, radios y funciones Aura
         run: node --experimental-strip-types --test tests/v75/aura.test.ts
       - name: Pruebas de regresion
-        run: node --experimental-strip-types --test tests/v7/*.test.ts tests/v71/*.test.ts tests/v72/*.test.ts
+        run: node --experimental-strip-types --test tests/v7/*.test.ts tests/v71/*.test.ts tests/v72/*.test.ts tests/v77/*.test.ts
       - name: Comprobar TypeScript
         run: npm run check:syntax
       - name: Compilar aislado sin migrar Neon

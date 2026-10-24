@@ -43,5 +43,7 @@ export const authMiddleware = createMiddleware({ type: "function" })
     // Reject scripted cross-site/sibling requests before touching per-user data.
     assertSameSiteRequest();
     const userId = await requireUserId(context.bearerToken);
+    const { assertPersonalSiteAllowsUser } = await import("@/lib/personal/guard.server");
+    await assertPersonalSiteAllowsUser(userId);
     return next({ context: { userId } });
   });

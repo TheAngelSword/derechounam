@@ -77,9 +77,11 @@ function wwwVariants(value?: string): string[] {
   return [...hosts].map((host) => `${url.protocol}//${host}${url.port ? `:${url.port}` : ""}`);
 }
 
+const personalPublicUrl = env("PERSONAL_PUBLIC_URL");
 const productionOrigins = [
   ...wwwVariants(explicitBaseURL),
   ...wwwVariants(publicHostname),
+  ...wwwVariants(personalPublicUrl),
   originFrom(vercelUrl),
   originFrom(vercelBranchUrl),
   originFrom(vercelProductionUrl),
@@ -95,18 +97,34 @@ const trustedOrigins: string[] = Array.from(
   ]),
 );
 
-const baseURL = explicitBaseURL ?? {
+function hostnamesOf(value?: string): string[] {
+  const origin = originFrom(value);
+  if (!origin) return [];
+  const url = new URL(origin);
+  const bare = url.hostname.replace(/^www\./, "");
+  return [bare, `www.${bare}`];
+}
+// One deployment can serve derechounam.com and pnota.com. Cookies stay host-only
+// (__Host- forbids a Domain attribute), so each host has its own session.
+// Dynamic baseURL is used only when those origins differ. A single-origin
+// deployment keeps the previous string baseURL.
+const personalOrigin = originFrom(personalPublicUrl);
+const portalOrigin = originFrom(explicitBaseURL);
+const multiHost = Boolean(personalOrigin && portalOrigin && personalOrigin !== portalOrigin);
+const baseURL = !explicitBaseURL || multiHost ? {
   allowedHosts: [
-    ...(publicHostname ? [publicHostname, `www.${publicHostname.replace(/^www\./, "")}`] : []),
+    ...hostnamesOf(explicitBaseURL),
+    ...(publicHostname ? hostnamesOf(publicHostname) : []),
+    ...hostnamesOf(personalPublicUrl),
     ...(vercelUrl ? [vercelUrl] : []),
     ...(vercelBranchUrl ? [vercelBranchUrl] : []),
     ...(vercelProductionUrl ? [vercelProductionUrl] : []),
     ...(!isProduction ? previewAllowedHosts : []),
     ...(!isProduction ? ["localhost", "127.0.0.1", "[::1]"] : []),
   ],
-  protocol: "auto" as const,
-  fallback: originFrom(vercelBranchUrl) ?? originFrom(vercelUrl) ?? originFrom(publicHostname) ?? "http://localhost:8080",
-};
+  protocol: (isProduction ? "https" : "auto") as "https" | "auto",
+  fallback: portalOrigin ?? personalOrigin ?? originFrom(vercelBranchUrl) ?? originFrom(vercelUrl) ?? originFrom(publicHostname) ?? "http://localhost:8080",
+} : explicitBaseURL;
 
 const databaseUrl = env("DATABASE_URL");
 const database = databaseUrl
@@ -159,6 +177,7 @@ export const auth = betterAuth({
   ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
 
   advanced: {
+    // __Host- cookies cannot set Domain. pnota.com and derechounam.com do not share a session.
     useSecureCookies: false,
     defaultCookieAttributes: { secure: true, sameSite: "lax", path: "/" },
     cookies: {
