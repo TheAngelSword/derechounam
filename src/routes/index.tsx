@@ -1,7 +1,7 @@
 import { AuraHome } from "@/components/aura-home";
 import { PersonalHome } from "@/components/personal-home";
 import { StudyBites } from "@/components/games/study-bites";
-import { siteShell } from "@/lib/personal/functions";
+import { readShell } from "@/lib/personal/shell";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowUpRight, BookOpen, CalendarDays, ClipboardCheck, GraduationCap, Headphones, Users } from "lucide-react";
 import { Shell } from "@/components/shell";
@@ -9,7 +9,7 @@ import { NewsSection } from "@/components/news";
 import { UpcomingEvents } from "@/components/home-dashboard";
 import { useBoard, useBoardStatus } from "@/components/board-context";
 import { useCurrentUserState } from "@/lib/auth/use-current-user";
-export const Route=createFileRoute("/")({loader:()=>siteShell(),component:function Switch(){const site=Route.useLoaderData();return site.personal?<PersonalHome portalUrl={site.portalUrl}/>:<Home/>;}});
+export const Route=createFileRoute("/")({loader:()=>readShell(),component:function Switch(){const site=Route.useLoaderData();return site.personal?<PersonalHome portalUrl={site.portalUrl}/>:<Home/>;}});
 function Home(){const{user}=useCurrentUserState();return <Shell eyebrow="FACULTAD DE DERECHO · ALUMNOS · GRUPO 9114" title="Portal Facultad de Derecho ALUMNOS" lead="Tu espacio para estudiar y organizar el semestre, descubrir qué pasó hoy y seguir la actualidad jurídica.">
  <div className="fd-campus-shortcuts fd-campus-shortcuts-compact">{([{to:"/plan-estudios",label:"Plan de estudios",icon:GraduationCap},{to:"/clases",label:"Horarios",icon:CalendarDays},{to:"/catedras",label:"Cátedras",icon:Headphones},{to:"/tareas",label:"Tareas",icon:ClipboardCheck},{to:"/biblioteca",label:"Biblioteca",icon:BookOpen},{to:"/agenda",label:"Agenda",icon:CalendarDays}] as const).map(({to,label,icon:Icon})=><Link key={to} to={to}><Icon size={20} strokeWidth={1.7}/><strong>{label}</strong></Link>)}</div>
  <AuraHome/>

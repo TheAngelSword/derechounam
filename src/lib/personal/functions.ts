@@ -11,11 +11,6 @@ async function personalUser(userId: string): Promise<string> {
   return userId;
 }
 
-export const siteShell = createServerFn({ method: "GET" }).handler(async () => {
-  const { requestSite } = await import("./request.server");
-  return requestSite();
-});
-
 export const personalAccess = createServerFn({ method: "GET" }).handler(async () => {
   const { accessState } = await import("./guard.server");
   const { setResponseHeader } = await import("@tanstack/react-start/server");

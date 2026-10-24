@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRootRoute, HeadContent, Outlet, Scripts, notFound, redirect } from "@tanstack/react-router";
-import { isPersonalSite, isPortalPage } from "@/lib/personal/hosts";
-import { siteShell } from "@/lib/personal/functions";
+import { isPortalPage } from "@/lib/personal/hosts";
+import { readShell } from "@/lib/personal/shell";
 import { useState } from "react";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import { AuthProvider } from "@/lib/auth/provider";
@@ -15,38 +15,17 @@ import aura75Css from "../styles-v75.css?url";
 import personalCss from "../styles-personal.css?url";
 
 const APP_NAME = "Facultad de Derecho";
-type SiteShell = { personal: boolean; portalUrl: string | null };
-let browserShell: SiteShell | undefined;
-
-function clientLooksPersonal(): boolean | null {
- if (typeof window === "undefined") return null;
- const mode = String(import.meta.env.VITE_SITE_MODE ?? "").trim().toLowerCase();
- const host = String(import.meta.env.VITE_PERSONAL_HOSTNAME ?? "").trim();
- if (mode !== "personal" && !host) return null;
- return isPersonalSite(window.location.host, { SITE_MODE: mode || undefined, PERSONAL_PUBLIC_URL: host ? `https://${host}` : undefined });
-}
-
-async function currentShell(): Promise<SiteShell> {
- if (typeof window !== "undefined" && browserShell) return browserShell;
- if (clientLooksPersonal() === false) {
-  browserShell = { personal: false, portalUrl: null };
-  return browserShell;
- }
- const site = await siteShell();
- if (typeof window !== "undefined") browserShell = site;
- return site;
-}
 
 export const Route = createRootRoute({
- beforeLoad: async ({ location }) => {
+ beforeLoad: ({ location }) => {
   if (!isPortalPage(location.pathname)) return;
-  const site = await currentShell();
+  const site = readShell();
   if (!site.personal) return;
   if (site.portalUrl) throw redirect({ href: `${site.portalUrl}${location.pathname}` });
   throw notFound();
  },
- head: async () => {
-  const site = await currentShell();
+ head: () => {
+  const site = readShell();
   const meta = [
    { charSet: "utf-8" },
    { name: "viewport", content: "width=device-width, initial-scale=1" },

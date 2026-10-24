@@ -41,6 +41,7 @@ El proyecto de Vercel de este espacio se llama `pnota`.
 | `VITE_PUBLIC_HOSTNAME` | `pnota.com` |
 | `VITE_SITE_MODE` | `personal` |
 | `VITE_PERSONAL_HOSTNAME` | `pnota.com` |
+| `VITE_PORTAL_PUBLIC_URL` | `https://derechounam.com` |
 | `VITE_AUTH_ENABLED` | `true` |
 | `DATABASE_URL` | La misma Neon de producción del portal, para reutilizar la cuenta |
 | `BETTER_AUTH_SECRET` | Un secreto propio de 32 caracteres o más. Puede ser distinto del portal |
@@ -63,6 +64,7 @@ Añade en el proyecto que ya publica derechounam.com:
 | `PERSONAL_PUBLIC_URL` | `https://pnota.com` |
 | `PORTAL_PUBLIC_URL` | `https://derechounam.com` |
 | `VITE_PERSONAL_HOSTNAME` | `pnota.com` |
+| `VITE_PORTAL_PUBLIC_URL` | `https://derechounam.com` |
 | `PERSONAL_OWNER_EMAILS` | Correo del titular |
 | `PERSONAL_ICS_TOKEN` | Aleatorio, 24+ |
 | `CRON_SECRET` | Aleatorio, 16+ |

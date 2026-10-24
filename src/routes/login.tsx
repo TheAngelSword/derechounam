@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState, type FormEvent } from "react";
 import { AUTH_PROVIDERS, authClient, authEnabled, googleAuthEnabled, signIn } from "@/lib/auth/client";
-import { siteShell } from "@/lib/personal/functions";
+import { readShell } from "@/lib/personal/shell";
 import { Button, Field, Input } from "@/components/ui";
 import { Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>) => ({ mode: search.mode === "alta" ? ("alta" as const) : ("entrar" as const) }),
-  loader: () => siteShell(),
+  loader: () => readShell(),
   component: Login,
 });
 
