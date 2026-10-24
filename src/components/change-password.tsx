@@ -28,7 +28,8 @@ export function ChangePasswordForm() {
     event.preventDefault();
     setError(null);
     setNotice(null);
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const currentPassword = String(form.get("currentPassword") ?? "");
     const newPassword = String(form.get("newPassword") ?? "");
     const again = String(form.get("confirmPassword") ?? "");
@@ -47,7 +48,7 @@ export function ChangePasswordForm() {
         setError(changeError(result.message));
         return;
       }
-      event.currentTarget.reset();
+      formElement.reset();
       setNotice("Contraseña actualizada. Las otras sesiones de este sitio se cerraron.");
     } catch {
       setError("No se pudo cambiar la contraseña. Revisa la conexión e inténtalo de nuevo.");
