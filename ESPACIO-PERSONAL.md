@@ -25,7 +25,9 @@ No agregues pnota.com al proyecto del portal antes de definir las variables. Sin
 
 ### A. Proyecto aparte (recomendado)
 
-1. En Vercel, crea un proyecto nuevo con este mismo repositorio y la rama de producción que ya usas.
+El proyecto de Vercel de este espacio se llama `pnota`.
+
+1. Conecta ese proyecto a este repositorio y a la rama de producción que ya usas.
 2. Dominio de producción: `pnota.com`. Añade también `www.pnota.com` y redirígelo a `https://pnota.com`.
 3. Variables de Production (y un redespliegue después de guardarlas; las que empiezan por `VITE_` se hornean en el build):
 
@@ -71,18 +73,17 @@ En esta modalidad el cron de `vercel.json` también corre en el portal. La dedup
 
 ## DNS
 
-Hazlo en el registrador donde ya administras pnota.com, después de agregar el dominio al proyecto correcto. Vercel muestra en **Settings → Domains** los registros exactos de ese proyecto. Esos valores mandan sobre cualquier ejemplo.
+El DNS de pnota.com está en HostGator, no en los nameservers de Vercel. Los registros del proyecto `pnota` son estos:
 
-Con la documentación de Vercel consultada el 24 de octubre de 2026, lo habitual es:
-
-| Nombre | Tipo | Valor que muestra el panel |
+| Nombre | Tipo | Valor |
 |---|---|---|
-| `@` (apex, pnota.com) | A | La IPv4 del proyecto. El ejemplo documentado es `76.76.21.21` cuando la ficha indica esa dirección |
-| `www` | CNAME | El destino del proyecto. Los ejemplos de la CLI usan `cname.vercel-dns-0.com`; copia el que salga en la ficha, no uno antiguo de memoria |
+| `@` | A | `216.198.79.1` |
+| `@` | A | `64.29.17.1` |
+| `www` | CNAME | `be64b7e961a748b0.vercel-dns-017.com` |
 
-Si el DNS lo lleva Vercel (nameservers `ns1.vercel-dns.com` y `ns2.vercel-dns.com`), los mismos registros se crean con `vercel dns add` dentro del dominio. Si el DNS sigue en otro proveedor, pégalos ahí y no uses `vercel dns add`.
+Entran en el panel de DNS de HostGator. No uses `vercel dns add`: ese comando solo escribe en DNS que ya administra Vercel. El apex lleva los dos A; no lo sustituyas por un CNAME. `www` apunta al CNAME de arriba, y en el proyecto `pnota` conviene redirigirlo a `https://pnota.com`.
 
-Comprueba con `vercel domains verify pnota.com --project <proyecto>` o con el estado «Valid Configuration» del panel. El certificado HTTPS lo emite Vercel al verificar el DNS; suele tardar unos minutos. No apuntes el apex con un CNAME plano si tu proveedor no soporta CNAME en la raíz: usa el A que indique Vercel.
+Comprueba con `vercel domains verify pnota.com --project pnota` o con el estado «Valid Configuration» del panel. El certificado HTTPS lo emite Vercel al verificar el DNS; suele tardar unos minutos.
 
 derechounam.com no se toca.
 
@@ -155,13 +156,13 @@ También valen `audiolibro`, `junta`, `diplomado`, `actividad` y `compromiso`, m
 
 ## Cron
 
-`vercel.json` programa `GET /api/personal/recordatorios` a las **13:00 UTC** (`0 13 * * *`), las 07:00 en Ciudad de México. Vercel, en plan Hobby, rechaza el despliegue si la expresión corre más de una vez al día (texto del error: «Hobby accounts are limited to daily cron jobs») y además puede retrasar esa pasada hasta 59 minutos. Por eso el repositorio no trae `*/15`: un `*/15` tumbaría el deploy de derechounam.com si ese proyecto está en Hobby.
+`vercel.json` programa `GET /api/personal/recordatorios` a las **13:00 UTC** (`0 13 * * *`), las 07:00 en Ciudad de México. Vercel solo acepta cinco campos: minuto, hora, día, mes y día de la semana. Una expresión de seis campos, como `0 13 * * * *`, falla el despliegue con «Expected 5 values, but got 6». En plan Hobby también rechaza el despliegue si la expresión corre más de una vez al día (texto del error: «Hobby accounts are limited to daily cron jobs») y puede retrasar esa pasada hasta 59 minutos. Por eso el repositorio no trae `*/15`: un `*/15` tumbaría el deploy de derechounam.com si ese proyecto está en Hobby.
 
 La ruta exige `Authorization: Bearer <CRON_SECRET>`. Vercel lo añade solo cuando esa variable existe en el proyecto. Secreto ausente o distinto: `404`, no `401`.
 
 Para que un aviso de 15 minutos o de una hora salga a tiempo hace falta una pasada frecuente:
 
-- Plan Pro (o superior): en `vercel.json` cambia el schedule a `*/15 * * * *` y redespliega. Solo hazlo si **todos** los proyectos que despliegan este repo están en un plan que acepte ese intervalo.
+- Plan Pro (o superior): en `vercel.json` cambia el schedule a `*/15 * * * *` (cinco campos, sin segundos) y redespliega. Solo hazlo si **todos** los proyectos que despliegan este repo están en un plan que acepte ese intervalo.
 - Plan Hobby: deja el cron diario y añade un programador externo (el que ya uses) cada 15 minutos:
 
 ```bash
