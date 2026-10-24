@@ -6,6 +6,7 @@ import {useDirectory,useInvalidateDirectory} from '@/components/directory';
 import {RegistryManager} from '@/components/registry-manager';
 import {RegistryAccessLog} from '@/components/registry-access-log';
 import {RedirectToSignIn} from '@/lib/auth/gates';
+import {ChangePasswordForm} from '@/components/change-password';
 import {useCurrentUserState} from '@/lib/auth/use-current-user';
 import {AREAS,assignAreaMod,registerMember,revokeAreaMod,type Directory,type Member} from '@/lib/members';
 import registryCss from '../styles-registry.css?url';
@@ -18,6 +19,7 @@ function RegistroBody(){
  return <Shell eyebrow="Acceso del grupo 9114" title="Registro y comunidad." lead="Consulta el padrón. Los moderadores pueden revisar registros, gestionar permisos y descargar la bitácora de accesos."><div className="fd-registry">
  {isLoading?<p role="status">Cargando el padrón…</p>:<>
  {!me?<FormBox title="Alta en el padrón" onSubmit={onRegister}><Field label="Alias en clase"><Input name="alias" required minLength={2} maxLength={40} placeholder="Tu nombre o alias"/></Field><p className="fd-registry-help">Tu solicitud se registrará como alumno pendiente. Un moderador puede activarla y asignar el rol de profesor cuando corresponda.</p>{error?<p className="fd-registry-error" role="alert">{error}</p>:null}<Button type="submit" disabled={pending}>{pending?'Guardando…':'Solicitar acceso'}</Button></FormBox>:<Card className="fd-registry-profile"><div><Pill>{me.role}</Pill><h2>{me.alias}</h2><p>Grupo {me.groupCode} · {me.status}</p></div><span>{isMod?'Administración del padrón':'Mi registro'}</span></Card>}
+ <Card><h2 id="clave" className="font-display text-xl">Cambiar contraseña</h2><p className="mt-2 mb-4 text-sm text-muted">Usa la clave actual de esta cuenta. Al guardarla se cierran las otras sesiones de este sitio.</p><ChangePasswordForm/></Card>
  {isMod&&me?<RegistryManager actorId={me.userId} onChange={invalidate}/>:<div className="fd-registry-public-rosters">{(['alumno','profesor','moderador'] as const).map((role,i)=><PublicRoster key={role} title={['Alumnos','Profesores','Moderadores'][i]} rows={directory?.members.filter(r=>r.role===role)??[]}/>)}</div>}
  {isMod&&me?<RegistryAccessLog actorId={me.userId}/>:<Card><h2 className="font-display text-xl">Privacidad del grupo</h2><p className="mt-2 text-sm text-muted">La bitácora detallada y las descargas de accesos están reservadas a moderadores activos.</p></Card>}
  <AreaAssignments directory={directory} isMod={isMod} onChange={invalidate}/>

@@ -13,6 +13,8 @@ import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
+import { productionSecretReady } from "./database-guard";
+import { passwordResetConfigured, personalResetAllowed, sendResetEmail } from "./password-mail";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { pgliteDialect } from "./pglite-dialect";
 import { PREVIEW_ALLOWED_HOSTS } from "./preview";
@@ -140,9 +142,7 @@ const stableAuthSecret = env("BETTER_AUTH_SECRET");
  * A temporary secret below is used only for constructing the unused Better Auth
  * instance; with authSecretReady=false no public auth endpoint can use it.
  */
-export const authSecretReady =
-  env("VERCEL_ENV") !== "production" ||
-  Boolean(stableAuthSecret && stableAuthSecret.length >= 32);
+export const authSecretReady = productionSecretReady(process.env);
 if (!authSecretReady) {
   console.error("[auth] Configuración incompleta: BETTER_AUTH_SECRET de Production debe tener al menos 32 caracteres. Autenticación suspendida; páginas públicas disponibles.");
 }
@@ -174,7 +174,17 @@ export const auth = betterAuth({
   },
 
   session: { cookieCache: { enabled: true, maxAge: 300 } },
-  ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
+  ...(emailAndPasswordEnabled ? { emailAndPassword: {
+    enabled: true,
+    ...(passwordResetConfigured(process.env) ? {
+      resetPasswordTokenExpiresIn: 60 * 60,
+      sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+        const { requestIsPersonal } = await import("@/lib/personal/request.server");
+        if (!personalResetAllowed(user.email, process.env, requestIsPersonal())) return;
+        await sendResetEmail(process.env, { to: user.email, url });
+      },
+    } : {}),
+  } } : {}),
 
   advanced: {
     // __Host- cookies cannot set Domain. pnota.com and derechounam.com do not share a session.

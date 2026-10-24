@@ -48,6 +48,8 @@ El proyecto de Vercel de este espacio se llama `pnota`.
 | `PERSONAL_OWNER_EMAILS` | El correo real del titular, en minúsculas |
 | `PERSONAL_ICS_TOKEN` | Aleatorio, 24 caracteres o más |
 | `CRON_SECRET` | Aleatorio, 16 caracteres o más |
+| `RESEND_API_KEY` | Opcional. Sin ella no hay correo de recuperación |
+| `EMAIL_FROM` | Remitente verificado en Resend, por ejemplo `Avisos <avisos@pnota.com>` |
 
 `SITE_MODE=personal` trata cualquier host de ese proyecto (incluido el `*.vercel.app`) como espacio personal. No pongas `SITE_MODE` en el proyecto de derechounam.com.
 
@@ -70,6 +72,8 @@ Añade en el proyecto que ya publica derechounam.com:
 | `CRON_SECRET` | Aleatorio, 16+ |
 
 No definas `SITE_MODE`. `VITE_PUBLIC_HOSTNAME` sigue siendo `derechounam.com`. Vuelve a desplegar después de cambiar variables `VITE_`.
+
+`RESEND_API_KEY` y `EMAIL_FROM` van en el mismo proyecto si quieres el correo de recuperación en los dos dominios.
 
 En esta modalidad el cron de `vercel.json` también corre en el portal. La deduplicación evita un doble WhatsApp si más adelante los dos proyectos disparan el mismo aviso.
 
@@ -174,6 +178,27 @@ curl -fsS -H "Authorization: Bearer $CRON_SECRET" https://pnota.com/api/personal
 El cron diario sí alcanza los avisos de un día, dos días y una semana cuya hora de envío cayó después de la pasada anterior, mientras el evento siga en el futuro. Abrir pnota.com también dispara los que ya están en hora.
 
 Si el proyecto aparte y el del portal tienen los dos `CRON_SECRET` y despliegan este archivo, los dos pueden llamar. La clave única de cada aviso evita el duplicado. Basta con definir `CRON_SECRET` en el proyecto de pnota.com.
+
+## Contraseña
+
+En Vercel, preview y production, el inicio de sesión no arranca la base embebida. Si `DATABASE_URL` falta o está vacía, `/api/auth` responde **503** con el código `DATABASE_UNAVAILABLE` y el registro dice:
+
+`[auth] DATABASE_URL no está definida (VERCEL_ENV=…). El inicio de sesión responde 503. No se arranca PGLite.`
+
+Las páginas públicas siguen abiertas. En `npm run dev`, sin `VERCEL_ENV`, la base en memoria se conserva.
+
+Con la sesión iniciada, «Cambiar contraseña» está en el registro del portal y en la agenda de pnota.com. Pide la clave actual y la nueva. Al guardarla se cierran las otras sesiones de ese mismo sitio.
+
+«¿Olvidaste tu contraseña?» aparece en el inicio de sesión solo cuando existen `RESEND_API_KEY` y `EMAIL_FROM`. Para conseguir la clave:
+
+1. Crea una cuenta en [resend.com](https://resend.com).
+2. Verifica el dominio desde el que vas a escribir (`pnota.com` en el proyecto personal, `derechounam.com` en el portal). Resend muestra los registros DNS que hay que añadir en HostGator.
+3. En API Keys crea una clave y cópiala en `RESEND_API_KEY`. No la pegues en el repositorio.
+4. `EMAIL_FROM` es una dirección de ese dominio, por ejemplo `Avisos <avisos@pnota.com>`.
+
+El enlace del correo caduca en una hora y abre de nuevo el inicio de sesión para elegir la clave. Si falta la clave de Resend, el enlace no se muestra y el resto del inicio de sesión sigue igual.
+
+En pnota.com solo se envía el correo si la dirección está en `PERSONAL_OWNER_EMAILS`. Cualquier otra petición recibe el mismo texto: «Si el correo puede recuperar la clave, revisa tu bandeja.» No se dice si la cuenta existe.
 
 ## Probar en local
 

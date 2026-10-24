@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { signOut } from "@/lib/auth/client";
+import { ChangePasswordForm } from "@/components/change-password";
 import { formatMexico, mexicoDateInput, mexicoTimeInput, startOfMexicoDay, endOfMexicoWeek } from "@/lib/personal/dates";
 import { deletePersonal, loadPersonal, personalAccess, progressPersonal, reviewPersonal, runPersonalReminders, savePersonal, sendPersonalTest, setPersonalStatus } from "@/lib/personal/functions";
 import { googleCalendarLink } from "@/lib/personal/ics";
@@ -150,6 +151,11 @@ export function PersonalHome({ portalUrl }: { portalUrl: string | null }) {
         <button type="button" className="pn-ghost" onClick={() => signOut("/")}>Salir</button>
       </div>
     </header>
+    <details className="pn-card">
+      <summary>Cambiar contraseña</summary>
+      <p className="pn-muted">Usa la clave actual. Al guardarla se cierran las otras sesiones de pnota.com.</p>
+      <ChangePasswordForm />
+    </details>
     <section className="pn-urgent" aria-labelledby="urgentes">
       <h1 id="urgentes">Fechas que importan</h1>
       <p>Tareas, exámenes y lo que marcaste como importante.</p>

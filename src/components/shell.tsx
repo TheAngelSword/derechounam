@@ -14,7 +14,7 @@ export const PORTAL_NAV=[
 function SidebarAccount(){
  const [mounted,setMounted]=useState(false);
  useEffect(()=>setMounted(true),[]);
- return <div className="fd-sidebar-account" style={{minHeight:36}}>{mounted?<><SignedIn><UserButton/></SignedIn><SignedOut><Link to="/login" search={{mode:"entrar"}} className="fd-signin">Entrar a mi cuenta <ArrowUpRight size={16}/></Link></SignedOut></>:null}</div>;
+ return <div className="fd-sidebar-account" style={{minHeight:36}}>{mounted?<><SignedIn><UserButton/><Link to="/registro" hash="clave" className="fd-signin">Cambiar contraseña</Link></SignedIn><SignedOut><Link to="/login" search={{mode:"entrar"}} className="fd-signin">Entrar a mi cuenta <ArrowUpRight size={16}/></Link></SignedOut></>:null}</div>;
 }
 export function Shell({eyebrow,title,lead,children}:{eyebrow:string;title:string;lead:string;children:ReactNode}){
  const pathname=useRouterState({select:s=>s.location.pathname}).replace(/\/+$/,"")||"/";
