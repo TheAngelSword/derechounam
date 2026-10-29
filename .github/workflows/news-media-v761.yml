@@ -1,0 +1,31 @@
+name: Comprobar miniaturas de noticias V7.6.1
+on:
+  push:
+    branches: [fix-news-media-20261029]
+permissions:
+  contents: read
+jobs:
+  news-media:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DATABASE_URL: ''
+      BETTER_AUTH_SECRET: 'local-news-media-check-not-used-in-production'
+      BETTER_AUTH_URL: http://localhost:8080
+      APP_PUBLIC_URL: http://localhost:8080
+      VITE_PUBLIC_HOSTNAME: localhost:8080
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - name: Probar detección y seguridad de miniaturas
+        run: node --experimental-strip-types --test tests/news-media/media.test.ts
+      - name: Revisar las cuatro fuentes originales
+        run: node --experimental-strip-types scripts/check-news-media-live.mts
+      - name: Compilar sin migrar bases de datos
+        run: npm run build:code
