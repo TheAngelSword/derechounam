@@ -1,9 +1,9 @@
 import type { NewsItem, NewsSource } from "./types.ts";
 import { safeImageUrl, safePublicUrl } from "./sources.ts";
 export function plainText(value:string, limit=500):string{
-  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,"$1").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"").replace(/<[^>]{0,2000}>/g," ").replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp);/gi,(_,e:string)=>{
-    const entities:Record<string,string>={amp:"&",lt:"<",gt:">",quot:'"',apos:"'",nbsp:" "};
-    if(e[0]!=="#")return entities[e.toLowerCase()]??"";
+  return value.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g,"$1").replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1>/gi,"").replace(/<[^>]{0,2000}>/g," ").replace(/&(#x[\da-f]+|#\d+|amp|lt|gt|quot|apos|nbsp|aacute|eacute|iacute|oacute|uacute|ntilde|uuml|iquest|iexcl);/gi,(_,e:string)=>{
+    const entities:Record<string,string>={amp:"&",lt:"<",gt:">",quot:'"',apos:"'",nbsp:" ",aacute:"á",eacute:"é",iacute:"í",oacute:"ó",uacute:"ú",ntilde:"ñ",uuml:"ü",iquest:"¿",iexcl:"¡"};
+    if(e[0]!=="#"){const ch=entities[e.toLowerCase()]??"";return ch&&e[0]!==e[0].toLowerCase()&&ch.length===1?ch.toLocaleUpperCase("es-MX"):ch;}
     const n=e[1].toLowerCase()==="x"?parseInt(e.slice(2),16):Number(e.slice(1));return n>0 && n<=0x10ffff && !(n>=0xd800 && n<=0xdfff)?String.fromCodePoint(n):"";
   }).replace(/\s+/g," ").trim().slice(0,limit);
 }
@@ -69,5 +69,19 @@ export function parseOfficialHtml(html:string,source:NewsSource):NewsItem[]{
     }
   }
   if(!results.length)throw new Error("Sin titulares reconocibles. Revisa el sitio original o publica el aviso manualmente; puede requerir JavaScript.");
-  return [...new Map(results.map(r=>[r.id,r])).values()].slice(0,30);
+  const unique=[...new Map(results.map(r=>[r.id,r])).values()];
+  return (source.id==="dof"?preferCurrentDof(unique):unique).slice(0,30);
+}
+function preferCurrentDof(items:NewsItem[]):NewsItem[]{
+  const best=new Map<string,NewsItem>();
+  const rest:NewsItem[]=[];
+  for(const item of items){
+    let code="";let stamp="";
+    try{const u=new URL(item.sourceUrl);code=u.searchParams.get("codigo")??"";const fecha=u.searchParams.get("fecha")??"";const m=fecha.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);if(m)stamp=`${m[3]}${m[2]}${m[1]}`;}catch{/* keep */}
+    if(!code||!stamp){rest.push(item);continue;}
+    const prev=best.get(code);
+    const prevStamp=prev?(()=>{try{const f=new URL(prev.sourceUrl).searchParams.get("fecha")??"";const m=f.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);return m?`${m[3]}${m[2]}${m[1]}`:"";}catch{return "";}})():"";
+    if(!prev||stamp>prevStamp)best.set(code,item);
+  }
+  return [...best.values(),...rest];
 }

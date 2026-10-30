@@ -1,4 +1,5 @@
 import { pendingMigrations } from "../../scripts/migration-plan.mjs";
+import { deployedWithoutDatabase, warnMissingDeployDatabase } from "./auth/database-guard";
 
 /** Which database backend is active. */
 export type DbSource = "neon" | "pglite";
@@ -11,10 +12,9 @@ const databaseUrl =
   rawDatabaseUrl && rawDatabaseUrl.trim() ? rawDatabaseUrl : undefined;
 
 /**
- * Active backend: real **Neon** when `DATABASE_URL` is set (deployed / configured
- * sandbox), otherwise a local embedded **PGLite** (Postgres compiled to WASM) so
- * the app has a working database even with nothing configured — the live preview
- * included. Swap in Neon later by just setting `DATABASE_URL`; no code changes.
+ * Active backend: real **Neon** when `DATABASE_URL` is set. Otherwise a local
+ * embedded **PGLite** for `npm run dev` only. Vercel preview and production
+ * without `DATABASE_URL` do not open PGLite; auth answers 503 instead.
  */
 export const dbSource: DbSource = databaseUrl ? "neon" : "pglite";
 
@@ -106,6 +106,10 @@ function createNeonSql(): Promise<Sql> {
 }
 
 async function createPgliteSql(): Promise<Sql> {
+  if (deployedWithoutDatabase(process.env)) {
+    warnMissingDeployDatabase();
+    throw new Error("[auth] DATABASE_URL ausente en Vercel. PGLite no se arranca en preview ni en production.");
+  }
   // Embedded Postgres, imported on demand so it never loads on the Neon path.
   // One in-memory instance per process, shared across HMR module instances, so
   // data survives source edits (it resets on dev-server restart).
@@ -176,6 +180,10 @@ async function createSql(): Promise<Sql> {
         "or a server route loader, never from client code.",
     );
   }
+  if (deployedWithoutDatabase(process.env)) {
+    warnMissingDeployDatabase();
+    throw new Error("[auth] DATABASE_URL ausente en Vercel. PGLite no se arranca en preview ni en production.");
+  }
   return dbSource === "neon" ? createNeonSql() : createPgliteSql();
 }
 
@@ -220,7 +228,10 @@ export async function getPglite(): Promise<import("@electric-sql/pglite").PGlite
  * module kick it off immediately (see bottom of file).
  */
 export function ensureDbReady(): Promise<void> {
-  if (dbSource !== "pglite") return Promise.resolve();
+  if (dbSource !== "pglite" || deployedWithoutDatabase(process.env)) {
+    if (deployedWithoutDatabase(process.env)) warnMissingDeployDatabase();
+    return Promise.resolve();
+  }
   return getSql().then(() => undefined);
 }
 
@@ -229,7 +240,7 @@ export function ensureDbReady(): Promise<void> {
 const globalBoot = globalThis as typeof globalThis & {
   __pgBootstrapPromise__?: Promise<void>;
 };
-if (typeof window === "undefined" && dbSource === "pglite") {
+if (typeof window === "undefined" && dbSource === "pglite" && !deployedWithoutDatabase(process.env)) {
   globalBoot.__pgBootstrapPromise__ ??= ensureDbReady().catch((err) => {
     globalBoot.__pgBootstrapPromise__ = undefined;
     console.error("[db] PGLite bootstrap failed:", err);

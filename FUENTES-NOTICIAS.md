@@ -1,6 +1,6 @@
 # Noticias: fuentes y configuración
 
-Revisión: 6 de octubre de 2026. Las direcciones siguientes identifican fuentes; **no todas publican un RSS ni todas permitieron comprobar su contenido desde este entorno**.
+Revisión: 24 de octubre de 2026. Las direcciones siguientes identifican fuentes. Lo que no respondió con un feed o un HTML utilizable desde este entorno no se conectó.
 
 ## Fuentes incluidas
 
@@ -8,13 +8,24 @@ Revisión: 6 de octubre de 2026. Las direcciones siguientes identifican fuentes;
 |---|---|---|
 | DUA, modalidad abierta | https://duaderecho.unam.mx/ | Adaptador HTML habilitado. La página depende de contenido que no fue legible en la revisión final. No se afirma que se hayan extraído avisos en directo. Se conserva acceso al sitio y se permite publicar avisos revisados manualmente. |
 | Facultad de Derecho, eventos | https://www.derecho.unam.mx/eventos/ | Página oficial consultada, con títulos, horarios y carteles. Adaptador HTML habilitado, pendiente de probar en el servidor. No se inventa un año de evento cuando falta. |
-| Gaceta UNAM, Facultad de Derecho | https://www.gaceta.unam.mx/tag/facultad-de-derecho/ | Portada temática consultada. Adaptador HTML habilitado. El endpoint propuesto terminado en `/feed/` devolvió un error de acceso: no se considera RSS comprobado. |
-| Diario Oficial de la Federación | https://dof.gob.mx/index.php | Adaptador HTML habilitado, a comprobar desde el hosting. Su configurador RSS oficial sí fue consultado: https://dof.gob.mx/website/filtroRss.php . Debe pegarse el enlace generado, no el configurador. |
-| SCJN, comunicados | https://www.internet2.scjn.gob.mx/red2/comunicados/ | Deshabilitada por defecto; la revisión devolvió HTTP 403. Permite configurar y probar una URL del mismo host oficial. |
+| Gaceta UNAM, Facultad de Derecho | https://www.gaceta.unam.mx/tag/facultad-de-derecho/feed/ | RSS comprobado el 24 de octubre de 2026 (HTTP 200, entradas de la etiqueta). El adaptador pasa de HTML a RSS. Una configuración guardada con la URL vieja, sin `/feed/` y en HTML, se actualiza sola a este feed. |
+| Diario Oficial de la Federación | https://dof.gob.mx/index.php | Adaptador HTML. El 24 de octubre de 2026 `https://dof.gob.mx` respondió 200. `https://www.dof.gob.mx` falla el certificado (el nombre no coincide): no se usa www. No hay un RSS único; el configurador sigue siendo https://dof.gob.mx/website/filtroRss.php y hay que pegar el enlace generado. La portada a veces repite el mismo `codigo` con fecha 1926 y 2026; el lector se queda con la fecha más reciente. |
+| SCJN, RSS oficial | https://www.scjn.gob.mx/rss.xml | Habilitada. RSS comprobado el 24 de octubre de 2026 (síntesis informativa y avisos del sitio). No es el Semanario Judicial. |
+| SCJN, comunicados (sitio anterior) | https://www.internet2.scjn.gob.mx/red2/comunicados/ | Sigue en HTTP 403 el 24 de octubre de 2026. Deshabilitada. La página HTML de comunicados en www.scjn.gob.mx no trae fichas legibles sin JavaScript, así que no se añadió como HTML. |
 | Cámara de Diputados, reformas | https://www.diputados.gob.mx/LeyesBiblio/ref/index.htm | Fuente de referencia, deshabilitada hasta comprobar acceso y adaptación. No se afirma que exista un RSS verificado. |
 | Poder Judicial de Coahuila | https://www.pjecz.gob.mx/consultas/fuentes-rss/ | Fuente estatal opcional, deshabilitada por defecto. Documenta RSS oficiales; se incluye `https://www.pjecz.gob.mx/feeds/comunicados.rss.xml` para probar. No es una fuente federal ni de la UNAM. |
 
 El archivo editable es `src/lib/news/sources.ts`. La interfaz de Control permite cambiar formato, URL, palabras y activación de estas fuentes, dentro de sus hosts permitidos. Para agregar una institución distinta hay que agregar una definición de fuente y revisar su seguridad; no se aceptan URLs arbitrarias a redes privadas.
+
+## Qué se probó y no se conectó
+
+El 24 de octubre de 2026, desde este entorno:
+
+- `https://www.gaceta.unam.mx/feed/` responde RSS de toda la UNAM. Se deja como portada HTML filtrada por palabras (`gaceta-actualidad`), no como feed general.
+- El Búho (`WebFeedGatewayPlugin/rss2` y Atom), `internet2.scjn.gob.mx`, `dgae.unam.mx` y `escolar.unam.mx` respondieron HTTP 403. Siguen fuera.
+- `https://sjf2.scjn.gob.mx` devuelve un reto de Incapsula. El servicio SOAP del Semanario existe, pero no se comprobó como feed estable. No está integrado.
+- `https://www.derecho.unam.mx/avisos/` y `/calendario/` respondieron 404. La agenda que ya usa el portal es `/eventos/`.
+- El RSS del CJF falló el certificado. No se añadió.
 
 ## Cómo configurarlas en el portal
 

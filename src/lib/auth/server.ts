@@ -13,6 +13,8 @@ import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
+import { productionSecretReady } from "./database-guard";
+import { passwordResetConfigured, personalResetAllowed, sendResetEmail } from "./password-mail";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
 import { pgliteDialect } from "./pglite-dialect";
 import { PREVIEW_ALLOWED_HOSTS } from "./preview";
@@ -77,9 +79,11 @@ function wwwVariants(value?: string): string[] {
   return [...hosts].map((host) => `${url.protocol}//${host}${url.port ? `:${url.port}` : ""}`);
 }
 
+const personalPublicUrl = env("PERSONAL_PUBLIC_URL");
 const productionOrigins = [
   ...wwwVariants(explicitBaseURL),
   ...wwwVariants(publicHostname),
+  ...wwwVariants(personalPublicUrl),
   originFrom(vercelUrl),
   originFrom(vercelBranchUrl),
   originFrom(vercelProductionUrl),
@@ -95,18 +99,34 @@ const trustedOrigins: string[] = Array.from(
   ]),
 );
 
-const baseURL = explicitBaseURL ?? {
+function hostnamesOf(value?: string): string[] {
+  const origin = originFrom(value);
+  if (!origin) return [];
+  const url = new URL(origin);
+  const bare = url.hostname.replace(/^www\./, "");
+  return [bare, `www.${bare}`];
+}
+// One deployment can serve derechounam.com and pnota.com. Cookies stay host-only
+// (__Host- forbids a Domain attribute), so each host has its own session.
+// Dynamic baseURL is used only when those origins differ. A single-origin
+// deployment keeps the previous string baseURL.
+const personalOrigin = originFrom(personalPublicUrl);
+const portalOrigin = originFrom(explicitBaseURL);
+const multiHost = Boolean(personalOrigin && portalOrigin && personalOrigin !== portalOrigin);
+const baseURL = !explicitBaseURL || multiHost ? {
   allowedHosts: [
-    ...(publicHostname ? [publicHostname, `www.${publicHostname.replace(/^www\./, "")}`] : []),
+    ...hostnamesOf(explicitBaseURL),
+    ...(publicHostname ? hostnamesOf(publicHostname) : []),
+    ...hostnamesOf(personalPublicUrl),
     ...(vercelUrl ? [vercelUrl] : []),
     ...(vercelBranchUrl ? [vercelBranchUrl] : []),
     ...(vercelProductionUrl ? [vercelProductionUrl] : []),
     ...(!isProduction ? previewAllowedHosts : []),
     ...(!isProduction ? ["localhost", "127.0.0.1", "[::1]"] : []),
   ],
-  protocol: "auto" as const,
-  fallback: originFrom(vercelBranchUrl) ?? originFrom(vercelUrl) ?? originFrom(publicHostname) ?? "http://localhost:8080",
-};
+  protocol: (isProduction ? "https" : "auto") as "https" | "auto",
+  fallback: portalOrigin ?? personalOrigin ?? originFrom(vercelBranchUrl) ?? originFrom(vercelUrl) ?? originFrom(publicHostname) ?? "http://localhost:8080",
+} : explicitBaseURL;
 
 const databaseUrl = env("DATABASE_URL");
 const database = databaseUrl
@@ -122,9 +142,7 @@ const stableAuthSecret = env("BETTER_AUTH_SECRET");
  * A temporary secret below is used only for constructing the unused Better Auth
  * instance; with authSecretReady=false no public auth endpoint can use it.
  */
-export const authSecretReady =
-  env("VERCEL_ENV") !== "production" ||
-  Boolean(stableAuthSecret && stableAuthSecret.length >= 32);
+export const authSecretReady = productionSecretReady(process.env);
 if (!authSecretReady) {
   console.error("[auth] Configuración incompleta: BETTER_AUTH_SECRET de Production debe tener al menos 32 caracteres. Autenticación suspendida; páginas públicas disponibles.");
 }
@@ -156,9 +174,20 @@ export const auth = betterAuth({
   },
 
   session: { cookieCache: { enabled: true, maxAge: 300 } },
-  ...(emailAndPasswordEnabled ? { emailAndPassword: { enabled: true } } : {}),
+  ...(emailAndPasswordEnabled ? { emailAndPassword: {
+    enabled: true,
+    ...(passwordResetConfigured(process.env) ? {
+      resetPasswordTokenExpiresIn: 60 * 60,
+      sendResetPassword: async ({ user, url }: { user: { email: string }; url: string }) => {
+        const { requestIsPersonal } = await import("@/lib/personal/request.server");
+        if (!personalResetAllowed(user.email, process.env, requestIsPersonal())) return;
+        await sendResetEmail(process.env, { to: user.email, url });
+      },
+    } : {}),
+  } } : {}),
 
   advanced: {
+    // __Host- cookies cannot set Domain. pnota.com and derechounam.com do not share a session.
     useSecureCookies: false,
     defaultCookieAttributes: { secure: true, sameSite: "lax", path: "/" },
     cookies: {

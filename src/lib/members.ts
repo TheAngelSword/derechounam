@@ -57,6 +57,8 @@ export const assignAreaMod=createServerFn({method:'POST'}).middleware([authMiddl
 });
 export const revokeAreaMod=createServerFn({method:'POST'}).middleware([authMiddleware]).validator(z.object({userId,area:areaSchema})).handler(async({context,data})=>{await requireModerator(context.userId);const sql=await getSql();await sql`delete from area_mods where user_id=${data.userId} and area=${data.area}`;return {ok:true as const};});
 export const logAccess=createServerFn({method:'POST'}).middleware([authMiddleware]).validator(z.object({area:z.string().refine(v=>ACCESS_SECTIONS.some(s=>s.id===v),'Sección no válida'),action:z.enum(['entrada','publicar']),eventId:z.string().min(8).max(100).optional()})).handler(async({context,data})=>{
+ const { requestIsPersonal } = await import("@/lib/personal/request.server");
+ if (requestIsPersonal()) return { ok: false as const };
  const me=await loadMember(context.userId);if(!me||me.status!=='activo')return {ok:false as const};const sql=await getSql();
  await sql`insert into access_log(user_id,alias,area,action,event_id) values(${context.userId},${me.alias},${data.area},${data.action},${data.eventId??null}) on conflict(event_id) do nothing`;
  return {ok:true as const};
