@@ -11,6 +11,7 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { getCookie } from "@tanstack/react-start/server";
 import { randomBytes } from "node:crypto";
 import { Pool } from "pg";
+import { strictSslUrl } from "../origin";
 import { ensureDbReady, getPglite } from "../db";
 import { emailAndPasswordEnabled } from "./email-password";
 import { GATE_PROVIDER_ID, gateIdentitySessions } from "./gate-session.server";
@@ -109,8 +110,13 @@ const baseURL = explicitBaseURL ?? {
 };
 
 const databaseUrl = env("DATABASE_URL");
+function authPool(url: string): Pool {
+  const pool = new Pool({ connectionString: strictSslUrl(url), max: 5 });
+  pool.on("error", (err) => console.error("[auth] idle connection closed:", err.message));
+  return pool;
+}
 const database = databaseUrl
-  ? new Pool({ connectionString: databaseUrl })
+  ? authPool(databaseUrl)
   : { dialect: pgliteDialect(() => getPglite()), type: "postgres" as const };
 
 export const SESSION_TOKEN_COOKIE = "__Host-faculta-auth.session_token";
@@ -151,7 +157,8 @@ export const auth = betterAuth({
     accountLinking: {
       enabled: true,
       trustedProviders: ["google", GATE_PROVIDER_ID],
-      requireLocalEmailVerified: false,
+      // Never attach Google to a local account whose email was not proven.
+      requireLocalEmailVerified: true,
     },
   },
 

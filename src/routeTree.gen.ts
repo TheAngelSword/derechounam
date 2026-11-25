@@ -32,6 +32,7 @@ import { Route as ApiCatedraUploadRouteImport } from './routes/api/catedra-uploa
 import { Route as ApiDriveCompleteRouteImport } from './routes/api/drive-complete'
 import { Route as ApiDriveFileRouteImport } from './routes/api/drive-file'
 import { Route as ApiDriveUploadRouteImport } from './routes/api/drive-upload'
+import { Route as ApiFrasesRouteImport } from './routes/api/frases'
 import { Route as ApiLibraryUploadRouteImport } from './routes/api/library-upload'
 import { Route as ApiMediaTokenRouteImport } from './routes/api/media-token'
 import { Route as ApiServicesUploadRouteImport } from './routes/api/services-upload'
@@ -152,6 +153,11 @@ const ApiDriveUploadRoute = ApiDriveUploadRouteImport.update({
   path: '/api/drive-upload',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiFrasesRoute = ApiFrasesRouteImport.update({
+  id: '/api/frases',
+  path: '/api/frases',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLibraryUploadRoute = ApiLibraryUploadRouteImport.update({
   id: '/api/library-upload',
   path: '/api/library-upload',
@@ -197,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/api/drive-complete': typeof ApiDriveCompleteRoute
   '/api/drive-file': typeof ApiDriveFileRoute
   '/api/drive-upload': typeof ApiDriveUploadRoute
+  '/api/frases': typeof ApiFrasesRoute
   '/api/library-upload': typeof ApiLibraryUploadRoute
   '/api/media-token': typeof ApiMediaTokenRoute
   '/api/services-upload': typeof ApiServicesUploadRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/api/drive-complete': typeof ApiDriveCompleteRoute
   '/api/drive-file': typeof ApiDriveFileRoute
   '/api/drive-upload': typeof ApiDriveUploadRoute
+  '/api/frases': typeof ApiFrasesRoute
   '/api/library-upload': typeof ApiLibraryUploadRoute
   '/api/media-token': typeof ApiMediaTokenRoute
   '/api/services-upload': typeof ApiServicesUploadRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/api/drive-complete': typeof ApiDriveCompleteRoute
   '/api/drive-file': typeof ApiDriveFileRoute
   '/api/drive-upload': typeof ApiDriveUploadRoute
+  '/api/frases': typeof ApiFrasesRoute
   '/api/library-upload': typeof ApiLibraryUploadRoute
   '/api/media-token': typeof ApiMediaTokenRoute
   '/api/services-upload': typeof ApiServicesUploadRoute
@@ -287,6 +296,7 @@ export interface FileRouteTypes {
     | '/api/drive-complete'
     | '/api/drive-file'
     | '/api/drive-upload'
+    | '/api/frases'
     | '/api/library-upload'
     | '/api/media-token'
     | '/api/services-upload'
@@ -316,6 +326,7 @@ export interface FileRouteTypes {
     | '/api/drive-complete'
     | '/api/drive-file'
     | '/api/drive-upload'
+    | '/api/frases'
     | '/api/library-upload'
     | '/api/media-token'
     | '/api/services-upload'
@@ -345,6 +356,7 @@ export interface FileRouteTypes {
     | '/api/drive-complete'
     | '/api/drive-file'
     | '/api/drive-upload'
+    | '/api/frases'
     | '/api/library-upload'
     | '/api/media-token'
     | '/api/services-upload'
@@ -375,6 +387,7 @@ export interface RootRouteChildren {
   ApiDriveCompleteRoute: typeof ApiDriveCompleteRoute
   ApiDriveFileRoute: typeof ApiDriveFileRoute
   ApiDriveUploadRoute: typeof ApiDriveUploadRoute
+  ApiFrasesRoute: typeof ApiFrasesRoute
   ApiLibraryUploadRoute: typeof ApiLibraryUploadRoute
   ApiMediaTokenRoute: typeof ApiMediaTokenRoute
   ApiServicesUploadRoute: typeof ApiServicesUploadRoute
@@ -544,6 +557,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDriveUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/frases': {
+      id: '/api/frases'
+      path: '/api/frases'
+      fullPath: '/api/frases'
+      preLoaderRoute: typeof ApiFrasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/library-upload': {
       id: '/api/library-upload'
       path: '/api/library-upload'
@@ -599,6 +619,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDriveCompleteRoute: ApiDriveCompleteRoute,
   ApiDriveFileRoute: ApiDriveFileRoute,
   ApiDriveUploadRoute: ApiDriveUploadRoute,
+  ApiFrasesRoute: ApiFrasesRoute,
   ApiLibraryUploadRoute: ApiLibraryUploadRoute,
   ApiMediaTokenRoute: ApiMediaTokenRoute,
   ApiServicesUploadRoute: ApiServicesUploadRoute,

@@ -180,7 +180,7 @@ function BibliotecaPage() {
       await refresh();
     } catch (cause) {
       const message = cause instanceof Error ? cause.message : "No se pudo publicar.";
-      setError(/ge01|servidor de archivos|autorizar|subida|media/i.test(message) ? `No se pudo subir el archivo a ge01.com. ${message}` : friendlyLibraryError(message));
+      setError(/drive|servidor de archivos|autorizar|subida|media/i.test(message) ? `No se pudo subir el archivo a Google Drive. ${message}` : friendlyLibraryError(message));
     } finally { setBusy(false); }
   }
 

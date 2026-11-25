@@ -1,0 +1,7 @@
+User-agent: *
+Disallow: /api/
+Disallow: /control
+Disallow: /registro
+Disallow: /login
+
+Sitemap: https://derechounam.com/sitemap.xml

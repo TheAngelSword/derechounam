@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
+import { isHttpUrl } from "@/lib/origin";
 
 export type AvailabilityMode = "specific" | "flexible" | "weekdays";
 
@@ -51,7 +52,7 @@ const promptSchema = z.string().trim().min(2).max(300);
 const descriptionSchema = z.string().trim().max(2400).optional();
 const notesSchema = z.string().trim().max(4000).optional();
 const locationSchema = z.string().trim().max(240).optional();
-const mapsUrlSchema = z.union([z.literal(""), z.string().url().max(1200)]).optional();
+const mapsUrlSchema = z.union([z.literal(""), z.string().max(1200).refine(isHttpUrl, "Usa una liga http o https.")]).optional();
 const scheduledDateSchema = z.union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/)]).optional();
 const scheduledTimeSchema = z.string().trim().max(80).optional();
 const availabilityModeSchema = z.enum(["specific", "flexible", "weekdays"]);
@@ -149,7 +150,23 @@ async function canManagePoll(userId: string, pollId: number) {
   throw new Error("Sólo el autor o un administrador puede editar esta votación.");
 }
 
+/** Visitors may vote, but personal notes are only for active members. */
+async function viewerIsMember(): Promise<boolean> {
+  try {
+    const { getSessionUser } = await import("@/lib/auth/verify.server");
+    const user = await getSessionUser();
+    if (!user) return false;
+    await activeMember(user.id);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export const loadPolls = createServerFn({ method: "GET" }).handler(async (): Promise<ActivityPoll[]> => {
+  const { setResponseHeader } = await import("@tanstack/react-start/server");
+  setResponseHeader("Cache-Control", "private, no-store");
+  const isMember = await viewerIsMember();
   const sql = await getSql();
   const [pollRows, responseRows] = await Promise.all([
     sql<{
@@ -208,7 +225,7 @@ export const loadPolls = createServerFn({ method: "GET" }).handler(async (): Pro
       availableDate: row.available_date ? asIsoDate(row.available_date) : null,
       availableTime: row.available_time ? asTime(row.available_time) : null,
       preferredWeekdays: row.preferred_weekdays ? row.preferred_weekdays.split(",").filter(Boolean) : [],
-      note: row.note,
+      note: isMember ? row.note : null,
       createdAt: String(row.created_at),
       updatedAt: String(row.updated_at),
     };
@@ -224,7 +241,7 @@ export const loadPolls = createServerFn({ method: "GET" }).handler(async (): Pro
     prompt: row.prompt,
     description: row.description,
     isOpen: row.is_open,
-    createdBy: row.created_by,
+    createdBy: isMember ? row.created_by : "",
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
     eventTitle: row.event_title,
@@ -323,6 +340,7 @@ const publicVoteSchema = z.object({
   pollId: z.number().int().positive(),
   ...responseFields,
   website: z.string().max(0).optional(),
+  editToken: z.string().uuid(),
 }).superRefine(refineAvailability);
 
 export const savePublicVote = createServerFn({ method: "POST" })
@@ -334,6 +352,8 @@ export const savePublicVote = createServerFn({ method: "POST" })
     if (!polls[0].is_open) throw new Error("Esta votación ya está cerrada.");
 
     const key = participantKey(data.participantName);
+    const { createHash } = await import("node:crypto");
+    const tokenHash = createHash("sha256").update(data.editToken).digest("hex");
     const existing = await sql<{ id: number }>`
       select id from activity_poll_responses where poll_id = ${data.pollId} and participant_key = ${key} limit 1
     `;
@@ -343,11 +363,11 @@ export const savePublicVote = createServerFn({ method: "POST" })
     }
 
     const stored = storageAvailability(data);
-    await sql`
+    const saved = await sql`
       insert into activity_poll_responses (
-        poll_id, participant_name, participant_key, availability_mode, available_date, available_time, preferred_weekdays, note
+        poll_id, participant_name, participant_key, availability_mode, available_date, available_time, preferred_weekdays, note, edit_token_hash
       ) values (
-        ${data.pollId}, ${data.participantName.trim()}, ${key}, ${data.availabilityMode}, ${stored.date}, ${stored.time}, ${stored.weekdays}, ${data.note ?? null}
+        ${data.pollId}, ${data.participantName.trim()}, ${key}, ${data.availabilityMode}, ${stored.date}, ${stored.time}, ${stored.weekdays}, ${data.note ?? null}, ${tokenHash}
       )
       on conflict (poll_id, participant_key)
       do update set
@@ -358,7 +378,10 @@ export const savePublicVote = createServerFn({ method: "POST" })
         preferred_weekdays = excluded.preferred_weekdays,
         note = excluded.note,
         updated_at = now()
+      where activity_poll_responses.edit_token_hash = excluded.edit_token_hash
+      returning id
     `;
+    if (!saved.length) throw new Error("Ya hay una respuesta con ese nombre, registrada desde otro navegador. Usa otro nombre o pide el cambio a un administrador.");
     return { ok: true as const };
   });
 

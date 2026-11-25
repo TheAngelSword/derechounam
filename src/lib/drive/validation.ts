@@ -50,3 +50,7 @@ export function driveResourceUrl(origin: string, id: string): string {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw new Error("Identificador de recurso no válido.");
   return new URL(`/api/drive-file?id=${id}`,origin).href;
 }
+/** Link-shared or domain-shared folders would expose private uploads outside the portal. */
+export function isPublicFolder(permissions: { type?: string }[] | undefined): boolean {
+  return (permissions ?? []).some((p) => p.type === "anyone" || p.type === "domain");
+}

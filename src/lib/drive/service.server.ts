@@ -1,7 +1,7 @@
 import { randomUUID, sign } from "node:crypto";
 import { getSql } from "@/lib/db";
 import { HttpError } from "@/lib/access.server";
-import { parseFolderId, validUploadSession, type UploadInput } from "./validation";
+import { isPublicFolder, parseFolderId, validUploadSession, type UploadInput } from "./validation";
 const API = "https://www.googleapis.com/drive/v3";
 let tokenCache: { token: string; expires: number } | null = null;
 let tokenPromise: Promise<string> | null = null;
@@ -53,15 +53,24 @@ export function checkDrive(response: Response): void {
   const message = response.status === 403 ? "Drive denegó el acceso: revisa permisos, cuota y alcance OAuth. Las cuentas de servicio necesitan una unidad compartida." : response.status === 404 ? "Drive no encuentra el recurso o la cuenta no tiene acceso." : response.status === 429 ? "Google ha limitado las solicitudes. Inténtalo de nuevo más tarde." : "Google Drive no respondió correctamente.";
   throw new HttpError(response.status === 429 ? 429 : 502,message);
 }
-export type DriveMetadata = { id:string; name:string; mimeType:string; size?:string; parents?:string[]; driveId?:string; trashed?:boolean; appProperties?:Record<string,string>; capabilities?:{canAddChildren?:boolean} };
+export type DriveMetadata = { id:string; name:string; mimeType:string; size?:string; parents?:string[]; driveId?:string; trashed?:boolean; appProperties?:Record<string,string>; capabilities?:{canAddChildren?:boolean}; permissions?:{type?:string}[] };
 export async function folderInfo(id: string): Promise<DriveMetadata> {
-  const response = await driveFetch(`/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,driveId,trashed,capabilities(canAddChildren)`); checkDrive(response);
+  const response = await driveFetch(`/files/${encodeURIComponent(id)}?supportsAllDrives=true&fields=id,name,mimeType,driveId,trashed,capabilities(canAddChildren),permissions(type)`); checkDrive(response);
   const info = await response.json() as DriveMetadata;
   if (info.mimeType !== "application/vnd.google-apps.folder" || info.trashed || !info.capabilities?.canAddChildren) throw new HttpError(400,"El destino debe ser una carpeta editable, no un archivo ni un acceso directo.");
+  if (isPublicFolder(info.permissions)) throw new HttpError(400,"La carpeta está abierta a cualquiera con el enlace o a todo un dominio. En Drive cambia Acceso general a Restringido antes de usarla.");
   if (credentialMode() === "service-account" && !info.driveId) throw new HttpError(400,"Una cuenta de servicio no puede ser propietaria de archivos en Mi unidad. Usa OAuth para una cuenta personal o una unidad compartida de Workspace.");
   return info;
 }
-async function childFolder(parent: string, name: string): Promise<string> {
+const folderPromises = new Map<string,Promise<string>>();
+/** Simultaneous uploads in one instance share a lookup, so they do not create duplicate folders. */
+function childFolder(parent: string, name: string): Promise<string> {
+  const key = parent + "/" + name;
+  const pending = folderPromises.get(key) ?? findOrCreateFolder(parent,name).finally(() => folderPromises.delete(key));
+  folderPromises.set(key,pending);
+  return pending;
+}
+async function findOrCreateFolder(parent: string, name: string): Promise<string> {
   const q = `'${parent.replace(/'/g,"\\'")}' in parents and name = '${name.replace(/'/g,"\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
   const params = new URLSearchParams({q,fields:"files(id)",pageSize:"1",supportsAllDrives:"true",includeItemsFromAllDrives:"true"});
   const response = await driveFetch(`/files?${params}`); checkDrive(response);
@@ -72,12 +81,13 @@ async function childFolder(parent: string, name: string): Promise<string> {
 }
 export async function beginDriveUpload(userId: string, input: UploadInput, origin: string) {
   const sql = await getSql();
+  // Check the destination first: a misconfigured Drive must not use up the daily quota.
+  let parent = await rootFolderId(); await folderInfo(parent);
   const [quota] = await sql<{count:string;bytes:string}>`select count(*)::text as count,coalesce(sum(expected_size),0)::text as bytes from drive_uploads where user_id=${userId} and created_at>now()-interval '24 hours'`;
   // Includes incomplete sessions, so opening sessions is not a quota bypass.
   if (Number(quota?.count) >= 100 || Number(quota?.bytes)+input.size > 5*1024**3) throw new HttpError(429,"Límite diario: 100 intentos de subida o 5 GB por usuario.");
   const reserved = await sql`insert into drive_daily_quotas(user_id,quota_day,attempts,reserved_bytes) values(${userId},current_date,1,${input.size}) on conflict(user_id,quota_day) do update set attempts=drive_daily_quotas.attempts+1,reserved_bytes=drive_daily_quotas.reserved_bytes+excluded.reserved_bytes where drive_daily_quotas.attempts<100 and drive_daily_quotas.reserved_bytes+excluded.reserved_bytes<=5368709120 returning attempts`;
   if(!reserved.length) throw new HttpError(429,"Límite de subidas diario alcanzado.");
-  let parent = await rootFolderId(); await folderInfo(parent);
   for (const segment of [input.category,...input.subfolder]) parent = await childFolder(parent,segment);
   const uploadId = randomUUID();
   // Reserve first so concurrent/failed initiations remain visible to the quota check.
