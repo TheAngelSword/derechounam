@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { getSql } from "@/lib/db";
 import { requireMemberRequest, apiError, HttpError } from "@/lib/access.server";
 import { driveFetch, checkDrive } from "@/lib/drive/service.server";
+import { vpsConfig, vpsDownloadUrl } from "@/lib/storage/vps.server";
 async function serve(request: Request): Promise<Response> {
   try {
     const url=new URL(request.url); const id=url.searchParams.get("id") ?? "";
@@ -12,6 +13,13 @@ async function serve(request: Request): Promise<Response> {
     // A news upload is public only after a moderator actually publishes a reference.
     const posts=file.category === "noticias" ? await sql`select id from news_posts where published=true and (image_upload_id=${id} or video_upload_id=${id}) limit 1` : [];
     if (!posts.length) await requireMemberRequest(request);
+    if (file.drive_file_id.startsWith("vps:")) {
+      const vps=vpsConfig();
+      if (!vps) throw new HttpError(503,"El servidor de archivos no está configurado.");
+      const inline=/^(image\/(jpeg|png|webp)|audio\/|video\/|application\/pdf)/.test(file.mime_type) && !url.searchParams.has("download");
+      // The portal checked access above; the link it hands out expires in minutes.
+      return new Response(null,{status:302,headers:{Location:vpsDownloadUrl(vps,id,file.file_name,inline),"Cache-Control":"private, no-store","Referrer-Policy":"no-referrer"}});
+    }
     const range=request.headers.get("Range");
     if (range && !/^bytes=(?:\d+-\d*|-\d+)$/.test(range)) throw new HttpError(416,"Rango no válido.");
     const response=await driveFetch(`/files/${encodeURIComponent(file.drive_file_id)}?alt=media&supportsAllDrives=true`,{headers:range ? {Range:range} : {},signal:AbortSignal.timeout(240000),method:request.method === "HEAD" ? "HEAD" : "GET"});

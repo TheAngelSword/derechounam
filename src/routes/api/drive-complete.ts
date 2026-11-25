@@ -6,10 +6,10 @@ import { driveResourceUrl } from "@/lib/drive/validation";
 export const Route = createFileRoute("/api/drive-complete")({server:{handlers:{POST:async ({request}) => {
   try {
     assertRequestOrigin(request); const userId=await requireMemberRequest(request);
-    const body=await readSmallJson(request) as {uploadId?:string;fileId?:string};
-    if (!/^[0-9a-f-]{36}$/i.test(body?.uploadId ?? "") || !/^[\w-]{10,200}$/.test(body?.fileId ?? "")) throw new HttpError(400,"Identificadores no válidos.");
-    const result=await completeDriveUpload(userId,body.uploadId!,body.fileId!);
+    const body=await readSmallJson(request) as {uploadId?:string;fileId?:string;receipt?:string};
+    if (!/^[0-9a-f-]{36}$/i.test(body?.uploadId ?? "") || (!body?.receipt && !/^[\w-]{10,200}$/.test(body?.fileId ?? "")) || (body?.receipt !== undefined && (typeof body.receipt !== "string" || body.receipt.length > 2000))) throw new HttpError(400,"Identificadores no válidos.");
+    const result=await completeDriveUpload(userId,body.uploadId!,body.fileId ?? "",body.receipt ?? "");
     const origin=canonicalOrigin(process.env.APP_PUBLIC_URL,request.url);
-    return Response.json({ok:true,uploadId:body.uploadId,...result,url:driveResourceUrl(origin,body.uploadId!),path:`drive:${result.driveFileId}`},{headers:{"Cache-Control":"no-store"}});
+    return Response.json({ok:true,uploadId:body.uploadId,...result,url:driveResourceUrl(origin,body.uploadId!),path:result.driveFileId.startsWith("vps:") ? result.driveFileId : `drive:${result.driveFileId}`},{headers:{"Cache-Control":"no-store"}});
   } catch(error) { return apiError(error); }
 }}}});

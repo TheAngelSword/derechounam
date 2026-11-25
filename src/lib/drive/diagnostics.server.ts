@@ -1,7 +1,15 @@
 import {getSql} from '@/lib/db';
+import {vpsConfig,vpsHealth} from '@/lib/storage/vps.server';
 import {credentialMode,rootFolderId,folderInfo,driveFetch,checkDrive} from './service.server';
 export async function driveDiagnostics(verify=false){
- const sql=await getSql();const mode=credentialMode();let folderId='';try{folderId=await rootFolderId();}catch{}
+ const sql=await getSql();const mode=credentialMode();
+ if(mode==='vps'){const cfg=vpsConfig()!;const [stats]=await sql<{confirmed:string;pending:string}>`select count(*) filter(where verified_at is not null)::text as confirmed,count(*) filter(where verified_at is null)::text as pending from drive_uploads where parent_id='vps'`;
+  const recent=await sql<{file_name:string;category:string;drive_file_id:string;verified_at:string}>`select file_name,category,drive_file_id,verified_at from drive_uploads where verified_at is not null and parent_id='vps' order by verified_at desc limit 5`;
+  const base={configured:true,authorized:false,folderId:'',credentialMode:mode,folderSource:new URL(cfg.url).host,environment:process.env.VERCEL_ENV??process.env.NODE_ENV??'local',branch:process.env.VERCEL_GIT_COMMIT_REF??'',missing:[] as string[],confirmed:Number(stats?.confirmed??0),pending:Number(stats?.pending??0),recent,message:'Servidor de archivos configurado, sin comprobar.'};
+  if(!verify)return base;
+  const h=await vpsHealth(cfg);const gb=(n:number)=>(n/1024**3).toFixed(1);
+  return {...base,authorized:true,message:`Servidor de archivos en línea: ${gb(h.freeBytes)} GB libres de ${gb(h.totalBytes)} GB.`};
+ }let folderId='';try{folderId=await rootFolderId();}catch{}
  const [folderSetting]=await sql<{setting_value:string}>`select setting_value from app_settings where setting_key='google_drive_folder_id'`;
  const needed=mode==='service-account'?['GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON']:['GOOGLE_DRIVE_CLIENT_ID','GOOGLE_DRIVE_CLIENT_SECRET','GOOGLE_DRIVE_REFRESH_TOKEN'];
  const missing=needed.filter(name=>!process.env[name]);if(!folderId)missing.push('GOOGLE_DRIVE_FOLDER_ID o carpeta en Control');
