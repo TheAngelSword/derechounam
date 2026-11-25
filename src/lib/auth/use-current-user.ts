@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { authClient, authEnabled } from "./client";
 
 /** Normalized user shape used across the app, auth on or off. */
@@ -53,12 +54,18 @@ export type CurrentUserState = {
  *
  * `authEnabled` is a module-level constant fixed at load, so the guarded hook
  * call keeps a stable hook order across every render of a given component.
+ *
+ * The session store can resolve before React finishes hydrating. Until the
+ * effect runs, this hook reports the same pending state the server rendered.
  */
 export function useCurrentUserState(): CurrentUserState {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(true);
+  }, []);
   if (!authEnabled) return { user: DEV_USER, isPending: false };
-  // eslint-disable-next-line react-hooks/rules-of-hooks -- authEnabled is constant for the app's lifetime
   const { data, isPending } = authClient.useSession();
-  const user = data?.user;
+  const user = ready ? data?.user : undefined;
   return {
     user: user
       ? {
@@ -69,7 +76,7 @@ export function useCurrentUserState(): CurrentUserState {
           isDevFallback: false,
         }
       : null,
-    isPending,
+    isPending: !ready || isPending,
   };
 }
 
