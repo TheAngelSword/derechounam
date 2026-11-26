@@ -1,5 +1,5 @@
 import { getSql } from "@/lib/db";
-import { DEFAULT_NEWS_SETTINGS, mergeSettings, assertSourceUrl } from "./sources";
+import { DEFAULT_NEWS_SETTINGS, mergeSettings, assertSourceUrl, NEWS_MAX_AGE_DAYS } from "./sources";
 import { parseFeed } from "./parser";
 import { parseOfficialHtmlV72 as parseOfficialHtml } from "./parser-v72";
 import { enrichMedia } from "./enrich.server";
@@ -23,7 +23,8 @@ export async function fetchOfficialSource(source:NewsSource):Promise<NewsItem[]>
    const chunks:Uint8Array[]=[];let size=0;
    try{for(;;){const r=await reader.read();if(r.done)break;size+=r.value.length;if(size>2_000_000){await reader.cancel();throw new Error("La fuente excede el límite de lectura.");}chunks.push(r.value);}}finally{reader.releaseLock();}
    const bytes=Buffer.concat(chunks);let text=bytes.toString("utf8");
-   if(/charset\s*=\s*["']?(?:iso-8859-1|windows-1252)/i.test(response.headers.get("content-type")??""))text=new TextDecoder("windows-1252").decode(bytes);
+   // DOF serves its sumario as text/xml with the Latin-1 encoding only declared in the XML prolog.
+   if(/charset\s*=\s*["']?(?:iso-8859-1|windows-1252)/i.test(response.headers.get("content-type")??"")||/^\s*<\?xml[^>]*encoding=["'](?:iso-8859-1|windows-1252)["']/i.test(text))text=new TextDecoder("windows-1252").decode(bytes);
    const items=source.kind==="rss"?parseFeed(text,source):parseOfficialHtml(text,source);
    if(!items.length)throw new Error("La fuente respondió, pero no se encontraron entradas que coincidan con los filtros.");
    return await enrichMedia(items,source,text);
@@ -31,10 +32,9 @@ export async function fetchOfficialSource(source:NewsSource):Promise<NewsItem[]>
  throw new Error("Demasiadas redirecciones en la fuente.");
 }
 async function refreshSource(source:NewsSource,settings:NewsSettings,force:boolean):Promise<{items:NewsItem[];status:NewsSourceStatus}>{
- const cacheId=`${source.id}:reader-v761`;
- const sql=await getSql();let [cache]=await sql<Cache>`select items,fetched_at,checked_at,last_error from news_cache where source_id=${cacheId}`;
- // Invalidate obsolete extraction results, but keep earlier headlines if the source is temporarily unavailable.
- if(!cache){const legacyId=`${source.id}:reader-v72`;const [legacy]=await sql<Cache>`select items,fetched_at,checked_at,last_error from news_cache where source_id=${legacyId}`;if(legacy)cache={...legacy,checked_at:null};}
+ // v79 reads official RSS feeds; HTML extractions from earlier readers are not carried over.
+ const cacheId=`${source.id}:reader-v79`;
+ const sql=await getSql();const [cache0]=await sql<Cache>`select items,fetched_at,checked_at,last_error from news_cache where source_id=${cacheId}`;let cache:Cache|undefined=cache0;
  const stale=!cache?.checked_at || Date.now()-new Date(cache.checked_at).getTime()>settings.intervalMinutes*60_000;
  if(source.enabled && (stale||force)){
   const locks=await sql`insert into news_refresh_locks(source_id,expires_at) values(${cacheId},now()+interval '45 seconds') on conflict(source_id) do update set expires_at=excluded.expires_at where news_refresh_locks.expires_at<now() returning source_id`;
@@ -50,7 +50,9 @@ async function refreshSource(source:NewsSource,settings:NewsSettings,force:boole
    }finally{await sql`delete from news_refresh_locks where source_id=${cacheId}`;}
   }
  }
- const items=source.enabled?(cache?.items?.length?cache.items:NEWS_SNAPSHOT.filter(i=>i.sourceId===source.id)):[];
+ // A failing source shows nothing (its status reports the error) instead of fixed reference cards that never change.
+ const cutoff=Date.now()-NEWS_MAX_AGE_DAYS*86_400_000;
+ const items=source.enabled?(cache?.items??[]).filter(i=>!i.publishedAt||Date.parse(i.publishedAt)>=cutoff):[];
  return {items,status:{id:source.id,name:source.name,enabled:source.enabled,checkedAt:iso(cache?.checked_at),fetchedAt:iso(cache?.fetched_at),error:cache?.last_error??null,count:items.filter(i=>!i.snapshot).length,kind:source.kind}};
 }
 export async function readEditorial(includeHidden=false):Promise<NewsItem[]>{

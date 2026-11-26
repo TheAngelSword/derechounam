@@ -17,7 +17,7 @@ export function NewsCard({item:original,featured=false,saved,onSave}:{item:NewsI
  const{element,item,cover,rejectImage,loading}=useNewsMedia(original);const[play,setPlay]=useState(false);const image=!!cover;
  const youtube=item.youtubeId&&/^[\w-]{11}$/.test(item.youtubeId)?item.youtubeId:null;
  useEffect(()=>setPlay(false),[item.sourceUrl,item.youtubeId,item.videoUrl]);
- const old=!!item.publishedAt&&Date.now()-new Date(item.publishedAt).getTime()>72*3600000;
+ const old=!!item.publishedAt&&Date.now()-new Date(item.publishedAt).getTime()>30*86400000;
  return <article ref={element} className={`fd-news-card ${featured?"featured":""}`}>
  <div className="fd-news-art">{image?<img key={cover!} src={cover!} alt={item.title} loading="lazy" decoding="async" referrerPolicy="no-referrer" onLoad={e=>{const img=e.currentTarget;if(img.naturalWidth<160||img.naturalHeight<90)rejectImage();}} onError={rejectImage}/>:<NewsArt category={item.category}/>}
  <span className="fd-media-label">{!image?loading?"Consultando imagen…":"Ilustración de referencia":cover?.startsWith("https://i.ytimg.com/")?"Miniatura de video":"Imagen de la fuente"}</span><span className="fd-news-stage">{youtube||item.videoUrl?"Video · ":""}{item.category}</span><button className={`fd-save-button ${saved?"saved":""}`} onClick={onSave} aria-label={saved?"Quitar de guardados":"Guardar noticia en este navegador"} aria-pressed={saved}><Bookmark size={16} fill={saved?"currentColor":"none"}/></button>{item.videoUrl||youtube?<button className="fd-play-button" onClick={()=>setPlay(!play)} aria-label={play?"Cerrar video":"Reproducir video"} aria-expanded={play}><Play size={22}/></button>:null}</div>
