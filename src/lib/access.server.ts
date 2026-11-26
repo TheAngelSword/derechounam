@@ -1,5 +1,6 @@
 import { auth } from "@/lib/auth/server";
 import { getSql } from "@/lib/db";
+import { allowedOrigins } from "@/lib/origin";
 export class HttpError extends Error {
   status: number;
   constructor(status: number, message: string) { super(message); this.status = status; }
@@ -8,8 +9,7 @@ export function assertRequestOrigin(request: Request) {
   const site = request.headers.get("sec-fetch-site");
   if (site && !["same-origin","none"].includes(site)) throw new HttpError(403,"Solicitud de otro sitio bloqueada.");
   const origin = request.headers.get("origin");
-  const expected = process.env.APP_PUBLIC_URL ? new URL(process.env.APP_PUBLIC_URL).origin : new URL(request.url).origin;
-  if (origin && origin !== expected) throw new HttpError(403,"Origen no autorizado.");
+  if (origin && !allowedOrigins(process.env.APP_PUBLIC_URL,request.url).includes(origin)) throw new HttpError(403,"Origen no autorizado.");
 }
 export async function requireMemberRequest(request: Request, moderator = false) {
   const site = request.headers.get("sec-fetch-site");

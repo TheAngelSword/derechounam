@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { authMiddleware } from "@/lib/auth/middleware";
 import { getSql } from "@/lib/db";
+import { isHttpUrl } from "@/lib/origin";
 import type {
   BitacoraPost,
   Board,
@@ -487,7 +488,7 @@ export const addEvent = createServerFn({ method: "POST" })
     return { ok: true as const };
   });
 
-const optionalUrl = z.union([z.literal(""), z.string().url().max(4000)]).optional();
+const optionalUrl = z.union([z.literal(""), z.string().max(4000).refine(isHttpUrl, "Usa una liga http o https.")]).optional();
 const bookTitle = z.string().trim().min(2).max(300);
 const bookAuthor = z.string().trim().min(2).max(400);
 
@@ -561,22 +562,12 @@ export const requestRideSeat = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     const me = await activeMember(context.userId);
     const sql = await getSql();
-    const rides = await sql<{ id: number; seats: number; created_by: string }>`select id, seats, created_by from rides where id = ${data.rideId} limit 1`;
-    const ride = rides[0];
-    if (!ride) throw new Error("Ruta no encontrada");
-    if (ride.created_by === context.userId) throw new Error("No puedes pedir asiento en tu propia ruta");
-
-    const mine = await sql<{ id: number }>`select id from ride_reservations where ride_id = ${data.rideId} and user_id = ${context.userId} limit 1`;
-    if (mine.length) return { ok: true as const, alreadyReserved: true as const };
-
-    const counts = await sql<{ n: number }>`select count(*)::int as n from ride_reservations where ride_id = ${data.rideId}`;
-    if ((counts[0]?.n ?? 0) >= Number(ride.seats)) throw new Error("Esta ruta ya está llena");
-
-    const inserted = await sql<{ id: number }>`insert into ride_reservations (ride_id, user_id, requester_alias)
-      values (${data.rideId}, ${context.userId}, ${me.alias})
-      on conflict (ride_id, user_id) do nothing
-      returning id`;
-    if (!inserted.length) return { ok: true as const, alreadyReserved: true as const };
+    const [row] = await sql<{ result: string }>`select portal_reserve_ride(${data.rideId}, ${context.userId}, ${me.alias}) as result`;
+    if (row?.result === "missing") throw new Error("Ruta no encontrada");
+    if (row?.result === "own") throw new Error("No puedes pedir asiento en tu propia ruta");
+    if (row?.result === "full") throw new Error("Esta ruta ya está llena");
+    if (row?.result === "already") return { ok: true as const, alreadyReserved: true as const };
+    if (row?.result !== "ok") throw new Error("No se pudo confirmar el asiento");
     return { ok: true as const, alreadyReserved: false as const };
   });
 

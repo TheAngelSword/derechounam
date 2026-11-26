@@ -25,9 +25,53 @@ function put(url:string,blob:Blob|null,range:string,mime:string,signal:AbortSign
     xhr.send(blob);
   });
 }
+type VpsReply={status:number;offset:number;receipt?:string};
+function vpsSend(url:string,method:"PUT"|"HEAD",blob:Blob|null,offset:number,mime:string,signal:AbortSignal|undefined,onBytes?:(n:number)=>void):Promise<VpsReply> {
+  return new Promise((resolve,reject)=>{
+    const xhr=new XMLHttpRequest();const abort=()=>xhr.abort();
+    if (signal?.aborted) { reject(new DOMException("Subida cancelada","AbortError")); return; }
+    signal?.addEventListener("abort",abort,{once:true});const clean=()=>signal?.removeEventListener("abort",abort);
+    xhr.open(method,url);xhr.timeout=180000;
+    if (method==="PUT") { xhr.setRequestHeader("Content-Type",mime);xhr.setRequestHeader("Upload-Offset",String(offset)); }
+    xhr.upload.onprogress=(event)=>onBytes?.(event.loaded);
+    xhr.onerror=()=>{clean();reject(new Error("Se interrumpió la conexión con el servidor de archivos."));};
+    xhr.ontimeout=()=>{clean();reject(new Error("El servidor de archivos tardó demasiado."));};
+    xhr.onabort=()=>{clean();reject(new DOMException("Subida cancelada","AbortError"));};
+    xhr.onload=()=>{clean();let receipt:string|undefined;try{receipt=JSON.parse(xhr.responseText)?.receipt;}catch{/* HEAD has no body. */}resolve({status:xhr.status,offset:Number(xhr.getResponseHeader("Upload-Offset")??-1),receipt});};
+    xhr.send(blob);
+  });
+}
+async function uploadToVps(url:string,file:File,mime:string,onProgress?:(p:number)=>void,signal?:AbortSignal):Promise<string> {
+  if (!/^https:\/\//.test(url) && !/^http:\/\/(localhost|127\.0\.0\.1)[:/]/.test(url)) throw new Error("El destino de subida no es seguro.");
+  let offset=0,failures=0;
+  for (;;) {
+    try {
+      const end=Math.min(offset+CHUNK,file.size);
+      const reply=await vpsSend(url,"PUT",file.slice(offset,end),offset,mime,signal,(n)=>onProgress?.(Math.min(99,Math.floor((offset+n)/file.size*100))));
+      if (reply.receipt) return reply.receipt;
+      if (reply.status===200 && reply.offset>offset) { offset=reply.offset; failures=0; continue; }
+      if (reply.status===409 && reply.offset>=0) { offset=reply.offset; continue; }
+      if (reply.status===403) throw Object.assign(new Error("El permiso de subida venció. Vuelve a seleccionar el archivo."),{fatal:true});
+      if (reply.status===507) throw Object.assign(new Error("El servidor de archivos no tiene espacio suficiente."),{fatal:true});
+      throw new Error("El servidor de archivos rechazó el bloque.");
+    } catch(error) {
+      if (signal?.aborted || (error as {name?:string})?.name === "AbortError" || (error as {fatal?:boolean})?.fatal) throw error;
+      if (++failures>4) throw new Error("No se pudo terminar la subida después de cuatro reintentos. Revisa la conexión.");
+      await delay(Math.min(16000,2**failures*700));
+      const state=await vpsSend(url,"HEAD",null,0,mime,signal).catch(()=>null);
+      if (state?.receipt) return state.receipt;
+      if (state && state.status===200 && state.offset>=0) offset=state.offset;
+    }
+  }
+}
 export async function uploadToDrive({file,category,subfolder="",onProgress,signal}:{file:File;category:MediaCategory;subfolder?:string;onProgress?:(percentage:number)=>void;signal?:AbortSignal}):Promise<UploadedMedia> {
   onProgress?.(0);
-  const session=await post("/api/drive-upload",{category,subfolder,fileName:file.name,contentType:file.type,size:file.size}) as {uploadId:string;uploadUrl:string;contentType:string};
+  const session=await post("/api/drive-upload",{category,subfolder,fileName:file.name,contentType:file.type,size:file.size}) as {uploadId:string;uploadUrl:string;contentType:string;backend?:"vps"|"drive"};
+  if (session.backend === "vps") {
+    const receipt=await uploadToVps(session.uploadUrl,file,session.contentType,onProgress,signal);
+    const stored=await post("/api/drive-complete",{uploadId:session.uploadId,receipt}) as UploadedMedia;
+    onProgress?.(100); return stored;
+  }
   if (!validUploadSession(session.uploadUrl)) throw new Error("El destino de subida no es Google Drive.");
   let offset=0,failures=0,fileId:string|undefined;
   while (offset<file.size && !fileId) {
