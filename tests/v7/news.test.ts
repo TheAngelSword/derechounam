@@ -44,3 +44,31 @@ test('configuración: antigüedad máxima, canales y SCJN activada al actualizar
  const ch=mergeSettings({channels:[{channelId:'UC2E6_POzHIUr_N90HWCSwlw',name:'Canal Judicial',category:'Justicia',enabled:true},{channelId:'UCV0EOz5EywI75hynyg6_Rew',name:'Duplicado SCJN',category:'Justicia'}]});assert.equal(ch.channels.length,1,'no duplica un canal que ya es fuente');assert.equal(ch.channels[0].name,'Canal Judicial');
  assert.throws(()=>mergeSettings({channels:[{channelId:'https://evil.test/feed',name:'Malo',category:'Justicia'}]}),/identificador de YouTube/);
 });
+
+// v7.10: illustrations chosen by the topic of the headline.
+import {newsTopic} from '../../src/lib/news/topics.ts';
+test('ilustración según el tema del titular',()=>{
+ const cases:[string,string][]=[
+  ['Sentencia dictada en el juicio agrario 50/99, relativo a la solicitud de dotación de tierras, promovida por campesinos','agrario'],
+  ['Aviso mediante el cual se informa la publicación del Código de Conducta del Instituto Potosino de Investigación Científica y Tecnológica','etica'],
+  ['Acuerdo General del Pleno del Órgano de Administración Judicial relativo a la designación','sentencia'],
+  ['Convenio de Coordinación que celebran la Secretaría de Gobernación y el Estado de Morelos','convenio'],
+  ['Acuerdo por el que se dan a conocer los estímulos fiscales a la gasolina y al diésel','economia'],
+  ['Aviso por el que se dan a conocer las tarifas por el uso de infraestructura portuaria','maritimo'],
+  ['Una persona registrada como deudor alimentario ganó una elección','electoral'],
+  ['Contribuye la Facultad de Medicina Veterinaria y Zootecnia a la ley de bienestar animal','ambiente'],
+  ['Decreto por el que se reforman diversas disposiciones de la Ley General','legislacion'],
+  ['Jornada de convivencia del grupo','comunidad'],
+ ];
+ for(const [title,topic] of cases)assert.equal(newsTopic({title,category:'Comunidad'}),topic,title);
+ assert.equal(newsTopic({title:'Aviso sin tema reconocible',category:'Universidad Abierta'}),'abierta');
+});
+test('una frase precisa gana a una palabra suelta del nombre de una institución',()=>{
+ assert.equal(newsTopic({title:'Aviso mediante el cual se informa la publicación del Código de Conducta del Instituto Potosino de Investigación Científica y Tecnológica A.C.',summary:'PODER EJECUTIVO SECRETARIA DE CIENCIA, HUMANIDADES, TECNOLOGIA E INNOVACION',category:'Legislación'}),'etica');
+ assert.equal(newsTopic({title:'Acuerdo General del Pleno del Órgano de Administración Judicial relativo a la designación de las personas integrantes',summary:'PODER JUDICIAL ORGANO DE ADMINISTRACION JUDICIAL',category:'Legislación'}),'sentencia');
+});
+test('temas generales (universidad, ley) no tapan el tema específico',()=>{
+ assert.equal(newsTopic({title:'Políticas institucionales feministas a 475 años de la Universidad',category:'Comunidad'}),'derechos');
+ assert.equal(newsTopic({title:'Sesión Pública del Pleno de la Suprema Corte de Justicia de la Nación',category:'Justicia'}),'corte');
+ assert.equal(newsTopic({title:'Taller de elaboración de tesis: de la idea a la tesis',category:'Facultad'}),'academia');
+});
