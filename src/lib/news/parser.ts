@@ -43,8 +43,11 @@ export function parseFeed(xml:string,source:NewsSource):NewsItem[]{
   const chunks=[...xml.matchAll(/<(item|entry)\b[^>]*>([\s\S]*?)<\/\1>/gi)].slice(0,80);
   const result:NewsItem[]=[];
   for(const [, ,chunk]of chunks){
-    const html=tag(chunk,"description")||tag(chunk,"summary")||tag(chunk,"content");
+    // WordPress appends "The post … appeared first on …" to every teaser; it is not part of the news.
+    const html=(tag(chunk,"description")||tag(chunk,"summary")||tag(chunk,"content")||tag(chunk,"media:description")).replace(/(?:<p>)?\s*The post\b[\s\S]*?appeared first on[\s\S]*$/i,"");
     let title=plainText(tag(chunk,"title"),220);let teaser=plainText(html,180);
+    // A title without spaces is a file name (SCJN's "SintesisInformativaPDF26noviembre2026"), not a headline.
+    if(!/\s/.test(title))continue;
     // DOF's sumario puts the section ("PODER EJECUTIVO SECRETARIA DE ...") in <title> and the act in <description>.
     const description=plainText(html,220);
     if(/[A-ZÁÉÍÓÚÑ]{4}/.test(title)&&title===title.toLocaleUpperCase("es")&&description.length>=20){teaser=title.slice(0,180);title=description;}
@@ -64,6 +67,8 @@ export function parseFeed(xml:string,source:NewsSource):NewsItem[]{
     const img=html.match(/<img\b[^>]*>/i)?.[0]??"";
     row.imageUrl=safeImageUrl(attr(media,"url")||attr(img,"src"),source.url);
     row.imageCredit=row.imageUrl?`Imagen publicada por ${source.name}; consulta créditos en la fuente.`:null;
+    // YouTube channel feeds: the video plays in the card (youtube-nocookie) only when the visitor presses play.
+    const videoId=plainText(tag(chunk,"yt:videoId"),20);if(/^[\w-]{11}$/.test(videoId))row.youtubeId=videoId;
     result.push(row);
   }
   return [...new Map(result.map(r=>[r.id,r])).values()].slice(0,30);
