@@ -40,4 +40,34 @@ Quita `ARCHIVOS_URL` en Vercel y vuelve a desplegar: el portal regresa a Google 
 
 ## Respaldo
 
-**Pendiente.** Los archivos solo existen en el disco del VPS. Configura una copia diaria fuera del servidor antes de usarlo para material importante.
+Copia diaria a Google Drive con rclone (remoto `gdrive`, permiso `drive.file`: solo ve lo que rclone creó).
+
+| Elemento | Ubicación |
+|---|---|
+| Script | `/usr/local/sbin/respaldo-derechounam` |
+| Horario | `respaldo-derechounam.timer`, 04:00 UTC ± 15 min; si el VPS estaba apagado, corre al encender |
+| Destino | `Respaldo-derechounam/actual` en Drive (copia espejo, sin `*.part`) |
+| Borrados | Lo eliminado o reemplazado pasa a `Respaldo-derechounam/borrados/<fecha>` |
+| Último éxito | `/var/lib/respaldo-derechounam.ok` |
+| Credencial | `/root/.config/rclone/rclone.conf` (permiso 600) |
+
+Revisar:
+
+```bash
+systemctl list-timers respaldo-derechounam.timer
+journalctl -u respaldo-derechounam -n 20
+cat /var/lib/respaldo-derechounam.ok
+```
+
+Restaurar todo (o una carpeta `<2 letras>`):
+
+```bash
+rclone copy gdrive:Respaldo-derechounam/actual /srv/derechounam-archivos/data
+chown -R 1000:1000 /srv/derechounam-archivos/data
+```
+
+Un archivo borrado se recupera de `borrados/<fecha>/<2 letras>/<id>` (y su `<id>.json`).
+
+Si `rclone about gdrive:` dice que el token venció, vuelve a autorizar: abre un túnel `ssh -L 53682:127.0.0.1:53682 root@VPS`, ejecuta `rclone config reconnect gdrive:` y abre en esta PC el enlace que imprime.
+
+La carpeta `borrados` crece sin límite; bórrala a mano cuando haga falta (`rclone purge gdrive:Respaldo-derechounam/borrados/<fecha>`).
