@@ -1,5 +1,5 @@
 import { getSql } from "@/lib/db";
-import { DEFAULT_NEWS_SETTINGS, mergeSettings, assertSourceUrl, NEWS_MAX_AGE_DAYS } from "./sources";
+import { DEFAULT_NEWS_SETTINGS, mergeSettings, assertSourceUrl, channelSource } from "./sources";
 import { parseFeed } from "./parser";
 import { parseOfficialHtmlV72 as parseOfficialHtml } from "./parser-v72";
 import { enrichMedia } from "./enrich.server";
@@ -9,7 +9,9 @@ type Cache={items:NewsItem[];fetched_at:Date|string|null;checked_at:Date|string|
 const iso=(v:Date|string|null|undefined)=>v?new Date(v).toISOString():null;
 export async function readNewsSettings():Promise<NewsSettings>{
  const sql=await getSql();const [row]=await sql<{setting_value:string}>`select setting_value from app_settings where setting_key='news_settings_v7'`;
- return row?mergeSettings(JSON.parse(row.setting_value)):DEFAULT_NEWS_SETTINGS;
+ // A saved configuration that no longer validates must not take the whole news section down.
+ if(!row)return DEFAULT_NEWS_SETTINGS;
+ try{return mergeSettings(JSON.parse(row.setting_value));}catch{return DEFAULT_NEWS_SETTINGS;}
 }
 export async function fetchOfficialSource(source:NewsSource):Promise<NewsItem[]>{
  let url=assertSourceUrl(source.url,source.hosts);const signal=AbortSignal.timeout(9000);
@@ -51,19 +53,24 @@ async function refreshSource(source:NewsSource,settings:NewsSettings,force:boole
   }
  }
  // A failing source shows nothing (its status reports the error) instead of fixed reference cards that never change.
- const cutoff=Date.now()-NEWS_MAX_AGE_DAYS*86_400_000;
+ const cutoff=Date.now()-settings.maxAgeDays*86_400_000;
  const items=source.enabled?(cache?.items??[]).filter(i=>!i.publishedAt||Date.parse(i.publishedAt)>=cutoff):[];
  return {items,status:{id:source.id,name:source.name,enabled:source.enabled,checkedAt:iso(cache?.checked_at),fetchedAt:iso(cache?.fetched_at),error:cache?.last_error??null,count:items.filter(i=>!i.snapshot).length,kind:source.kind}};
 }
 export async function readEditorial(includeHidden=false):Promise<NewsItem[]>{
  const sql=await getSql();const rows=await sql.query<Record<string,unknown>>(`select * from news_posts ${includeHidden?"":"where published=true"} order by pinned desc,published_at desc nulls last,created_at desc limit 100`);
- return rows.map(r=>({id:`editorial-${r.id}`,title:String(r.title),summary:String(r.summary),sourceId:"editorial",sourceName:String(r.source_name),sourceUrl:String(r.source_url),category:String(r.category),legalStage:String(r.legal_stage),publishedAt:iso(r.published_at as Date|null),eventDate:r.event_date?new Date(r.event_date as string).toISOString().slice(0,10):null,imageUrl:r.image_upload_id?`/api/drive-file?id=${r.image_upload_id}`:null,videoUrl:r.video_upload_id?`/api/drive-file?id=${r.video_upload_id}`:null,youtubeId:r.youtube_id?String(r.youtube_id):null,pinned:!!r.pinned,published:!!r.published}));
+ return rows.map(r=>({id:`editorial-${r.id}`,title:String(r.title),summary:String(r.summary),sourceId:"editorial",sourceName:String(r.source_name),sourceUrl:String(r.source_url),category:String(r.category),legalStage:String(r.legal_stage),publishedAt:iso((r.published_at??r.created_at) as Date|null),eventDate:r.event_date?new Date(r.event_date as string).toISOString().slice(0,10):null,imageUrl:r.image_upload_id?`/api/drive-file?id=${r.image_upload_id}`:null,videoUrl:r.video_upload_id?`/api/drive-file?id=${r.video_upload_id}`:null,youtubeId:r.youtube_id?String(r.youtube_id):null,socialUrl:r.social_url?String(r.social_url):null,pinned:!!r.pinned,published:!!r.published}));
 }
 export async function getNewsFeed(force=false):Promise<NewsFeed>{
  try{
-  const settings=await readNewsSettings();const [results,manual]=await Promise.all([Promise.all(settings.sources.map(s=>refreshSource(s,settings,force))),readEditorial()]);
-  const items=[...manual,...results.flatMap(r=>r.items)];
-  const dedup=[...new Map(items.map(i=>[`${i.title.toLocaleLowerCase("es")}::${i.sourceUrl}`,i])).values()];
+  const settings=await readNewsSettings();const [results,manual]=await Promise.all([Promise.all([...settings.sources,...settings.channels.map(channelSource)].map(s=>refreshSource(s,settings,force))),readEditorial()]);
+  // Up to PER_SOURCE recent entries per source so a busy video channel does not bury the written news.
+  const PER_SOURCE=8;
+  const recent=(list:NewsItem[])=>list.slice().sort((a,b)=>(b.publishedAt??"").localeCompare(a.publishedAt??"")).slice(0,PER_SOURCE);
+  const items=[...manual,...results.flatMap(r=>recent(r.items))];
+  // The same headline from the same source (re-uploads, "Tarjeta informativa" and "Tarjeta informativa.") counts once.
+  const seen=new Set<string>();
+  const dedup=items.filter(i=>{const k=`${i.sourceId}::${i.title.toLocaleLowerCase("es").replace(/[^\p{L}\p{N}]+/gu," ").trim()}`;if(seen.has(k))return false;seen.add(k);return true;});
   dedup.sort((a,b)=>Number(!!b.pinned)-Number(!!a.pinned)||Number(!!a.snapshot)-Number(!!b.snapshot)||(b.publishedAt??b.eventDate??"").localeCompare(a.publishedAt??a.eventDate??""));
   return {items:dedup.slice(0,120),sources:results.map(r=>r.status),generatedAt:new Date().toISOString()};
  }catch{return {items:NEWS_SNAPSHOT,sources:[],error:"No se pudo consultar el servicio de noticias. Se muestran referencias revisadas el 6 de octubre de 2026, no una actualización en directo.",generatedAt:new Date().toISOString()};}

@@ -46,7 +46,7 @@ async function cachedArticleMedia(url:string,source:NewsSource,timeoutMs=5000):P
 export async function enrichMedia(items:NewsItem[],source:NewsSource,listing:string):Promise<NewsItem[]>{
  const result=items.map(item=>{const thumb=source.kind==="html"&&item.sourceUrl!==source.url?thumbnailFromListing(listing,item.sourceUrl,source.url):null;return thumb?{...item,imageUrl:item.imageUrl||thumb,imageCredit:item.imageCredit||`Imagen publicada por ${source.name}. Consulta los créditos en la fuente.`}:{...item};});
  const deadline=Date.now()+8000;let cursor=0;
- await Promise.all(Array.from({length:3},async()=>{while(cursor<result.length&&Date.now()<deadline-250){const i=cursor++;const item=result[i];if(item.sourceUrl===source.url||/\.(pdf|docx?|zip|png|jpe?g|webp)(?:[?#]|$)/i.test(item.sourceUrl))continue;try{const media=await cachedArticleMedia(item.sourceUrl,source,Math.max(250,Math.min(5000,deadline-Date.now())));result[i]={...item,...media};}catch{/* The visible-card resolver retries without hiding the headline. */}}}));
+ await Promise.all(Array.from({length:3},async()=>{while(cursor<result.length&&Date.now()<deadline-250){const i=cursor++;const item=result[i];if(item.youtubeId||item.sourceUrl===source.url||/\.(pdf|docx?|zip|png|jpe?g|webp)(?:[?#]|$)/i.test(item.sourceUrl))continue;try{const media=await cachedArticleMedia(item.sourceUrl,source,Math.max(250,Math.min(5000,deadline-Date.now())));result[i]={...item,...media};}catch{/* The visible-card resolver retries without hiding the headline. */}}}));
  return result;
 }
 /** Public resolver accepts only articles already included in a source cache or reviewed snapshot. */

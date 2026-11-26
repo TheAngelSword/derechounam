@@ -169,3 +169,7 @@
 @keyframes fd-puma-breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.018)}}
 @media(max-width:740px){.fd-aura-mascot.fd-aura-puma-scene{min-width:115px;max-width:138px;padding:0 3px}.fd-aura-puma-scene .fd-aura-puma{width:118px;height:123px}.fd-aura-puma-scene small{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.fd-aura-puma-scene .fd-aura-puma{animation:none!important}}
+
+/* v7.9: TikTok and Instagram embeds are portrait */
+.fd-news-social{aspect-ratio:9/16;max-height:640px;background:#000}
+.fd-news-grid.compact .fd-news-social{max-height:560px}
